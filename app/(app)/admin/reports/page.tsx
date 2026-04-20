@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import {
   Select,
   SelectContent,
@@ -20,14 +22,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  adminChildren,
-  adminPayments,
-  adminSessions,
-  adminTeachers,
-} from '@/lib/store/admin';
+  adminKeys,
+  listAdminSessions,
+  listAdminStudents,
+} from '@/lib/api/admin';
+import {
+  listAdminPayments,
+  listAdminTeacherPayouts,
+  paymentKeys,
+  type TeacherPayoutSummary,
+} from '@/lib/api/payments';
 import { cn } from '@/lib/utils';
-import { isSessionPayoutEligible } from '@/lib/types';
-import { useMounted } from '@/lib/use-mounted';
+import { isSessionPayoutEligible, type Child, type Payment, type Session } from '@/lib/types';
+
+const EMPTY_PAYMENTS: Payment[] = [];
+const EMPTY_SESSIONS: Session[] = [];
+const EMPTY_STUDENTS: Child[] = [];
+const EMPTY_PAYOUTS: TeacherPayoutSummary[] = [];
 
 function monthKey(date: string) {
   return date.slice(0, 7);
@@ -40,21 +51,50 @@ function monthLabel(key: string) {
   });
 }
 
+function currentMonth() {
+  return new Date().toISOString().slice(0, 7);
+}
+
 export default function AdminReportsPage() {
-  const mounted = useMounted();
-  const payments = adminPayments();
-  const sessions = adminSessions();
-  const teachers = adminTeachers();
-  const children = adminChildren();
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const paymentsQuery = useQuery({
+    queryKey: paymentKeys.adminPayments,
+    queryFn: listAdminPayments,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: adminKeys.sessions,
+    queryFn: listAdminSessions,
+  });
+  const studentsQuery = useQuery({
+    queryKey: adminKeys.students,
+    queryFn: listAdminStudents,
+  });
+  const payoutsQuery = useQuery({
+    queryKey: paymentKeys.adminPayouts(selectedMonth),
+    queryFn: () => listAdminTeacherPayouts(selectedMonth),
+  });
+
+  const payments = paymentsQuery.data ?? EMPTY_PAYMENTS;
+  const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
+  const children = studentsQuery.data ?? EMPTY_STUDENTS;
+  const teacherRows = payoutsQuery.data ?? EMPTY_PAYOUTS;
+  const isLoading =
+    paymentsQuery.isLoading ||
+    sessionsQuery.isLoading ||
+    studentsQuery.isLoading ||
+    payoutsQuery.isLoading;
+  const isError =
+    paymentsQuery.isError ||
+    sessionsQuery.isError ||
+    studentsQuery.isError ||
+    payoutsQuery.isError;
 
   const monthOptions = useMemo(() => {
-    const keys = new Set<string>([new Date().toISOString().slice(0, 7)]);
+    const keys = new Set<string>([currentMonth()]);
     payments.forEach((payment) => keys.add(monthKey(payment.createdAt)));
     sessions.forEach((session) => keys.add(monthKey(session.startsAt)));
     return Array.from(keys).sort((a, b) => b.localeCompare(a));
   }, [payments, sessions]);
-
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
 
   const report = useMemo(() => {
     const monthlyPayments = payments.filter(
@@ -72,29 +112,22 @@ export default function AdminReportsPage() {
       (s) => s.cancellation?.status === 'Approved',
     );
     const revenue = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
-    const verifiedHours =
-      verified.reduce((sum, session) => sum + session.durationMins, 0) / 60;
-    const teacherRows = teachers.map((teacher) => {
-      const teacherSessions = verified.filter(
-        (session) => session.teacherId === teacher.id,
-      );
-      const hours =
-        teacherSessions.reduce((sum, session) => sum + session.durationMins, 0) /
-        60;
-      const amountDue = Math.round(hours * teacher.hourlyRate);
-      return {
-        teacher,
-        sessions: teacherSessions.length,
-        hours,
-        amountDue,
-      };
-    });
+    const verifiedHours = teacherRows.reduce(
+      (sum, row) => sum + row.verifiedHours,
+      0,
+    );
     const teacherPayoutDue = teacherRows.reduce(
-      (sum, row) => sum + row.amountDue,
+      (sum, row) => sum + row.amount,
+      0,
+    );
+    const paidTeacherPayout = teacherRows.reduce(
+      (sum, row) => sum + (row.status === 'Paid' ? row.amount : 0),
       0,
     );
     const confirmationRate =
-      completed.length > 0 ? Math.round((verified.length / completed.length) * 100) : 0;
+      completed.length > 0
+        ? Math.round((verified.length / completed.length) * 100)
+        : 0;
     const deactivatedStudents = children.filter(
       (child) => child.status === 'Deactivated',
     ).length;
@@ -110,16 +143,24 @@ export default function AdminReportsPage() {
       verifiedHours,
       teacherRows,
       teacherPayoutDue,
+      paidTeacherPayout,
       margin: revenue - teacherPayoutDue,
       confirmationRate,
       deactivatedStudents,
     };
-  }, [children, payments, selectedMonth, sessions, teachers]);
+  }, [children, payments, selectedMonth, sessions, teacherRows]);
 
-  if (!mounted) {
+  if (isLoading) {
+    return <PageShellSkeleton />;
+  }
+
+  if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
+        <PageHeader title="Monthly report" description="" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load reports right now. Please try again.
+        </div>
       </div>
     );
   }
@@ -151,7 +192,7 @@ export default function AdminReportsPage() {
         <StatTile
           icon={DollarSign}
           label="Revenue"
-          value={`$${report.revenue}`}
+          value={`$${report.revenue.toFixed(0)}`}
           sub={`${report.monthlyPayments.length} parent payment${report.monthlyPayments.length === 1 ? '' : 's'}`}
           accent
         />
@@ -164,13 +205,13 @@ export default function AdminReportsPage() {
         <StatTile
           icon={GraduationCap}
           label="Teacher payout due"
-          value={`$${report.teacherPayoutDue}`}
-          sub="pay teachers individually"
+          value={`$${report.teacherPayoutDue.toFixed(0)}`}
+          sub={`$${report.paidTeacherPayout.toFixed(0)} paid`}
         />
         <StatTile
           icon={TrendingUp}
           label="Gross margin"
-          value={`$${report.margin}`}
+          value={`$${report.margin.toFixed(0)}`}
           sub="revenue minus teacher due"
         />
       </div>
@@ -208,41 +249,71 @@ export default function AdminReportsPage() {
         </h2>
         <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[680px]">
+            <table className="w-full text-sm min-w-[760px]">
               <thead className="bg-gray-50 dark:bg-background text-xs text-gray-500 dark:text-muted-foreground uppercase tracking-wide">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Teacher</th>
-                  <th className="text-right px-4 py-3 font-medium">Verified sessions</th>
+                  <th className="text-right px-4 py-3 font-medium">
+                    Verified sessions
+                  </th>
                   <th className="text-right px-4 py-3 font-medium">Hours</th>
                   <th className="text-right px-4 py-3 font-medium">Rate</th>
                   <th className="text-right px-4 py-3 font-medium">Amount due</th>
+                  <th className="text-right px-4 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {report.teacherRows.map((row) => (
-                  <tr key={row.teacher.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                  <tr
+                    key={row.teacherId}
+                    className="hover:bg-gray-50 dark:hover:bg-white/5"
+                  >
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-900 dark:text-foreground">
-                        {row.teacher.name}
+                        {row.teacherName}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                        {row.teacher.subjects.join(', ')}
+                        {row.subjects.join(', ')}
                       </p>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.sessions}
+                      {row.sessionCount}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.hours.toFixed(1)}
+                      {row.verifiedHours.toFixed(1)}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      ${row.teacher.hourlyRate}/hr
+                      ${row.hourlyRate}/hr
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                      ${row.amountDue}
+                      ${row.amount.toFixed(0)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span
+                        className={cn(
+                          'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                          row.status === 'Paid'
+                            ? 'bg-accent2-50 text-accent2-700'
+                            : row.amount > 0
+                              ? 'bg-amber-50 text-amber-700'
+                              : 'bg-gray-100 text-gray-500',
+                        )}
+                      >
+                        {row.amount === 0 ? 'No payout' : row.status}
+                      </span>
                     </td>
                   </tr>
                 ))}
+                {report.teacherRows.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-8 text-center text-sm text-gray-500"
+                    >
+                      No teachers found for this report.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -257,7 +328,7 @@ export default function AdminReportsPage() {
             .filter((session) => !isSessionPayoutEligible(session.attendance))
             .map((session) => ({
               id: session.id,
-              label: session.subject,
+              label: `${session.subject} - ${session.childName ?? 'Student'}`,
               sub: `${new Date(session.startsAt).toLocaleDateString()} - ${session.durationMins} min`,
               tone: 'warning',
             }))}
@@ -273,8 +344,8 @@ export default function AdminReportsPage() {
               session.cancellation?.status === 'Approved'
                 ? 'danger'
                 : session.cancellation?.status === 'Rejected'
-                ? 'muted'
-                : 'warning',
+                  ? 'muted'
+                  : 'warning',
           }))}
         />
       </section>
@@ -297,7 +368,9 @@ function ReportList({
         {title}
       </h2>
       {rows.length === 0 ? (
-        <p className="text-xs text-gray-500 dark:text-muted-foreground">{empty}</p>
+        <p className="text-xs text-gray-500 dark:text-muted-foreground">
+          {empty}
+        </p>
       ) : (
         <div className="space-y-2">
           {rows.map((row) => (

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   BookOpen,
@@ -12,62 +13,168 @@ import {
   Video,
   Wallet,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import ChildSwitcher from '@/components/dashboard/ChildSwitcher';
 import FeedbackCard from '@/components/dashboard/FeedbackCard';
 import PageHeader from '@/components/dashboard/PageHeader';
 import SessionRow from '@/components/dashboard/SessionRow';
 import StatTile from '@/components/dashboard/StatTile';
+import { DashboardHomeSkeleton } from '@/components/dashboard/Skeletons';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
-  familyChildren,
-  familyParent,
-  familySessionsForChild,
-  familyTeacher,
-} from '@/lib/store/family';
-import type { Child, Parent, Session } from '@/lib/types';
+  confirmFamilySessionAttendance,
+  familyKeys,
+  getFamilyProfile,
+  listFamilySessions,
+  listFamilyStudents,
+  requestFamilySessionCancellation,
+} from '@/lib/api/family';
+import type { Child, Session } from '@/lib/types';
+
+const EMPTY_CHILDREN: Child[] = [];
+const EMPTY_SESSIONS: Session[] = [];
 
 export default function FamilyHome() {
-  const [parent, setParent] = useState<Parent | null>(null);
-  const [children, setChildren] = useState<Child[]>([]);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  const profileQuery = useQuery({
+    queryKey: familyKeys.profile,
+    queryFn: getFamilyProfile,
+  });
+  const childrenQuery = useQuery({
+    queryKey: familyKeys.students,
+    queryFn: listFamilyStudents,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: familyKeys.sessions,
+    queryFn: listFamilySessions,
+  });
+
+  const parent = profileQuery.data;
+  const children = childrenQuery.data ?? EMPTY_CHILDREN;
+  const allSessions = sessionsQuery.data ?? EMPTY_SESSIONS;
+  const isLoading =
+    profileQuery.isLoading || childrenQuery.isLoading || sessionsQuery.isLoading;
+  const isError =
+    profileQuery.isError || childrenQuery.isError || sessionsQuery.isError;
+
   useEffect(() => {
-    setParent(familyParent());
-    const list = familyChildren();
-    setChildren(list);
-    setActiveId(list[0]?.id ?? null);
-  }, []);
+    if (activeId || children.length === 0) return;
+    setActiveId(children[0].id);
+  }, [activeId, children]);
 
   const active = useMemo(
     () => children.find((c) => c.id === activeId) ?? children[0],
     [children, activeId],
   );
 
-  const sessions: Session[] = useMemo(
-    () => (active ? familySessionsForChild(active.id) : []),
-    [active],
+  const sessions = useMemo(
+    () => (active ? allSessions.filter((s) => s.childId === active.id) : []),
+    [active, allSessions],
   );
+
+  const attendanceMutation = useMutation({
+    mutationFn: confirmFamilySessionAttendance,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
+      toast({
+        title: 'Attendance confirmed',
+        description: 'Admin can now include this class in the lesson record.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not confirm attendance',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const cancellationMutation = useMutation({
+    mutationFn: ({
+      sessionId,
+      reason,
+    }: {
+      sessionId: string;
+      reason: string;
+    }) => requestFamilySessionCancellation(sessionId, reason),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
+      toast({
+        title: 'Cancellation requested',
+        description: 'Admin will review the request.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not request cancellation',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  if (isLoading) {
+    return <DashboardHomeSkeleton />;
+  }
+
+  if (isError || !parent) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Family dashboard" description="" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load your family dashboard right now. Please try again.
+        </div>
+      </div>
+    );
+  }
+
+  if (!active) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title={`Hi, ${parent.name.split(' ')[0]}`}
+          description="Your family's learning at a glance."
+          action={
+            <Link href="/family/children/new">
+              <Button variant="outline" className="rounded-full">
+                <Plus className="w-4 h-4 mr-2" />
+                Add child
+              </Button>
+            </Link>
+          }
+        />
+        <section className="bg-accent2-50 border border-accent2-100 rounded-3xl p-6 lg:p-8 text-center">
+          <p className="text-sm text-brand font-semibold">
+            Add your first child
+          </p>
+          <p className="text-xs text-gray-600 dark:text-muted-foreground mt-1">
+            Once their profile and intake are complete, admin can match them
+            with a teacher.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
   const upcoming = sessions
     .filter((s) => s.status === 'Upcoming')
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const completed = sessions.filter((s) => s.status === 'Completed');
   const nextSession = upcoming[0];
-  const teacher = nextSession ? familyTeacher(nextSession.teacherId) : null;
-
-  if (!parent || !active) {
-    return <p className="text-sm text-gray-400 dark:text-muted-foreground">Loading…</p>;
-  }
-
   const sessionsDone = completed.length;
-  const totalSpent = sessions
-    .filter((s) => s.status === 'Completed')
-    .reduce((sum, s) => sum + s.amount, 0);
+  const totalSpent = completed.reduce((sum, s) => sum + s.amount, 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={`Hi, ${parent.name.split(' ')[0]}`}
-        description="Your family&apos;s learning at a glance."
+        description="Your family's learning at a glance."
         action={
           <Link href="/family/children/new">
             <Button variant="outline" className="rounded-full">
@@ -103,17 +210,16 @@ export default function FamilyHome() {
         </Link>
       )}
 
-      {/* Next session hero card */}
-      {nextSession && teacher ? (
+      {nextSession ? (
         <section className="bg-brand text-white rounded-3xl p-6 lg:p-8 relative overflow-hidden">
-          <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-accent2-500/20" />
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-white/5" />
+          <div className="absolute right-0 top-0 h-full w-28 bg-accent2-500/20" />
           <div className="relative z-10">
             <p className="text-xs uppercase tracking-wide text-accent2-400 font-semibold mb-2">
               Next session
             </p>
             <h2 className="text-2xl lg:text-3xl font-bold mb-1">
-              {nextSession.subject} with {teacher.name}
+              {nextSession.subject} with{' '}
+              {nextSession.teacherName ?? 'your teacher'}
             </h2>
             <p className="text-white/80 text-sm mb-6">
               {new Date(nextSession.startsAt).toLocaleString(undefined, {
@@ -123,16 +229,20 @@ export default function FamilyHome() {
                 hour: '2-digit',
                 minute: '2-digit',
               })}{' '}
-              · {nextSession.durationMins} min · Live on Google Meet
+              - {nextSession.durationMins} min
             </p>
             <div className="flex flex-wrap gap-3">
               {nextSession.meetLink ? (
-              <Link href={nextSession.meetLink} target="_blank" rel="noreferrer">
-                <Button className="bg-accent2-500 text-brand hover:bg-accent2-400 rounded-full">
-                  <Video className="w-4 h-4 mr-2" />
-                  Join session
-                </Button>
-              </Link>
+                <Link
+                  href={nextSession.meetLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Button className="bg-accent2-500 text-brand hover:bg-accent2-400 rounded-full">
+                    <Video className="w-4 h-4 mr-2" />
+                    Join session
+                  </Button>
+                </Link>
               ) : (
                 <Button
                   className="bg-white/10 text-white rounded-full"
@@ -164,7 +274,6 @@ export default function FamilyHome() {
         </section>
       )}
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile
           icon={CalendarDays}
@@ -175,7 +284,7 @@ export default function FamilyHome() {
         <StatTile
           icon={Wallet}
           label="Spent"
-          value={`$${totalSpent}`}
+          value={`$${totalSpent.toFixed(0)}`}
           sub="on completed sessions"
         />
         <StatTile
@@ -192,7 +301,6 @@ export default function FamilyHome() {
         />
       </div>
 
-      {/* Upcoming + feedback */}
       <div className="grid lg:grid-cols-2 gap-4">
         <section>
           <div className="flex items-center justify-between mb-3">
@@ -208,9 +316,25 @@ export default function FamilyHome() {
           </div>
           <div className="space-y-3">
             {upcoming.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">Nothing scheduled.</p>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                Nothing scheduled.
+              </p>
             ) : (
-              upcoming.slice(0, 3).map((s) => <SessionRow key={s.id} session={s} />)
+              upcoming.slice(0, 3).map((s) => (
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  onConfirmHeld={async (sessionId) => {
+                    await attendanceMutation.mutateAsync(sessionId);
+                  }}
+                  onRequestCancellation={async (sessionId, reason) => {
+                    await cancellationMutation.mutateAsync({
+                      sessionId,
+                      reason,
+                    });
+                  }}
+                />
+              ))
             )}
           </div>
         </section>
@@ -233,14 +357,20 @@ export default function FamilyHome() {
               </p>
             ) : (
               completed
+                .filter((s) => s.note || s.noteId)
                 .slice(0, 2)
                 .map((s) => <FeedbackCard key={s.id} session={s} />)
             )}
+            {completed.length > 0 &&
+              completed.filter((s) => s.note || s.noteId).length === 0 && (
+                <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                  Feedback is pending for completed sessions.
+                </p>
+              )}
           </div>
         </section>
       </div>
 
-      {/* Quick links */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <QuickLink
           href="/family/learning"
@@ -285,7 +415,9 @@ function QuickLink({
         <Icon className="w-4 h-4" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">{label}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+          {label}
+        </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground">{sub}</p>
       </div>
     </Link>

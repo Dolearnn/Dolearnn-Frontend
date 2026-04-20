@@ -155,6 +155,8 @@ export interface Session {
   id: string;
   childId: string;
   teacherId: string;
+  childName?: string;
+  teacherName?: string;
   subject: string;
   startsAt: string;
   durationMins: number;
@@ -164,6 +166,7 @@ export interface Session {
   amount: number;
   attendance?: SessionAttendance;
   cancellation?: SessionCancellation;
+  note?: SessionNote;
 }
 
 export interface SessionAttendance {
@@ -175,6 +178,7 @@ export type CancellationRequester = 'family' | 'teacher';
 export type CancellationStatus = 'Pending' | 'Approved' | 'Rejected';
 
 export interface SessionCancellation {
+  id?: string;
   requestedBy: CancellationRequester;
   requestedAt: string;
   reason: string;
@@ -188,6 +192,8 @@ export interface SessionProposal {
   id: string;
   childId: string;
   teacherId: string;
+  childName?: string;
+  teacherName?: string;
   subject: string;
   startsAt: string;
   durationMins: number;

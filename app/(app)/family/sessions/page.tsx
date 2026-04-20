@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck2, CalendarX2 } from 'lucide-react';
 import ChildSwitcher from '@/components/dashboard/ChildSwitcher';
 import FeedbackCard from '@/components/dashboard/FeedbackCard';
@@ -8,64 +9,138 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import SessionRow from '@/components/dashboard/SessionRow';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import {
-  getSessionProposals,
-  updateSessionProposalStatus,
-} from '@/lib/store/client';
-import {
-  familyChildren,
-  familySessionsForChild,
-  familyTeacher,
-} from '@/lib/store/family';
-import type { Child, Session, SessionProposal, SessionStatus } from '@/lib/types';
+  acceptFamilySessionProposal,
+  confirmFamilySessionAttendance,
+  declineFamilySessionProposal,
+  familyKeys,
+  listFamilySessionProposals,
+  listFamilySessions,
+  listFamilyStudents,
+  requestFamilySessionCancellation,
+} from '@/lib/api/family';
+import type { Session, SessionProposal, SessionStatus } from '@/lib/types';
+import { useState } from 'react';
 
 const TAB_ORDER: SessionStatus[] = ['Upcoming', 'Completed', 'Cancelled'];
 
 export default function FamilySessionsPage() {
-  const [children, setChildren] = useState<Child[]>([]);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [proposals, setProposals] = useState<SessionProposal[]>([]);
 
-  useEffect(() => {
-    const list = familyChildren();
-    setChildren(list);
-    setActiveId(list[0]?.id ?? null);
-    setProposals(getSessionProposals());
-  }, []);
+  const studentsQuery = useQuery({
+    queryKey: familyKeys.students,
+    queryFn: listFamilyStudents,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: familyKeys.sessions,
+    queryFn: listFamilySessions,
+  });
+  const proposalsQuery = useQuery({
+    queryKey: familyKeys.proposals,
+    queryFn: listFamilySessionProposals,
+  });
 
+  const children = useMemo(() => studentsQuery.data ?? [], [studentsQuery.data]);
   const active = useMemo(
-    () => children.find((c) => c.id === activeId) ?? children[0],
+    () =>
+      children.find((child) => child.id === activeId) ??
+      children[0] ??
+      null,
     [children, activeId],
   );
 
-  const acceptedProposalCount = proposals.filter(
-    (proposal) => proposal.status === 'Accepted',
-  ).length;
-
-  const sessions: Session[] = useMemo(() => {
-    if (!active || acceptedProposalCount < 0) return [];
-    return familySessionsForChild(active.id);
-  }, [active, acceptedProposalCount]);
-
-  const pendingProposals = useMemo(
-    () =>
-      active
-        ? proposals.filter(
-            (proposal) =>
-              proposal.childId === active.id && proposal.status === 'Pending',
-          )
-        : [],
-    [active, proposals],
-  );
-
-  const resolveProposal = (
-    proposalId: string,
-    status: 'Accepted' | 'Declined',
-  ) => {
-    const updated = updateSessionProposalStatus(proposalId, status);
-    if (!updated) return;
-    setProposals(getSessionProposals());
+  const invalidateSessions = () => {
+    queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
+    queryClient.invalidateQueries({ queryKey: familyKeys.proposals });
   };
+
+  const acceptMutation = useMutation({
+    mutationFn: acceptFamilySessionProposal,
+    onSuccess: () => {
+      invalidateSessions();
+      toast({ title: 'Session accepted' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not accept session',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const declineMutation = useMutation({
+    mutationFn: declineFamilySessionProposal,
+    onSuccess: () => {
+      invalidateSessions();
+      toast({ title: 'Session declined' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not decline session',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const attendanceMutation = useMutation({
+    mutationFn: confirmFamilySessionAttendance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
+      toast({ title: 'Attendance confirmed' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not confirm attendance',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const cancellationMutation = useMutation({
+    mutationFn: ({
+      sessionId,
+      reason,
+    }: {
+      sessionId: string;
+      reason: string;
+    }) => requestFamilySessionCancellation(sessionId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
+      toast({ title: 'Cancellation requested' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not request cancellation',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const sessions = useMemo(() => {
+    if (!active) return [];
+    return (sessionsQuery.data ?? []).filter(
+      (session) => session.childId === active.id,
+    );
+  }, [active, sessionsQuery.data]);
+
+  const pendingProposals = useMemo(() => {
+    if (!active) return [];
+    return (proposalsQuery.data ?? []).filter(
+      (proposal) =>
+        proposal.childId === active.id && proposal.status === 'Pending',
+    );
+  }, [active, proposalsQuery.data]);
 
   const grouped = useMemo(() => {
     const bucket: Record<SessionStatus, Session[]> = {
@@ -73,22 +148,56 @@ export default function FamilySessionsPage() {
       Completed: [],
       Cancelled: [],
     };
-    for (const s of sessions) bucket[s.status].push(s);
+    for (const session of sessions) bucket[session.status].push(session);
     bucket.Upcoming.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     bucket.Completed.sort((a, b) => b.startsAt.localeCompare(a.startsAt));
     bucket.Cancelled.sort((a, b) => b.startsAt.localeCompare(a.startsAt));
     return bucket;
   }, [sessions]);
 
+  const isLoading =
+    studentsQuery.isLoading ||
+    sessionsQuery.isLoading ||
+    proposalsQuery.isLoading;
+  const error =
+    studentsQuery.error ?? sessionsQuery.error ?? proposalsQuery.error;
+
+  if (isLoading) {
+    return (
+      <p className="text-sm text-gray-400 dark:text-muted-foreground">
+        Loading...
+      </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <p className="text-sm text-red-600">
+        {error instanceof Error ? error.message : 'Could not load sessions.'}
+      </p>
+    );
+  }
+
   if (!active) {
-    return <p className="text-sm text-gray-400 dark:text-muted-foreground">Loading…</p>;
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Sessions"
+          description="Every lesson for your family - past, present and upcoming."
+        />
+        <EmptyState
+          title="No students yet"
+          hint="Add a student before sessions can be proposed."
+        />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Sessions"
-        description="Every lesson for your family — past, present and upcoming."
+        description="Every lesson for your family - past, present and upcoming."
       />
 
       <ChildSwitcher
@@ -103,8 +212,10 @@ export default function FamilySessionsPage() {
             <SessionProposalCard
               key={proposal.id}
               proposal={proposal}
-              onAccept={() => resolveProposal(proposal.id, 'Accepted')}
-              onDecline={() => resolveProposal(proposal.id, 'Declined')}
+              accepting={acceptMutation.isPending}
+              declining={declineMutation.isPending}
+              onAccept={() => acceptMutation.mutate(proposal.id)}
+              onDecline={() => declineMutation.mutate(proposal.id)}
             />
           ))}
         </div>
@@ -133,7 +244,18 @@ export default function FamilySessionsPage() {
               hint="New sessions will appear here once booked."
             />
           ) : (
-            grouped.Upcoming.map((s) => <SessionRow key={s.id} session={s} />)
+            grouped.Upcoming.map((session) => (
+              <SessionRow
+                key={session.id}
+                session={session}
+                onConfirmHeld={async (sessionId) => {
+                  await attendanceMutation.mutateAsync(sessionId);
+                }}
+                onRequestCancellation={(sessionId, reason) =>
+                  cancellationMutation.mutateAsync({ sessionId, reason })
+                }
+              />
+            ))
           )}
         </TabsContent>
 
@@ -144,10 +266,15 @@ export default function FamilySessionsPage() {
               hint="Feedback from teachers will appear here after each session."
             />
           ) : (
-            grouped.Completed.map((s) => (
-              <div key={s.id} className="space-y-3">
-                <SessionRow session={s} />
-                <FeedbackCard session={s} />
+            grouped.Completed.map((session) => (
+              <div key={session.id} className="space-y-3">
+                <SessionRow
+                  session={session}
+                  onConfirmHeld={async (sessionId) => {
+                    await attendanceMutation.mutateAsync(sessionId);
+                  }}
+                />
+                <FeedbackCard session={session} />
               </div>
             ))
           )}
@@ -160,7 +287,9 @@ export default function FamilySessionsPage() {
               hint="Any cancelled sessions will appear here."
             />
           ) : (
-            grouped.Cancelled.map((s) => <SessionRow key={s.id} session={s} />)
+            grouped.Cancelled.map((session) => (
+              <SessionRow key={session.id} session={session} />
+            ))
           )}
         </TabsContent>
       </Tabs>
@@ -170,14 +299,17 @@ export default function FamilySessionsPage() {
 
 function SessionProposalCard({
   proposal,
+  accepting,
+  declining,
   onAccept,
   onDecline,
 }: {
   proposal: SessionProposal;
+  accepting: boolean;
+  declining: boolean;
   onAccept: () => void;
   onDecline: () => void;
 }) {
-  const teacher = familyTeacher(proposal.teacherId);
   return (
     <div className="bg-white dark:bg-card border border-brand/20 dark:border-accent2-400/30 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4">
       <div className="w-10 h-10 rounded-full bg-brand/10 text-brand dark:bg-accent2-500/15 dark:text-accent2-400 flex items-center justify-center shrink-0">
@@ -193,7 +325,7 @@ function SessionProposalCard({
           </span>
         </div>
         <p className="font-semibold text-gray-900 dark:text-foreground">
-          {teacher.name}
+          {proposal.teacherName ?? 'Teacher'}
         </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
           {new Date(proposal.startsAt).toLocaleString(undefined, {
@@ -212,11 +344,20 @@ function SessionProposalCard({
         )}
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" className="rounded-full" onClick={onDecline}>
-          Decline
+        <Button
+          variant="outline"
+          className="rounded-full"
+          disabled={accepting || declining}
+          onClick={onDecline}
+        >
+          {declining ? 'Declining...' : 'Decline'}
         </Button>
-        <Button className="rounded-full bg-brand hover:bg-brand-600" onClick={onAccept}>
-          Accept
+        <Button
+          className="rounded-full bg-brand hover:bg-brand-600"
+          disabled={accepting || declining}
+          onClick={onAccept}
+        >
+          {accepting ? 'Accepting...' : 'Accept'}
         </Button>
       </div>
     </div>
@@ -227,8 +368,12 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
   return (
     <div className="bg-white dark:bg-card border border-dashed border-gray-300 dark:border-border rounded-2xl p-10 text-center">
       <CalendarX2 className="w-6 h-6 text-gray-400 dark:text-muted-foreground mx-auto mb-2" />
-      <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">{title}</p>
-      <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">{hint}</p>
+      <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+        {title}
+      </p>
+      <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+        {hint}
+      </p>
     </div>
   );
 }

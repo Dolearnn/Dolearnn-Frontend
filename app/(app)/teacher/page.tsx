@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
   ClipboardList,
@@ -10,17 +11,20 @@ import {
   Video,
   Wallet,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
 import StudentSessionRow from '@/components/dashboard/StudentSessionRow';
+import { DashboardHomeSkeleton } from '@/components/dashboard/Skeletons';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
-  teacherEarnings,
-  teacherMe,
-  teacherSessions,
-  teacherStudents,
-} from '@/lib/store/teacher';
-import { useMounted } from '@/lib/use-mounted';
+  confirmTeacherSessionAttendance,
+  getTeacherProfile,
+  listTeacherSessions,
+  listTeacherStudents,
+  requestTeacherSessionCancellation,
+  teacherKeys,
+} from '@/lib/api/teacher';
 import type { Session } from '@/lib/types';
 
 function isSameDay(a: Date, b: Date) {
@@ -32,13 +36,74 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export default function TeacherHome() {
-  const mounted = useMounted();
-  const me = teacherMe();
-  const sessions = teacherSessions();
-  const students = teacherStudents();
-  const earnings = teacherEarnings();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const today = useMemo(() => new Date(), []);
+  const profileQuery = useQuery({
+    queryKey: teacherKeys.profile,
+    queryFn: getTeacherProfile,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: teacherKeys.sessions,
+    queryFn: listTeacherSessions,
+  });
+  const studentsQuery = useQuery({
+    queryKey: teacherKeys.students,
+    queryFn: listTeacherStudents,
+  });
 
-  const today = new Date();
+  const me = profileQuery.data;
+  const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
+  const students = studentsQuery.data ?? EMPTY_STUDENTS;
+  const isLoading =
+    profileQuery.isLoading || sessionsQuery.isLoading || studentsQuery.isLoading;
+  const isError =
+    profileQuery.isError || sessionsQuery.isError || studentsQuery.isError;
+
+  const attendanceMutation = useMutation({
+    mutationFn: confirmTeacherSessionAttendance,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: teacherKeys.sessions });
+      toast({
+        title: 'Attendance confirmed',
+        description: 'Admin can now include this in payment review.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not confirm attendance',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const cancellationMutation = useMutation({
+    mutationFn: ({
+      sessionId,
+      reason,
+    }: {
+      sessionId: string;
+      reason: string;
+    }) => requestTeacherSessionCancellation(sessionId, reason),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: teacherKeys.sessions });
+      toast({
+        title: 'Cancellation requested',
+        description: 'Admin will review the request.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not request cancellation',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const todays = useMemo(
     () =>
       sessions
@@ -49,24 +114,34 @@ export default function TeacherHome() {
   const upcoming = useMemo(
     () =>
       sessions
-        .filter((s) => s.status === 'Upcoming' && !isSameDay(new Date(s.startsAt), today))
+        .filter(
+          (s) =>
+            s.status === 'Upcoming' && !isSameDay(new Date(s.startsAt), today),
+        )
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
     [sessions, today],
   );
   const nextSession: Session | undefined = todays[0] ?? upcoming[0];
-
   const completed = sessions.filter((s) => s.status === 'Completed');
-  const paidThisMonth = earnings
-    .filter((e) => e.status === 'Paid')
-    .reduce((sum, e) => sum + e.amount, 0);
-  const pending = earnings
-    .filter((e) => e.status === 'Pending')
-    .reduce((sum, e) => sum + e.amount, 0);
+  const estimatedPay = me
+    ? completed.reduce(
+        (sum, session) =>
+          sum + (session.durationMins / 60) * (me.hourlyRate ?? 0),
+        0,
+      )
+    : 0;
 
-  if (!mounted) {
+  if (isLoading) {
+    return <DashboardHomeSkeleton />;
+  }
+
+  if (isError || !me) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
+        <PageHeader title="Teacher dashboard" description="" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load your dashboard right now. Please try again.
+        </div>
       </div>
     );
   }
@@ -80,7 +155,7 @@ export default function TeacherHome() {
 
       {nextSession ? (
         <section className="bg-brand text-white rounded-3xl p-6 lg:p-8 relative overflow-hidden">
-          <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-accent2-500/20" />
+          <div className="absolute right-0 top-0 h-full w-28 bg-accent2-500/20" />
           <div className="relative z-10">
             <p className="text-xs uppercase tracking-wide text-accent2-400 font-semibold mb-2">
               {isSameDay(new Date(nextSession.startsAt), today)
@@ -88,7 +163,7 @@ export default function TeacherHome() {
                 : 'Next session'}
             </p>
             <h2 className="text-2xl lg:text-3xl font-bold mb-1">
-              {nextSession.subject} ·{' '}
+              {nextSession.subject} -{' '}
               {new Date(nextSession.startsAt).toLocaleString(undefined, {
                 weekday: 'long',
                 day: 'numeric',
@@ -98,15 +173,29 @@ export default function TeacherHome() {
               })}
             </h2>
             <p className="text-white/80 text-sm mb-6">
-              {nextSession.durationMins} min · Live on Google Meet
+              {nextSession.durationMins} min -{' '}
+              {nextSession.childName ?? 'Student'}
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href={nextSession.meetLink} target="_blank" rel="noreferrer">
-                <Button className="bg-accent2-500 text-brand hover:bg-accent2-400 rounded-full">
-                  <Video className="w-4 h-4 mr-2" />
-                  Start session
+              {nextSession.meetLink ? (
+                <Link
+                  href={nextSession.meetLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Button className="bg-accent2-500 text-brand hover:bg-accent2-400 rounded-full">
+                    <Video className="w-4 h-4 mr-2" />
+                    Start session
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  className="bg-accent2-500 text-brand rounded-full"
+                  disabled
+                >
+                  Awaiting admin link
                 </Button>
-              </Link>
+              )}
               <Link href="/teacher/schedule">
                 <Button
                   variant="outline"
@@ -133,15 +222,15 @@ export default function TeacherHome() {
         <StatTile
           icon={CalendarDays}
           label="Sessions taught"
-          value={me.totalSessions + completed.length}
-          sub="lifetime"
+          value={completed.length}
+          sub="from backend records"
         />
         <StatTile icon={Users} label="Active students" value={students.length} />
         <StatTile
           icon={Wallet}
-          label="Paid"
-          value={`$${paidThisMonth}`}
-          sub={pending > 0 ? `$${pending} pending` : 'all settled'}
+          label="Estimated pay"
+          value={`$${estimatedPay.toFixed(0)}`}
+          sub={`${me.hourlyRate}/hr`}
         />
         <StatTile
           icon={Star}
@@ -154,7 +243,9 @@ export default function TeacherHome() {
       <div className="grid lg:grid-cols-2 gap-4">
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">Today</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+              Today
+            </h2>
             <Link
               href="/teacher/schedule"
               className="text-xs text-brand font-medium"
@@ -164,15 +255,33 @@ export default function TeacherHome() {
           </div>
           <div className="space-y-3">
             {todays.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">Nothing scheduled today.</p>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                Nothing scheduled today.
+              </p>
             ) : (
-              todays.map((s) => <StudentSessionRow key={s.id} session={s} />)
+              todays.map((s) => (
+                <StudentSessionRow
+                  key={s.id}
+                  session={s}
+                  onConfirmHeld={async (sessionId) => {
+                    await attendanceMutation.mutateAsync(sessionId);
+                  }}
+                  onRequestCancellation={async (sessionId, reason) => {
+                    await cancellationMutation.mutateAsync({
+                      sessionId,
+                      reason,
+                    });
+                  }}
+                />
+              ))
             )}
           </div>
         </section>
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">Coming up</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+              Coming up
+            </h2>
             <Link
               href="/teacher/students"
               className="text-xs text-brand font-medium"
@@ -182,10 +291,24 @@ export default function TeacherHome() {
           </div>
           <div className="space-y-3">
             {upcoming.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">Nothing else scheduled.</p>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                Nothing else scheduled.
+              </p>
             ) : (
               upcoming.slice(0, 3).map((s) => (
-                <StudentSessionRow key={s.id} session={s} />
+                <StudentSessionRow
+                  key={s.id}
+                  session={s}
+                  onConfirmHeld={async (sessionId) => {
+                    await attendanceMutation.mutateAsync(sessionId);
+                  }}
+                  onRequestCancellation={async (sessionId, reason) => {
+                    await cancellationMutation.mutateAsync({
+                      sessionId,
+                      reason,
+                    });
+                  }}
+                />
               ))
             )}
           </div>
@@ -216,6 +339,9 @@ export default function TeacherHome() {
   );
 }
 
+const EMPTY_SESSIONS: Session[] = [];
+const EMPTY_STUDENTS: unknown[] = [];
+
 function QuickLink({
   href,
   icon: Icon,
@@ -236,7 +362,9 @@ function QuickLink({
         <Icon className="w-4 h-4" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">{label}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+          {label}
+        </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground">{sub}</p>
       </div>
     </Link>

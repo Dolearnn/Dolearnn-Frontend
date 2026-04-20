@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, BellOff, Check } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -23,22 +23,37 @@ export default function NotificationList({
   emptyTitle = 'Nothing here',
   emptyDescription = 'Updates will appear here.',
   initialItems,
+  onMarkAllRead,
+  onToggleRead,
 }: {
   title?: string;
   emptyTitle?: string;
   emptyDescription?: string;
   initialItems: Notification[];
+  onMarkAllRead?: () => Promise<void> | void;
+  onToggleRead?: (id: string, read: boolean) => Promise<void> | void;
 }) {
   const [items, setItems] = useState<Notification[]>(initialItems);
   const unread = items.filter((n) => !n.read).length;
 
-  const markAll = () =>
-    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
 
-  const toggle = (id: string) =>
+  const markAll = async () => {
+    await onMarkAllRead?.();
+    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const toggle = async (id: string) => {
+    const item = items.find((n) => n.id === id);
+    if (!item) return;
+    const nextRead = !item.read;
+    await onToggleRead?.(id, nextRead);
     setItems((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n)),
+      prev.map((n) => (n.id === id ? { ...n, read: nextRead } : n)),
     );
+  };
 
   return (
     <div className="space-y-6">

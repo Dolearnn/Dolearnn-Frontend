@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -15,7 +16,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { SelectWithOther } from '@/components/forms/SelectWithOther';
-import { addChild, updateChild } from '@/lib/store/client';
+import { useToast } from '@/hooks/use-toast';
+import { createFamilyStudent, familyKeys } from '@/lib/api/family';
+import { updateChild } from '@/lib/store/client';
 import type { Child, GradeLevel } from '@/lib/types';
 
 const grades: GradeLevel[] = [
@@ -64,6 +67,8 @@ export default function ChildProfileForm({
   mode: 'create' | 'edit';
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -75,14 +80,30 @@ export default function ChildProfileForm({
     },
   });
 
+  const createMutation = useMutation({
+    mutationFn: createFamilyStudent,
+    onSuccess: (child) => {
+      queryClient.invalidateQueries({ queryKey: familyKeys.students });
+      router.push(`/family/children/${child.id}/intake`);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not add child',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const onSubmit = (values: Values) => {
     const payload = {
       ...values,
       gradeOther: values.grade === 'Other' ? values.gradeOther?.trim() : undefined,
     };
     if (mode === 'create') {
-      const child = addChild(payload);
-      router.push(`/family/children/${child.id}/intake`);
+      createMutation.mutate(payload);
     } else if (initial) {
       updateChild(initial.id, payload);
       router.push(`/family/children/${initial.id}`);
@@ -161,9 +182,14 @@ export default function ChildProfileForm({
         />
         <Button
           type="submit"
+          disabled={createMutation.isPending}
           className="w-full bg-brand hover:bg-brand-600 rounded-full"
         >
-          {mode === 'create' ? 'Continue to intake' : 'Save changes'}
+          {createMutation.isPending
+            ? 'Saving...'
+            : mode === 'create'
+              ? 'Continue to intake'
+              : 'Save changes'}
         </Button>
       </form>
     </Form>

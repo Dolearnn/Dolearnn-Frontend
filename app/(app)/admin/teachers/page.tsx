@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  Check,
   Mail,
   Phone,
   Plus,
@@ -11,6 +13,7 @@ import {
   UserX,
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -30,15 +33,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import {
-  adminChildren,
-  adminSessions,
-  adminTeachers,
-} from '@/lib/store/admin';
-import { updateTeacherHourlyRate } from '@/lib/store/client';
+  adminKeys,
+  assignAdminTeacherToStudent,
+  createAdminTeacher,
+  listAdminSessions,
+  listAdminStudents,
+  listAdminTeachers,
+  terminateAdminTeacher,
+  updateAdminTeacherRate,
+} from '@/lib/api/admin';
+import { cn } from '@/lib/utils';
 import type { Child, Teacher } from '@/lib/types';
-import { useMounted } from '@/lib/use-mounted';
 
 const COUNTRY_CODES = [
   { value: '+234', label: 'Nigeria (+234)' },
@@ -69,6 +76,8 @@ type AddTeacherForm = {
   phoneNumber: string;
   subjects: string[];
   qualifications: string;
+  hourlyRate: string;
+  defaultPassword: string;
 };
 
 const emptyTeacherForm: AddTeacherForm = {
@@ -79,13 +88,13 @@ const emptyTeacherForm: AddTeacherForm = {
   phoneNumber: '',
   subjects: [],
   qualifications: '',
+  hourlyRate: '0',
+  defaultPassword: 'Teacher12345',
 };
 
 export default function AdminTeachersPage() {
-  const mounted = useMounted();
-  const sessions = adminSessions();
-  const [teachers, setTeachers] = useState<Teacher[]>(adminTeachers());
-  const [children, setChildren] = useState<Child[]>(adminChildren());
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [teacherForm, setTeacherForm] =
@@ -94,49 +103,161 @@ export default function AdminTeachersPage() {
   const [terminationReason, setTerminationReason] = useState('');
   const [rematchIds, setRematchIds] = useState<string[]>([]);
 
+  const teachersQuery = useQuery({
+    queryKey: adminKeys.teachers,
+    queryFn: listAdminTeachers,
+  });
+  const studentsQuery = useQuery({
+    queryKey: adminKeys.students,
+    queryFn: listAdminStudents,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: adminKeys.sessions,
+    queryFn: listAdminSessions,
+  });
+
+  const teachers = useMemo(() => teachersQuery.data ?? [], [teachersQuery.data]);
+  const children = useMemo(() => studentsQuery.data ?? [], [studentsQuery.data]);
+  const sessions = useMemo(() => sessionsQuery.data ?? [], [sessionsQuery.data]);
+
+  const invalidateAdmin = () => {
+    queryClient.invalidateQueries({ queryKey: adminKeys.teachers });
+    queryClient.invalidateQueries({ queryKey: adminKeys.students });
+    queryClient.invalidateQueries({ queryKey: adminKeys.sessions });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: createAdminTeacher,
+    onSuccess: () => {
+      invalidateAdmin();
+      setTeacherForm(emptyTeacherForm);
+      setAddOpen(false);
+      toast({ title: 'Teacher added' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not add teacher',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const terminateMutation = useMutation({
+    mutationFn: ({ teacherId, reason }: { teacherId: string; reason: string }) =>
+      terminateAdminTeacher(teacherId, reason),
+    onSuccess: (_teacher, variables) => {
+      const affectedChildIds = children
+        .filter((child) => child.assignedTeacherId === variables.teacherId)
+        .map((child) => child.id);
+      setRematchIds((previous) =>
+        Array.from(new Set([...previous, ...affectedChildIds])),
+      );
+      invalidateAdmin();
+      setTerminateTarget(null);
+      setTerminationReason('');
+      toast({ title: 'Teacher terminated' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not terminate teacher',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const rateMutation = useMutation({
+    mutationFn: ({
+      teacherId,
+      hourlyRate,
+    }: {
+      teacherId: string;
+      hourlyRate: number;
+    }) => updateAdminTeacherRate(teacherId, hourlyRate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.teachers });
+      toast({ title: 'Rate updated' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not update rate',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: ({ childId, teacherId }: { childId: string; teacherId: string }) =>
+      assignAdminTeacherToStudent(childId, teacherId),
+    onSuccess: (_student, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.students });
+      setRematchIds((previous) =>
+        previous.filter((id) => id !== variables.childId),
+      );
+      toast({ title: 'Student rematched' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not assign teacher',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return teachers;
     return teachers.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.email?.toLowerCase().includes(q) ||
-        t.subjects.some((s) => s.toLowerCase().includes(q)),
+      (teacher) =>
+        teacher.name.toLowerCase().includes(q) ||
+        teacher.email?.toLowerCase().includes(q) ||
+        teacher.subjects.some((subject) => subject.toLowerCase().includes(q)),
     );
   }, [teachers, query]);
 
   const activeTeachers = useMemo(
-    () => teachers.filter((t) => (t.status ?? 'Active') !== 'Terminated'),
+    () =>
+      teachers.filter((teacher) => (teacher.status ?? 'Active') !== 'Terminated'),
     [teachers],
   );
 
   const needsRematch = useMemo(
     () =>
       children.filter(
-        (c) =>
-          rematchIds.includes(c.id) &&
-          c.assignedTeacherId === undefined &&
-          c.intake,
+        (child) =>
+          rematchIds.includes(child.id) &&
+          child.assignedTeacherId === undefined &&
+          child.intake,
       ),
     [children, rematchIds],
   );
 
   const assignedByTeacher = useMemo(() => {
     const map = new Map<string, number>();
-    for (const c of children) {
-      if (!c.assignedTeacherId) continue;
-      map.set(c.assignedTeacherId, (map.get(c.assignedTeacherId) ?? 0) + 1);
+    for (const child of children) {
+      if (!child.assignedTeacherId) continue;
+      map.set(
+        child.assignedTeacherId,
+        (map.get(child.assignedTeacherId) ?? 0) + 1,
+      );
     }
     return map;
   }, [children]);
 
   const upcomingByTeacher = useMemo(() => {
     const map = new Map<string, number>();
-    for (const s of sessions) {
-      if (s.status !== 'Upcoming') continue;
-      const teacher = teachers.find((t) => t.id === s.teacherId);
+    for (const session of sessions) {
+      if (session.status !== 'Upcoming') continue;
+      const teacher = teachers.find((item) => item.id === session.teacherId);
       if (teacher?.status === 'Terminated') continue;
-      map.set(s.teacherId, (map.get(s.teacherId) ?? 0) + 1);
+      map.set(session.teacherId, (map.get(session.teacherId) ?? 0) + 1);
     }
     return map;
   }, [sessions, teachers]);
@@ -147,91 +268,49 @@ export default function AdminTeachersPage() {
     teacherForm.email.trim() &&
     teacherForm.phoneNumber.trim() &&
     teacherForm.subjects.length > 0 &&
-    teacherForm.qualifications.trim();
+    teacherForm.qualifications.trim() &&
+    teacherForm.defaultPassword.trim().length >= 8;
 
   const addTeacher = () => {
     if (!canAddTeacher) return;
-    const firstName = teacherForm.firstName.trim();
-    const lastName = teacherForm.lastName.trim();
-    const qualifications = teacherForm.qualifications
-      .split('\n')
-      .map((q) => q.trim())
-      .filter(Boolean);
-    const teacher: Teacher = {
-      id: `t_${Date.now()}`,
-      firstName,
-      lastName,
-      name: `${firstName} ${lastName}`,
+    createMutation.mutate({
+      firstName: teacherForm.firstName.trim(),
+      lastName: teacherForm.lastName.trim(),
       email: teacherForm.email.trim(),
       phoneCountry: teacherForm.phoneCountry,
       phoneNumber: teacherForm.phoneNumber.trim(),
       bio: `${teacherForm.subjects.join(', ')} teacher added by admin.`,
       subjects: teacherForm.subjects,
-      qualifications,
-      hourlyRate: 0,
-      rating: 0,
-      totalSessions: 0,
-      joinedAt: new Date().toISOString(),
-      status: 'Active',
-    };
-    setTeachers((prev) => [teacher, ...prev]);
-    setTeacherForm(emptyTeacherForm);
-    setAddOpen(false);
+      qualifications: teacherForm.qualifications
+        .split('\n')
+        .map((qualification) => qualification.trim())
+        .filter(Boolean),
+      hourlyRate: Number(teacherForm.hourlyRate) || 0,
+      defaultPassword: teacherForm.defaultPassword.trim(),
+    });
   };
 
   const terminateTeacher = () => {
     if (!terminateTarget || !terminationReason.trim()) return;
-    const teacherId = terminateTarget.id;
-    const affectedChildIds = children
-      .filter((child) => child.assignedTeacherId === teacherId)
-      .map((child) => child.id);
-    setTeachers((prev) =>
-      prev.map((teacher) =>
-        teacher.id === teacherId
-          ? {
-              ...teacher,
-              status: 'Terminated',
-              terminationReason: terminationReason.trim(),
-              terminatedAt: new Date().toISOString(),
-            }
-          : teacher,
-      ),
-    );
-    setChildren((prev) =>
-      prev.map((child) =>
-        child.assignedTeacherId === teacherId
-          ? { ...child, assignedTeacherId: undefined }
-          : child,
-      ),
-    );
-    setRematchIds((prev) => Array.from(new Set([...prev, ...affectedChildIds])));
-    setTerminateTarget(null);
-    setTerminationReason('');
+    terminateMutation.mutate({
+      teacherId: terminateTarget.id,
+      reason: terminationReason.trim(),
+    });
   };
 
-  const assignChild = (childId: string, teacherId: string) => {
-    setChildren((prev) =>
-      prev.map((child) =>
-        child.id === childId ? { ...child, assignedTeacherId: teacherId } : child,
-      ),
-    );
-    setRematchIds((prev) => prev.filter((id) => id !== childId));
-  };
+  const isLoading =
+    teachersQuery.isLoading || studentsQuery.isLoading || sessionsQuery.isLoading;
+  const error = teachersQuery.error ?? studentsQuery.error ?? sessionsQuery.error;
 
-  const updateRate = (teacherId: string, hourlyRate: number) => {
-    updateTeacherHourlyRate(teacherId, hourlyRate);
-    setTeachers((prev) =>
-      prev.map((teacher) =>
-        teacher.id === teacherId ? { ...teacher, hourlyRate } : teacher,
-      ),
-    );
-  };
+  if (isLoading) {
+    return <PageShellSkeleton />;
+  }
 
-  if (!mounted) {
+  if (error) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
-      </div>
+      <p className="text-sm text-red-600">
+        {error instanceof Error ? error.message : 'Could not load teachers.'}
+      </p>
     );
   }
 
@@ -255,7 +334,10 @@ export default function AdminTeachersPage() {
         <RematchPanel
           students={needsRematch}
           teachers={activeTeachers}
-          onAssign={assignChild}
+          assigning={assignMutation.isPending}
+          onAssign={(childId, teacherId) =>
+            assignMutation.mutate({ childId, teacherId })
+          }
         />
       )}
 
@@ -263,7 +345,7 @@ export default function AdminTeachersPage() {
         <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
         <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by name, email, or subject"
           className="pl-9 rounded-full"
         />
@@ -277,14 +359,20 @@ export default function AdminTeachersPage() {
         </div>
       ) : (
         <div className="grid lg:grid-cols-2 gap-4">
-          {filtered.map((t) => (
+          {filtered.map((teacher) => (
             <TeacherCard
-              key={t.id}
-              teacher={t}
-              studentCount={assignedByTeacher.get(t.id) ?? 0}
-              upcomingCount={upcomingByTeacher.get(t.id) ?? 0}
-              onTerminate={() => setTerminateTarget(t)}
-              onRateChange={(rate) => updateRate(t.id, rate)}
+              key={teacher.id}
+              teacher={teacher}
+              studentCount={assignedByTeacher.get(teacher.id) ?? 0}
+              upcomingCount={upcomingByTeacher.get(teacher.id) ?? 0}
+              savingRate={rateMutation.isPending}
+              onTerminate={() => setTerminateTarget(teacher)}
+              onRateSave={(rate) =>
+                rateMutation.mutate({
+                  teacherId: teacher.id,
+                  hourlyRate: rate,
+                })
+              }
             />
           ))}
         </div>
@@ -294,6 +382,7 @@ export default function AdminTeachersPage() {
         open={addOpen}
         form={teacherForm}
         canSubmit={!!canAddTeacher}
+        isSubmitting={createMutation.isPending}
         onOpenChange={setAddOpen}
         onChange={setTeacherForm}
         onSubmit={addTeacher}
@@ -327,7 +416,7 @@ export default function AdminTeachersPage() {
             </div>
             <Textarea
               value={terminationReason}
-              onChange={(e) => setTerminationReason(e.target.value)}
+              onChange={(event) => setTerminationReason(event.target.value)}
               placeholder="Reason for termination, e.g. misconduct report details"
             />
           </div>
@@ -337,10 +426,10 @@ export default function AdminTeachersPage() {
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700"
-              disabled={!terminationReason.trim()}
+              disabled={!terminationReason.trim() || terminateMutation.isPending}
               onClick={terminateTeacher}
             >
-              Terminate
+              {terminateMutation.isPending ? 'Terminating...' : 'Terminate'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -353,17 +442,21 @@ function TeacherCard({
   teacher,
   studentCount,
   upcomingCount,
+  savingRate,
   onTerminate,
-  onRateChange,
+  onRateSave,
 }: {
   teacher: Teacher;
   studentCount: number;
   upcomingCount: number;
+  savingRate: boolean;
   onTerminate: () => void;
-  onRateChange: (hourlyRate: number) => void;
+  onRateSave: (hourlyRate: number) => void;
 }) {
+  const [rate, setRate] = useState(String(teacher.hourlyRate));
   const status = teacher.status ?? 'Active';
   const isTerminated = status === 'Terminated';
+  const rateChanged = Number(rate) !== teacher.hourlyRate;
 
   return (
     <div
@@ -376,7 +469,7 @@ function TeacherCard({
         <div className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-semibold shrink-0">
           {teacher.name
             .split(' ')
-            .map((p) => p[0])
+            .map((part) => part[0])
             .join('')
             .slice(0, 2)}
         </div>
@@ -431,12 +524,12 @@ function TeacherCard({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {teacher.subjects.map((s) => (
+        {teacher.subjects.map((subject) => (
           <span
-            key={s}
+            key={subject}
             className="text-[11px] bg-accent2-50 text-accent2-700 px-2 py-0.5 rounded-full"
           >
-            {s}
+            {subject}
           </span>
         ))}
       </div>
@@ -453,11 +546,22 @@ function TeacherCard({
             <Input
               type="number"
               min={0}
-              value={teacher.hourlyRate}
-              onChange={(e) => onRateChange(Number(e.target.value) || 0)}
+              value={rate}
+              onChange={(event) => setRate(event.target.value)}
               className="h-7 w-16 text-center px-1"
             />
-            <span className="text-[10px] text-gray-500">/hr</span>
+            <Button
+              size="sm"
+              variant={rateChanged ? 'default' : 'outline'}
+              className={cn(
+                'h-7 w-7 rounded-full p-0',
+                rateChanged && 'bg-brand hover:bg-brand-600',
+              )}
+              disabled={!rateChanged || savingRate || isTerminated}
+              onClick={() => onRateSave(Number(rate) || 0)}
+            >
+              <Check className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
       </div>
@@ -504,6 +608,7 @@ function AddTeacherDialog({
   open,
   form,
   canSubmit,
+  isSubmitting,
   onOpenChange,
   onChange,
   onSubmit,
@@ -511,6 +616,7 @@ function AddTeacherDialog({
   open: boolean;
   form: AddTeacherForm;
   canSubmit: boolean;
+  isSubmitting: boolean;
   onOpenChange: (open: boolean) => void;
   onChange: (form: AddTeacherForm) => void;
   onSubmit: () => void;
@@ -530,18 +636,18 @@ function AddTeacherDialog({
           <div className="grid sm:grid-cols-2 gap-3">
             <Input
               value={form.firstName}
-              onChange={(e) => patch({ firstName: e.target.value })}
+              onChange={(event) => patch({ firstName: event.target.value })}
               placeholder="First name"
             />
             <Input
               value={form.lastName}
-              onChange={(e) => patch({ lastName: e.target.value })}
+              onChange={(event) => patch({ lastName: event.target.value })}
               placeholder="Last name"
             />
           </div>
           <Input
             value={form.email}
-            onChange={(e) => patch({ email: e.target.value })}
+            onChange={(event) => patch({ email: event.target.value })}
             placeholder="Email address"
             type="email"
           />
@@ -563,7 +669,7 @@ function AddTeacherDialog({
             </Select>
             <Input
               value={form.phoneNumber}
-              onChange={(e) => patch({ phoneNumber: e.target.value })}
+              onChange={(event) => patch({ phoneNumber: event.target.value })}
               placeholder="Phone number"
               inputMode="tel"
             />
@@ -602,10 +708,27 @@ function AddTeacherDialog({
           </div>
           <Textarea
             value={form.qualifications}
-            onChange={(e) => patch({ qualifications: e.target.value })}
+            onChange={(event) => patch({ qualifications: event.target.value })}
             placeholder="Qualifications, one per line"
             rows={4}
           />
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Input
+              value={form.hourlyRate}
+              onChange={(event) => patch({ hourlyRate: event.target.value })}
+              placeholder="Hourly rate"
+              type="number"
+              min={0}
+            />
+            <Input
+              value={form.defaultPassword}
+              onChange={(event) =>
+                patch({ defaultPassword: event.target.value })
+              }
+              placeholder="Default password"
+              type="text"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -613,10 +736,10 @@ function AddTeacherDialog({
           </Button>
           <Button
             className="bg-brand hover:bg-brand-600"
-            disabled={!canSubmit}
+            disabled={!canSubmit || isSubmitting}
             onClick={onSubmit}
           >
-            Add teacher
+            {isSubmitting ? 'Adding...' : 'Add teacher'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -627,16 +750,20 @@ function AddTeacherDialog({
 function RematchPanel({
   students,
   teachers,
+  assigning,
   onAssign,
 }: {
   students: Child[];
   teachers: Teacher[];
+  assigning: boolean;
   onAssign: (childId: string, teacherId: string) => void;
 }) {
   return (
     <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 space-y-3">
       <div>
-        <p className="font-semibold text-amber-900">Students needing a new teacher</p>
+        <p className="font-semibold text-amber-900">
+          Students needing a new teacher
+        </p>
         <p className="text-xs text-amber-800">
           These assignments were ended after a teacher termination. Match each
           student with another active teacher.
@@ -656,7 +783,10 @@ function RematchPanel({
                 {child.intake?.subject ?? 'No subject listed'}
               </p>
             </div>
-            <Select onValueChange={(teacherId) => onAssign(child.id, teacherId)}>
+            <Select
+              disabled={assigning}
+              onValueChange={(teacherId) => onAssign(child.id, teacherId)}
+            >
               <SelectTrigger className="w-44">
                 <SelectValue placeholder="Match teacher" />
               </SelectTrigger>

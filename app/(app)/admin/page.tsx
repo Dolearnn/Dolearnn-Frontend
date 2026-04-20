@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   CalendarDays,
   ClipboardList,
@@ -11,27 +12,53 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
+import { DashboardHomeSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
-import { displayGrade, displaySubject } from '@/lib/types';
-import { cn } from '@/lib/utils';
-import { useMounted } from '@/lib/use-mounted';
 import {
-  adminPayments,
-  adminPayouts,
-  adminPendingIntakes,
-  adminSessions,
-  adminTeacherById,
-  adminTeachers,
-} from '@/lib/store/admin';
+  adminKeys,
+  listAdminSessions,
+  listAdminStudents,
+  listAdminTeachers,
+} from '@/lib/api/admin';
+import { displayGrade, displaySubject, type Child, type Session, type Teacher } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+const EMPTY_STUDENTS: Child[] = [];
+const EMPTY_SESSIONS: Session[] = [];
+const EMPTY_TEACHERS: Teacher[] = [];
 
 export default function AdminHome() {
-  const mounted = useMounted();
-  const pending = adminPendingIntakes();
-  const sessions = adminSessions();
-  const teachers = adminTeachers();
-  const payments = adminPayments();
-  const payouts = adminPayouts();
+  const studentsQuery = useQuery({
+    queryKey: adminKeys.students,
+    queryFn: listAdminStudents,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: adminKeys.sessions,
+    queryFn: listAdminSessions,
+  });
+  const teachersQuery = useQuery({
+    queryKey: adminKeys.teachers,
+    queryFn: listAdminTeachers,
+  });
 
+  const students = studentsQuery.data ?? EMPTY_STUDENTS;
+  const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
+  const teachers = teachersQuery.data ?? EMPTY_TEACHERS;
+  const isLoading =
+    studentsQuery.isLoading || sessionsQuery.isLoading || teachersQuery.isLoading;
+  const isError =
+    studentsQuery.isError || sessionsQuery.isError || teachersQuery.isError;
+
+  const pending = useMemo(
+    () =>
+      students.filter(
+        (student) =>
+          student.intake &&
+          !student.assignedTeacherId &&
+          student.status !== 'Deactivated',
+      ),
+    [students],
+  );
   const upcoming = useMemo(
     () =>
       sessions
@@ -39,15 +66,23 @@ export default function AdminHome() {
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
     [sessions],
   );
-
-  const revenue = payments.reduce((sum, p) => sum + p.amount, 0);
-  const paidOut = payouts.reduce((sum, p) => sum + p.amount, 0);
   const completed = sessions.filter((s) => s.status === 'Completed').length;
+  const activeTeachers = teachers.filter((teacher) => teacher.status !== 'Terminated');
+  const sessionValue = sessions
+    .filter((s) => s.status === 'Completed')
+    .reduce((sum, s) => sum + s.amount, 0);
 
-  if (!mounted) {
+  if (isLoading) {
+    return <DashboardHomeSkeleton />;
+  }
+
+  if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
+        <PageHeader title="Overview" description="" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load the admin dashboard right now. Please try again.
+        </div>
       </div>
     );
   }
@@ -70,20 +105,20 @@ export default function AdminHome() {
         <StatTile
           icon={GraduationCap}
           label="Teachers"
-          value={teachers.length}
-          sub="active roster"
+          value={activeTeachers.length}
+          sub={`${teachers.length - activeTeachers.length} terminated`}
         />
         <StatTile
           icon={CalendarDays}
           label="Sessions"
           value={sessions.length}
-          sub={`${completed} completed · ${upcoming.length} upcoming`}
+          sub={`${completed} completed - ${upcoming.length} upcoming`}
         />
         <StatTile
           icon={Wallet}
-          label="Revenue"
-          value={`$${revenue}`}
-          sub={`$${paidOut} paid to teachers`}
+          label="Session value"
+          value={`$${sessionValue.toFixed(0)}`}
+          sub="completed classes"
         />
       </div>
 
@@ -113,9 +148,13 @@ export default function AdminHome() {
                 className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 flex flex-col sm:flex-row sm:items-center gap-3"
               >
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900 dark:text-foreground">{c.fullName}</p>
+                  <p className="font-semibold text-gray-900 dark:text-foreground">
+                    {c.fullName}
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                    {displayGrade(c)} · {c.intake ? displaySubject(c.intake) : ''} · {c.intake?.learningGoal}
+                    {displayGrade(c)} -{' '}
+                    {c.intake ? displaySubject(c.intake) : 'No subject'} -{' '}
+                    {c.intake?.learningGoal ?? 'No goal yet'}
                   </p>
                 </div>
                 <Link href={`/admin/intakes?child=${c.id}`}>
@@ -146,43 +185,45 @@ export default function AdminHome() {
             </Link>
           </div>
           <div className="space-y-3">
-            {upcoming.slice(0, 4).map((s) => {
-              const teacher = adminTeacherById(s.teacherId);
-              return (
-                <div
-                  key={s.id}
-                  className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-gray-900 dark:text-foreground">
-                      {s.subject} · {teacher?.name ?? 'Teacher'}
-                    </p>
-                    <span className="text-[11px] text-brand bg-brand/10 px-2 py-0.5 rounded-full font-medium">
-                      {s.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                    {new Date(s.startsAt).toLocaleString(undefined, {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}{' '}
-                    · {s.durationMins} min
+            {upcoming.slice(0, 4).map((s) => (
+              <div
+                key={s.id}
+                className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-gray-900 dark:text-foreground">
+                    {s.subject} - {s.teacherName ?? 'Teacher'}
                   </p>
+                  <span className="text-[11px] text-brand bg-brand/10 px-2 py-0.5 rounded-full font-medium">
+                    {s.status}
+                  </span>
                 </div>
-              );
-            })}
+                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+                  {s.childName ?? 'Student'} -{' '}
+                  {new Date(s.startsAt).toLocaleString(undefined, {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}{' '}
+                  - {s.durationMins} min
+                </p>
+              </div>
+            ))}
             {upcoming.length === 0 && (
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">No upcoming sessions.</p>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                No upcoming sessions.
+              </p>
             )}
           </div>
         </section>
 
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">Top teachers</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+              Teacher roster
+            </h2>
             <Link
               href="/admin/teachers"
               className="text-xs text-brand font-medium"
@@ -191,8 +232,8 @@ export default function AdminHome() {
             </Link>
           </div>
           <div className="space-y-3">
-            {[...teachers]
-              .sort((a, b) => b.rating - a.rating)
+            {[...activeTeachers]
+              .sort((a, b) => b.totalSessions - a.totalSessions)
               .slice(0, 4)
               .map((t) => (
                 <div
@@ -211,24 +252,31 @@ export default function AdminHome() {
                       {t.name}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-                      {t.subjects.join(' · ')}
+                      {t.subjects.join(' - ')}
                     </p>
                   </div>
                   <div className="text-right">
                     <p
                       className={cn(
                         'text-sm font-semibold',
-                        t.rating >= 4.8 ? 'text-accent2-600' : 'text-gray-700',
+                        t.totalSessions > 0
+                          ? 'text-accent2-600'
+                          : 'text-gray-700',
                       )}
                     >
-                      ★ {t.rating.toFixed(1)}
+                      {t.totalSessions}
                     </p>
                     <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                      {t.totalSessions} sessions
+                      sessions
                     </p>
                   </div>
                 </div>
               ))}
+            {activeTeachers.length === 0 && (
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                No active teachers yet.
+              </p>
+            )}
           </div>
         </section>
       </div>
@@ -244,7 +292,7 @@ export default function AdminHome() {
           href="/admin/teachers"
           icon={Users}
           label="Teachers"
-          sub="Roster, ratings and subjects"
+          sub="Roster, rates and subjects"
         />
         <QuickLink
           href="/admin/payments"
@@ -277,7 +325,9 @@ function QuickLink({
         <Icon className="w-4 h-4" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">{label}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+          {label}
+        </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground">{sub}</p>
       </div>
     </Link>

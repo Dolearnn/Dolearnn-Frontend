@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
   Calendar,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import {
   Select,
   SelectContent,
@@ -19,14 +21,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  familyChildren,
-  familyPayments,
-  familySessionNote,
-  familySessionsForChild,
-  familyTeacher,
-} from '@/lib/store/family';
+  familyKeys,
+  listFamilySessions,
+  listFamilyStudents,
+} from '@/lib/api/family';
 import { cn } from '@/lib/utils';
-import { isSessionPayoutEligible } from '@/lib/types';
+import { isSessionPayoutEligible, type Child, type Session } from '@/lib/types';
+
+const EMPTY_CHILDREN: Child[] = [];
+const EMPTY_SESSIONS: Session[] = [];
 
 function monthKey(date: string) {
   return date.slice(0, 7);
@@ -40,28 +43,30 @@ function monthLabel(key: string) {
 }
 
 export default function FamilyReportsPage() {
-  const children = familyChildren();
-  const payments = familyPayments();
-  const allSessions = children.flatMap((child) =>
-    familySessionsForChild(child.id).map((session) => ({
-      ...session,
-      child,
-    })),
-  );
+  const childrenQuery = useQuery({
+    queryKey: familyKeys.students,
+    queryFn: listFamilyStudents,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: familyKeys.sessions,
+    queryFn: listFamilySessions,
+  });
+  const children = childrenQuery.data ?? EMPTY_CHILDREN;
+  const allSessions = sessionsQuery.data ?? EMPTY_SESSIONS;
+  const isLoading = childrenQuery.isLoading || sessionsQuery.isLoading;
+  const isError = childrenQuery.isError || sessionsQuery.isError;
 
   const monthOptions = useMemo(() => {
     const keys = new Set<string>([new Date().toISOString().slice(0, 7)]);
-    payments.forEach((payment) => keys.add(monthKey(payment.createdAt)));
     allSessions.forEach((session) => keys.add(monthKey(session.startsAt)));
     return Array.from(keys).sort((a, b) => b.localeCompare(a));
-  }, [allSessions, payments]);
+  }, [allSessions]);
 
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toISOString().slice(0, 7),
+  );
 
   const report = useMemo(() => {
-    const monthlyPayments = payments.filter(
-      (payment) => monthKey(payment.createdAt) === selectedMonth,
-    );
     const monthlySessions = allSessions.filter(
       (session) => monthKey(session.startsAt) === selectedMonth,
     );
@@ -75,15 +80,7 @@ export default function FamilyReportsPage() {
       (session) => !session.attendance?.familyConfirmedAt,
     );
     const cancellations = monthlySessions.filter((s) => s.cancellation);
-    const amountPaid = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
-    const planSessions = monthlyPayments.reduce(
-      (sum, p) => sum + p.sessionsIncluded,
-      0,
-    );
-    const usedSessions = monthlyPayments.reduce(
-      (sum, p) => sum + p.sessionsUsed,
-      0,
-    );
+    const sessionValue = completed.reduce((sum, session) => sum + session.amount, 0);
     const byChild = children.map((child) => {
       const childSessions = monthlySessions.filter((s) => s.childId === child.id);
       const childCompleted = childSessions.filter((s) => s.status === 'Completed');
@@ -100,16 +97,10 @@ export default function FamilyReportsPage() {
       };
     });
     const feedback = completed
-      .map((session) => ({
-        session,
-        note: familySessionNote(session.noteId),
-        teacher: familyTeacher(session.teacherId),
-      }))
-      .filter((item) => item.note)
+      .filter((session) => session.note)
       .slice(0, 4);
 
     return {
-      monthlyPayments,
       monthlySessions,
       completed,
       upcoming,
@@ -117,20 +108,33 @@ export default function FamilyReportsPage() {
       verified,
       awaitingConfirmation,
       cancellations,
-      amountPaid,
-      planSessions,
-      usedSessions,
+      sessionValue,
       byChild,
       feedback,
       pausedChildren: children.filter((child) => child.status === 'Deactivated'),
     };
-  }, [allSessions, children, payments, selectedMonth]);
+  }, [allSessions, children, selectedMonth]);
+
+  if (isLoading) {
+    return <PageShellSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Monthly report" description="" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load your family report right now. Please try again.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Monthly report"
-        description="Your family&apos;s lessons, payments, confirmations and child activity."
+        description="Your family's lessons, confirmations and child activity."
         action={
           <div className="w-48">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -164,9 +168,9 @@ export default function FamilyReportsPage() {
         />
         <StatTile
           icon={CreditCard}
-          label="Paid this month"
-          value={`$${report.amountPaid}`}
-          sub={`${report.monthlyPayments.length} payment${report.monthlyPayments.length === 1 ? '' : 's'}`}
+          label="Session value"
+          value={`$${report.sessionValue.toFixed(0)}`}
+          sub="payments endpoint pending"
         />
         <StatTile
           icon={CheckCircle2}
@@ -185,9 +189,9 @@ export default function FamilyReportsPage() {
         />
         <StatTile
           icon={CreditCard}
-          label="Plan usage"
-          value={`${report.usedSessions}/${report.planSessions || 0}`}
-          sub="sessions used"
+          label="Total sessions"
+          value={report.monthlySessions.length}
+          sub="this month"
         />
         <StatTile
           icon={AlertTriangle}
@@ -221,7 +225,10 @@ export default function FamilyReportsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {report.byChild.map((row) => (
-                  <tr key={row.child.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                  <tr
+                    key={row.child.id}
+                    className="hover:bg-gray-50 dark:hover:bg-white/5"
+                  >
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-900 dark:text-foreground">
                         {row.child.fullName}
@@ -256,6 +263,16 @@ export default function FamilyReportsPage() {
                     </td>
                   </tr>
                 ))}
+                {report.byChild.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-8 text-center text-sm text-gray-500 dark:text-muted-foreground"
+                    >
+                      No children yet.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -268,8 +285,8 @@ export default function FamilyReportsPage() {
           empty="No completed sessions need confirmation."
           rows={report.awaitingConfirmation.map((session) => ({
             id: session.id,
-            label: `${session.child.fullName} - ${session.subject}`,
-            sub: `${new Date(session.startsAt).toLocaleDateString()} with ${familyTeacher(session.teacherId).name}`,
+            label: `${session.childName ?? 'Student'} - ${session.subject}`,
+            sub: `${new Date(session.startsAt).toLocaleDateString()} with ${session.teacherName ?? 'Teacher'}`,
             tone: 'warning',
           }))}
         />
@@ -284,8 +301,8 @@ export default function FamilyReportsPage() {
               session.cancellation?.status === 'Approved'
                 ? 'danger'
                 : session.cancellation?.status === 'Rejected'
-                ? 'muted'
-                : 'warning',
+                  ? 'muted'
+                  : 'warning',
           }))}
         />
       </section>
@@ -302,22 +319,23 @@ export default function FamilyReportsPage() {
           </div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-3">
-            {report.feedback.map(({ session, note, teacher }) => (
+            {report.feedback.map((session) => (
               <div
                 key={session.id}
                 className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4"
               >
                 <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-                  {session.child.fullName} - {session.subject}
+                  {session.childName ?? 'Student'} - {session.subject}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                  {teacher.name} - {new Date(session.startsAt).toLocaleDateString()}
+                  {session.teacherName ?? 'Teacher'} -{' '}
+                  {new Date(session.startsAt).toLocaleDateString()}
                 </p>
                 <p className="text-xs text-gray-700 dark:text-foreground/90 mt-3 line-clamp-2">
-                  {note?.covered}
+                  {session.note?.covered}
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-muted-foreground mt-2">
-                  Next: {note?.focusNext}
+                  Next: {session.note?.focusNext}
                 </p>
               </div>
             ))}
@@ -343,7 +361,9 @@ function ReportList({
         {title}
       </h2>
       {rows.length === 0 ? (
-        <p className="text-xs text-gray-500 dark:text-muted-foreground">{empty}</p>
+        <p className="text-xs text-gray-500 dark:text-muted-foreground">
+          {empty}
+        </p>
       ) : (
         <div className="space-y-2">
           {rows.map((row) => (

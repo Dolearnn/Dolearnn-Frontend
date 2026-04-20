@@ -1,26 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Check, GraduationCap, Star, Users } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { getTeacherProfile, teacherKeys } from '@/lib/api/teacher';
 import { cn } from '@/lib/utils';
-import { teacherMe } from '@/lib/store/teacher';
-import { useMounted } from '@/lib/use-mounted';
 import type { DayOfWeek, TimeBlock } from '@/lib/types';
 
 const DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const BLOCKS: TimeBlock[] = ['Morning', 'Afternoon', 'Evening'];
 
 export default function TeacherProfilePage() {
-  const mounted = useMounted();
-  const me = teacherMe();
-  const [bio, setBio] = useState(me.bio);
-  const [subjects, setSubjects] = useState(me.subjects.join(', '));
+  const { toast } = useToast();
+  const profileQuery = useQuery({
+    queryKey: teacherKeys.profile,
+    queryFn: getTeacherProfile,
+  });
+  const me = profileQuery.data;
+  const [bio, setBio] = useState('');
+  const [subjects, setSubjects] = useState('');
   const [days, setDays] = useState<Set<DayOfWeek>>(
     new Set<DayOfWeek>(['Mon', 'Wed', 'Fri']),
   );
@@ -28,6 +34,12 @@ export default function TeacherProfilePage() {
     new Set<TimeBlock>(['Evening']),
   );
   const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!me) return;
+    setBio(me.bio);
+    setSubjects(me.subjects.join(', '));
+  }, [me]);
 
   const toggle = <T extends DayOfWeek | TimeBlock>(
     set: Set<T>,
@@ -42,12 +54,23 @@ export default function TeacherProfilePage() {
 
   const save = () => {
     setSavedAt(new Date().toISOString());
+    toast({
+      title: 'Saved locally',
+      description: 'The backend profile update endpoint is the next piece to add.',
+    });
   };
 
-  if (!mounted) {
+  if (profileQuery.isLoading) {
+    return <PageShellSkeleton />;
+  }
+
+  if (profileQuery.isError || !me) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
+        <PageHeader title="Profile" description="" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load your profile right now. Please try again.
+        </div>
       </div>
     );
   }
@@ -68,21 +91,19 @@ export default function TeacherProfilePage() {
             .slice(0, 2)}
         </div>
         <div className="flex-1">
-          <p className="text-lg font-semibold text-gray-900 dark:text-foreground">{me.name}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-foreground">
+            {me.name}
+          </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
-            Joined{' '}
-            {new Date(me.joinedAt).toLocaleDateString(undefined, {
-              month: 'short',
-              year: 'numeric',
-            })}
+            {me.email}
           </p>
           <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-muted-foreground">
             <span className="flex items-center gap-1">
               <Star className="w-3 h-3 text-amber-500" />
               {me.rating.toFixed(1)}
             </span>
-            <span>·</span>
-            <span>{me.totalSessions} sessions</span>
+            <span>-</span>
+            <span>{me.status}</span>
           </div>
         </div>
       </section>
@@ -102,7 +123,9 @@ export default function TeacherProfilePage() {
       </div>
 
       <section className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">About you</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+          About you
+        </h2>
         <div className="space-y-2">
           <Label htmlFor="bio" className="text-xs">
             Bio
@@ -138,7 +161,9 @@ export default function TeacherProfilePage() {
           </div>
         </div>
         <div className="pt-2">
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">Qualifications</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">
+            Qualifications
+          </p>
           <ul className="flex flex-wrap gap-2">
             {me.qualifications.map((q) => (
               <li
@@ -153,9 +178,13 @@ export default function TeacherProfilePage() {
       </section>
 
       <section className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">Availability</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+          Availability
+        </h2>
         <div>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">Days you teach</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">
+            Days you teach
+          </p>
           <div className="flex flex-wrap gap-2">
             {DAYS.map((d) => (
               <button
@@ -174,7 +203,9 @@ export default function TeacherProfilePage() {
           </div>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">Time blocks</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">
+            Time blocks
+          </p>
           <div className="flex flex-wrap gap-2">
             {BLOCKS.map((b) => (
               <button
@@ -201,7 +232,10 @@ export default function TeacherProfilePage() {
             Saved
           </span>
         )}
-        <Button className="bg-brand hover:bg-brand-600 rounded-full" onClick={save}>
+        <Button
+          className="bg-brand hover:bg-brand-600 rounded-full"
+          onClick={save}
+        >
           Save changes
         </Button>
       </div>

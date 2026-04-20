@@ -33,7 +33,18 @@ function formatDate(iso: string) {
   });
 }
 
-export default function StudentSessionRow({ session }: { session: Session }) {
+export default function StudentSessionRow({
+  session,
+  onConfirmHeld,
+  onRequestCancellation,
+}: {
+  session: Session;
+  onConfirmHeld?: (sessionId: string) => Promise<void> | void;
+  onRequestCancellation?: (
+    sessionId: string,
+    reason: string,
+  ) => Promise<void> | void;
+}) {
   const child = teacherChild(session.childId);
   const [attendance, setAttendance] = useState<SessionAttendance | undefined>(
     session.attendance,
@@ -50,23 +61,37 @@ export default function StudentSessionRow({ session }: { session: Session }) {
   const teacherConfirmed = !!attendance?.teacherConfirmedAt;
   const cancellationPending = cancellation?.status === 'Pending';
 
-  const confirmHeld = () => {
-    confirmSessionAttendance(session.id, 'teacher');
+  const confirmHeld = async () => {
+    if (onConfirmHeld) {
+      await onConfirmHeld(session.id);
+    } else {
+      confirmSessionAttendance(session.id, 'teacher');
+    }
     setAttendance((prev) => ({
       ...prev,
       teacherConfirmedAt: new Date().toISOString(),
     }));
   };
 
-  const requestCancel = () => {
-    const next = requestSessionCancellation({
-      session,
-      requestedBy: 'teacher',
-      reason: cancelReason,
-      studentName: child?.fullName,
-    });
-    if (!next) return;
-    setCancellation(next[session.id]?.cancellation);
+  const requestCancel = async () => {
+    if (onRequestCancellation) {
+      await onRequestCancellation(session.id, cancelReason);
+      setCancellation({
+        requestedBy: 'teacher',
+        requestedAt: new Date().toISOString(),
+        reason: cancelReason,
+        status: 'Pending',
+      });
+    } else {
+      const next = requestSessionCancellation({
+        session,
+        requestedBy: 'teacher',
+        reason: cancelReason,
+        studentName: child?.fullName,
+      });
+      if (!next) return;
+      setCancellation(next[session.id]?.cancellation);
+    }
     setCancelReason('');
     setCancelOpen(false);
   };
@@ -80,8 +105,8 @@ export default function StudentSessionRow({ session }: { session: Session }) {
         transition={{ duration: 0.22, ease: 'easeOut' }}
         className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-brand/40 dark:hover:border-accent2-400/40 transition-colors"
       >
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
           <span className="text-xs font-medium text-accent2-600 dark:text-accent2-400 bg-accent2-50 dark:bg-accent2-500/10 px-2 py-0.5 rounded-full">
             {session.subject}
           </span>
@@ -92,29 +117,33 @@ export default function StudentSessionRow({ session }: { session: Session }) {
             </span>
           )}
         </div>
-        <p className="font-semibold text-gray-900 dark:text-foreground">
-          {child?.fullName ?? 'Student'}
+        <p className="font-semibold text-gray-900 dark:text-foreground truncate">
+          {session.childName ?? child?.fullName ?? 'Student'}
         </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
           {formatDate(session.startsAt)} · {session.durationMins} min
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
         {session.status === 'Upcoming' && session.meetLink && (
           <Link href={session.meetLink} target="_blank" rel="noreferrer">
-            <Button className="bg-brand hover:bg-brand-600 dark:bg-accent2-500 dark:hover:bg-accent2-400 dark:text-brand rounded-full">
-              <Video className="w-4 h-4 mr-2" />
+            <Button
+              size="sm"
+              className="bg-brand hover:bg-brand-600 dark:bg-accent2-500 dark:hover:bg-accent2-400 dark:text-brand rounded-full"
+            >
+              <Video className="w-3.5 h-3.5 mr-1.5" />
               Start
             </Button>
           </Link>
         )}
         {session.status === 'Upcoming' && !session.meetLink && (
-          <Button variant="outline" className="rounded-full" disabled>
-            Awaiting admin link
+          <Button size="sm" variant="outline" className="rounded-full" disabled>
+            Awaiting link
           </Button>
         )}
         {canConfirm && (
           <Button
+            size="sm"
             variant={teacherConfirmed ? 'outline' : 'default'}
             className={cn(
               'rounded-full',
@@ -123,25 +152,27 @@ export default function StudentSessionRow({ session }: { session: Session }) {
             disabled={teacherConfirmed}
             onClick={confirmHeld}
           >
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            {teacherConfirmed ? 'Confirmed held' : 'Confirm class held'}
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+            {teacherConfirmed ? 'Confirmed' : 'Confirm held'}
           </Button>
         )}
         {session.status === 'Completed' && !session.noteId && (
           <Link href="/teacher/notes">
-            <Button variant="outline" className="rounded-full">
+            <Button size="sm" variant="outline" className="rounded-full">
               Add notes
             </Button>
           </Link>
         )}
         {session.status === 'Upcoming' && !cancellationPending && (
           <Button
-            variant="outline"
-            className="rounded-full text-red-600 hover:text-red-700"
+            size="sm"
+            variant="ghost"
+            className="rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5"
             onClick={() => setCancelOpen(true)}
+            aria-label="Request cancellation"
+            title="Request cancellation"
           >
-            <XCircle className="w-4 h-4 mr-2" />
-            Request cancellation
+            <XCircle className="w-4 h-4" />
           </Button>
         )}
       </div>

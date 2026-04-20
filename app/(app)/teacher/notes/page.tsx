@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardCheck, ClipboardList, PenLine } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,14 +17,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
-import { cn } from '@/lib/utils';
-import { addSessionNote } from '@/lib/store/client';
+import { useToast } from '@/hooks/use-toast';
 import {
-  teacherChild,
-  teacherNotes,
-  teacherSessions,
-} from '@/lib/store/teacher';
-import { useMounted } from '@/lib/use-mounted';
+  listTeacherNotes,
+  listTeacherSessions,
+  submitTeacherSessionNote,
+  teacherKeys,
+} from '@/lib/api/teacher';
+import { cn } from '@/lib/utils';
 import type { Performance, Rating, Session, SessionNote } from '@/lib/types';
 
 const PERFORMANCE_OPTIONS: Performance[] = ['Excellent', 'Good', 'Needs Work'];
@@ -38,18 +40,54 @@ interface DraftNote {
 }
 
 export default function TeacherNotesPage() {
-  const mounted = useMounted();
-  const [sessions, setSessions] = useState<Session[]>(teacherSessions());
-  const [notes, setNotes] = useState<SessionNote[]>(teacherNotes());
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [drafts, setDrafts] = useState<DraftMap>({});
+
+  const sessionsQuery = useQuery({
+    queryKey: teacherKeys.sessions,
+    queryFn: listTeacherSessions,
+  });
+  const notesQuery = useQuery({
+    queryKey: teacherKeys.notes,
+    queryFn: listTeacherNotes,
+  });
+
+  const sessions = useMemo(
+    () => sessionsQuery.data ?? [],
+    [sessionsQuery.data],
+  );
+  const notes = useMemo(() => notesQuery.data ?? [], [notesQuery.data]);
+
+  const noteMutation = useMutation({
+    mutationFn: ({ session, draft }: { session: Session; draft: DraftNote }) =>
+      submitTeacherSessionNote(session.id, draft),
+    onSuccess: (_note, variables) => {
+      queryClient.invalidateQueries({ queryKey: teacherKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: teacherKeys.notes });
+      setDrafts((previous) => {
+        const { [variables.session.id]: _removed, ...rest } = previous;
+        return rest;
+      });
+      toast({ title: 'Session note submitted' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not submit note',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const needsNotes = useMemo(
     () =>
       sessions
         .filter(
-          (s) =>
-            s.status === 'Completed' &&
-            !notes.some((n) => n.sessionId === s.id),
+          (session) =>
+            session.status === 'Completed' &&
+            !notes.some((note) => note.sessionId === session.id),
         )
         .sort((a, b) => b.startsAt.localeCompare(a.startsAt)),
     [sessions, notes],
@@ -57,59 +95,48 @@ export default function TeacherNotesPage() {
 
   const submittedNotes = useMemo(() => {
     return notes
-      .map((n) => ({
-        note: n,
-        session: sessions.find((s) => s.id === n.sessionId),
+      .map((note) => ({
+        note,
+        session: sessions.find((session) => session.id === note.sessionId),
       }))
-      .filter((x): x is { note: SessionNote; session: Session } =>
-        Boolean(x.session),
+      .filter((item): item is { note: SessionNote; session: Session } =>
+        Boolean(item.session),
       )
       .sort((a, b) => b.note.createdAt.localeCompare(a.note.createdAt));
   }, [notes, sessions]);
 
   const updateDraft = (sessionId: string, patch: Partial<DraftNote>) => {
-    setDrafts((prev) => {
-      const current: DraftNote = prev[sessionId] ?? {
+    setDrafts((previous) => {
+      const current: DraftNote = previous[sessionId] ?? {
         covered: '',
         performance: 'Good',
         rating: 4,
         focusNext: '',
       };
-      return { ...prev, [sessionId]: { ...current, ...patch } };
+      return { ...previous, [sessionId]: { ...current, ...patch } };
     });
   };
 
   const submitDraft = (session: Session) => {
     const draft = drafts[session.id];
-    if (!draft || !draft.covered.trim() || !draft.focusNext.trim() || !draft.rating) return;
-    const newNote: SessionNote = {
-      id: `n_${Math.random().toString(36).slice(2, 10)}`,
-      sessionId: session.id,
-      covered: draft.covered.trim(),
-      performance: draft.performance,
-      rating: draft.rating,
-      focusNext: draft.focusNext.trim(),
-      concerns: draft.concerns?.trim() || undefined,
-      createdAt: new Date().toISOString(),
-    };
-    setNotes((prev) => [...prev, newNote]);
-    addSessionNote(newNote);
-    setSessions((prev) =>
-      prev.map((item) =>
-        item.id === session.id ? { ...item, noteId: newNote.id } : item,
-      ),
-    );
-    setDrafts((prev) => {
-      const { [session.id]: _, ...rest } = prev;
-      return rest;
-    });
+    if (!draft || !draft.covered.trim() || !draft.focusNext.trim() || !draft.rating) {
+      return;
+    }
+    noteMutation.mutate({ session, draft });
   };
 
-  if (!mounted) {
+  const isLoading = sessionsQuery.isLoading || notesQuery.isLoading;
+  const error = sessionsQuery.error ?? notesQuery.error;
+
+  if (isLoading) {
+    return <PageShellSkeleton />;
+  }
+
+  if (error) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
-      </div>
+      <p className="text-sm text-red-600">
+        {error instanceof Error ? error.message : 'Could not load notes.'}
+      </p>
     );
   }
 
@@ -130,20 +157,23 @@ export default function TeacherNotesPage() {
         {needsNotes.length === 0 ? (
           <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-8 text-center">
             <ClipboardCheck className="w-6 h-6 text-accent2-500 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">All caught up</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+              All caught up
+            </p>
             <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
               No completed sessions are waiting on notes.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {needsNotes.map((s) => (
+            {needsNotes.map((session) => (
               <DraftCard
-                key={s.id}
-                session={s}
-                draft={drafts[s.id]}
-                onChange={(patch) => updateDraft(s.id, patch)}
-                onSubmit={() => submitDraft(s)}
+                key={session.id}
+                session={session}
+                draft={drafts[session.id]}
+                submitting={noteMutation.isPending}
+                onChange={(patch) => updateDraft(session.id, patch)}
+                onSubmit={() => submitDraft(session)}
               />
             ))}
           </div>
@@ -158,7 +188,9 @@ export default function TeacherNotesPage() {
           </h2>
         </div>
         {submittedNotes.length === 0 ? (
-          <p className="text-xs text-gray-500 dark:text-muted-foreground">No notes submitted yet.</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground">
+            No notes submitted yet.
+          </p>
         ) : (
           <div className="space-y-3">
             {submittedNotes.map(({ note, session }) => (
@@ -174,15 +206,16 @@ export default function TeacherNotesPage() {
 function DraftCard({
   session,
   draft,
+  submitting,
   onChange,
   onSubmit,
 }: {
   session: Session;
   draft?: DraftNote;
+  submitting: boolean;
   onChange: (patch: Partial<DraftNote>) => void;
   onSubmit: () => void;
 }) {
-  const child = teacherChild(session.childId);
   const rating = draft?.rating ?? 0;
   const canSubmit =
     !!draft &&
@@ -195,7 +228,7 @@ function DraftCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold text-gray-900 dark:text-foreground">
-            {child?.fullName ?? 'Student'} · {session.subject}
+            {session.childName ?? 'Student'} - {session.subject}
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
             {new Date(session.startsAt).toLocaleString(undefined, {
@@ -205,7 +238,7 @@ function DraftCard({
               hour: '2-digit',
               minute: '2-digit',
             })}{' '}
-            · {session.durationMins} min
+            - {session.durationMins} min
           </p>
         </div>
       </div>
@@ -216,7 +249,7 @@ function DraftCard({
           <StarRating
             value={rating}
             size="lg"
-            onChange={(v) => onChange({ rating: v as Rating })}
+            onChange={(value) => onChange({ rating: value as Rating })}
           />
           <span className="text-xs text-gray-500 dark:text-muted-foreground">
             {rating > 0 ? `${rating} of 5` : 'Tap to rate this session'}
@@ -232,7 +265,7 @@ function DraftCard({
           id={`covered-${session.id}`}
           placeholder="e.g. Quadratic equations, factorisation basics"
           value={draft?.covered ?? ''}
-          onChange={(e) => onChange({ covered: e.target.value })}
+          onChange={(event) => onChange({ covered: event.target.value })}
           rows={2}
         />
       </div>
@@ -242,15 +275,17 @@ function DraftCard({
           <Label className="text-xs">Performance</Label>
           <Select
             value={draft?.performance ?? 'Good'}
-            onValueChange={(v) => onChange({ performance: v as Performance })}
+            onValueChange={(value) =>
+              onChange({ performance: value as Performance })
+            }
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PERFORMANCE_OPTIONS.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {PERFORMANCE_OPTIONS.map((performance) => (
+                <SelectItem key={performance} value={performance}>
+                  {performance}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -264,7 +299,7 @@ function DraftCard({
             id={`focus-${session.id}`}
             placeholder="e.g. Word problems with fractions"
             value={draft?.focusNext ?? ''}
-            onChange={(e) => onChange({ focusNext: e.target.value })}
+            onChange={(event) => onChange({ focusNext: event.target.value })}
           />
         </div>
       </div>
@@ -277,7 +312,7 @@ function DraftCard({
           id={`concerns-${session.id}`}
           placeholder="Anything the parent should know"
           value={draft?.concerns ?? ''}
-          onChange={(e) => onChange({ concerns: e.target.value })}
+          onChange={(event) => onChange({ concerns: event.target.value })}
           rows={2}
         />
       </div>
@@ -288,10 +323,10 @@ function DraftCard({
         </p>
         <Button
           className="bg-brand hover:bg-brand-600 rounded-full"
-          disabled={!canSubmit}
+          disabled={!canSubmit || submitting}
           onClick={onSubmit}
         >
-          Submit feedback
+          {submitting ? 'Submitting...' : 'Submit feedback'}
         </Button>
       </div>
     </div>
@@ -305,22 +340,21 @@ function SubmittedCard({
   note: SessionNote;
   session: Session;
 }) {
-  const child = teacherChild(session.childId);
   const perfColor =
     note.performance === 'Excellent'
       ? 'bg-accent2-100 text-accent2-700'
       : note.performance === 'Good'
-      ? 'bg-brand/10 text-brand'
-      : 'bg-amber-50 text-amber-700';
+        ? 'bg-brand/10 text-brand'
+        : 'bg-amber-50 text-amber-700';
   return (
     <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5">
       <div className="flex items-center justify-between mb-3 gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
-            {child?.fullName ?? 'Student'}
+            {session.childName ?? 'Student'}
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
-            {session.subject} ·{' '}
+            {session.subject} -{' '}
             {new Date(session.startsAt).toLocaleDateString(undefined, {
               day: 'numeric',
               month: 'short',

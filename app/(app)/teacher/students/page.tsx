@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, type ComponentType } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, CalendarPlus, Flame, Target, Users } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -23,15 +24,16 @@ import {
 } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
 import { Textarea } from '@/components/ui/textarea';
-import { createSessionProposal } from '@/lib/store/client';
-import { cn } from '@/lib/utils';
-import { useMounted } from '@/lib/use-mounted';
+import { useToast } from '@/hooks/use-toast';
 import {
-  teacherMe,
-  teacherNotes,
-  teacherSessions,
-  teacherStudents,
-} from '@/lib/store/teacher';
+  createTeacherSessionProposal,
+  getTeacherProfile,
+  listTeacherNotes,
+  listTeacherSessions,
+  listTeacherStudents,
+  teacherKeys,
+} from '@/lib/api/teacher';
+import { cn } from '@/lib/utils';
 import {
   displayGrade,
   displaySchedule,
@@ -44,12 +46,42 @@ import {
   type TimeBlock,
 } from '@/lib/types';
 
+const EMPTY_STUDENTS: Child[] = [];
+const EMPTY_SESSIONS: Session[] = [];
+const EMPTY_NOTES: SessionNote[] = [];
+
 export default function TeacherStudentsPage() {
-  const mounted = useMounted();
-  const teacher = teacherMe();
-  const students = teacherStudents();
-  const sessions = teacherSessions();
-  const notes = teacherNotes();
+  const teacherQuery = useQuery({
+    queryKey: teacherKeys.profile,
+    queryFn: getTeacherProfile,
+  });
+  const studentsQuery = useQuery({
+    queryKey: teacherKeys.students,
+    queryFn: listTeacherStudents,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: teacherKeys.sessions,
+    queryFn: listTeacherSessions,
+  });
+  const notesQuery = useQuery({
+    queryKey: teacherKeys.notes,
+    queryFn: listTeacherNotes,
+  });
+
+  const teacher = teacherQuery.data;
+  const students = studentsQuery.data ?? EMPTY_STUDENTS;
+  const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
+  const notes = notesQuery.data ?? EMPTY_NOTES;
+  const isLoading =
+    teacherQuery.isLoading ||
+    studentsQuery.isLoading ||
+    sessionsQuery.isLoading ||
+    notesQuery.isLoading;
+  const isError =
+    teacherQuery.isError ||
+    studentsQuery.isError ||
+    sessionsQuery.isError ||
+    notesQuery.isError;
 
   const byStudent = useMemo(() => {
     const map = new Map<string, Session[]>();
@@ -76,10 +108,24 @@ export default function TeacherStudentsPage() {
     return map;
   }, [notes, sessions]);
 
-  if (!mounted) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="My students" description="Loading…" />
+        <PageHeader title="My students" description="Loading..." />
+      </div>
+    );
+  }
+
+  if (isError || !teacher) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="My students"
+          description="Students you're currently assigned to."
+        />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load your students right now. Please try again.
+        </div>
       </div>
     );
   }
@@ -157,16 +203,19 @@ function StudentCard({
             .slice(0, 2)}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-gray-900 dark:text-foreground">{student.fullName}</p>
+          <p className="font-semibold text-gray-900 dark:text-foreground">
+            {student.fullName}
+          </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
-            {displayGrade(student)} · Age {student.age}
-            {student.school ? ` · ${student.school}` : ''}
+            {displayGrade(student)} - Age {student.age}
+            {student.school ? ` - ${student.school}` : ''}
           </p>
           {avgRating !== null && (
             <div className="mt-1.5 flex items-center gap-1.5">
               <StarRating value={Math.round(avgRating)} readOnly size="sm" />
               <span className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                {avgRating.toFixed(1)} avg · {notes.length} note{notes.length === 1 ? '' : 's'}
+                {avgRating.toFixed(1)} avg - {notes.length} note
+                {notes.length === 1 ? '' : 's'}
               </span>
             </div>
           )}
@@ -249,7 +298,7 @@ function StudentCard({
               minute: '2-digit',
             })}
           </span>{' '}
-          · {upcoming.subject}
+          - {upcoming.subject}
         </div>
       )}
     </div>
@@ -319,6 +368,8 @@ function ScheduleProposalForm({
   student: Child;
   teacherId: string;
 }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const entries = intakeSchedule(student);
@@ -335,7 +386,9 @@ function ScheduleProposalForm({
   const selectedBlock = selectedEntry?.time;
   const dateDay = dayForDate(date);
   const dateMatchesDay = !dateDay || dateDay === selectedDay;
-  const timeMatchesBlock = selectedBlock ? !time || timeIsInBlock(time, selectedBlock) : false;
+  const timeMatchesBlock = selectedBlock
+    ? !time || timeIsInBlock(time, selectedBlock)
+    : false;
   const canSubmit =
     !!selectedBlock &&
     !!date &&
@@ -344,22 +397,40 @@ function ScheduleProposalForm({
     dateMatchesDay &&
     timeMatchesBlock;
 
+  const proposalMutation = useMutation({
+    mutationFn: createTeacherSessionProposal,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: teacherKeys.sessions });
+      setSent(true);
+      setOpen(false);
+      setDate('');
+      setTime('');
+      setNote('');
+      toast({
+        title: 'Proposal sent',
+        description: 'The family can now accept or decline this session.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not send proposal',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const submitProposal = () => {
     if (!canSubmit || !selectedBlock) return;
-    createSessionProposal({
-      childId: student.id,
-      teacherId: student.assignedTeacherId ?? teacherId,
+    proposalMutation.mutate({
+      studentId: student.id,
       subject,
       startsAt: new Date(`${date}T${time}:00`).toISOString(),
       durationMins: Number(duration),
       timeBlock: selectedBlock,
       note: note.trim() || undefined,
     });
-    setSent(true);
-    setOpen(false);
-    setDate('');
-    setTime('');
-    setNote('');
   };
 
   if (entries.length === 0) {
@@ -443,7 +514,8 @@ function ScheduleProposalForm({
               </div>
               {selectedBlock && (
                 <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                  {selectedDay} is inside {selectedBlock.toLowerCase()} ({TIME_BLOCK_RANGES[selectedBlock].label}) in{' '}
+                  {selectedDay} is inside {selectedBlock.toLowerCase()} (
+                  {TIME_BLOCK_RANGES[selectedBlock].label}) in{' '}
                   {student.intake?.timezone ?? 'the student timezone'}.
                 </p>
               )}
@@ -486,10 +558,10 @@ function ScheduleProposalForm({
               </Button>
               <Button
                 className="bg-brand hover:bg-brand-600"
-                disabled={!canSubmit}
+                disabled={!canSubmit || proposalMutation.isPending}
                 onClick={submitProposal}
               >
-                Send proposal
+                {proposalMutation.isPending ? 'Sending...' : 'Send proposal'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -519,7 +591,9 @@ function Stat({
         {Icon && <Icon className="w-3 h-3" />}
         <p className="text-[10px] uppercase tracking-wide">{label}</p>
       </div>
-      <p className="text-base font-semibold text-gray-900 dark:text-foreground">{value}</p>
+      <p className="text-base font-semibold text-gray-900 dark:text-foreground">
+        {value}
+      </p>
     </div>
   );
 }

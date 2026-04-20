@@ -1,8 +1,9 @@
 'use client';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, PauseCircle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,32 +17,102 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/dashboard/PageHeader';
 import ChildProfileForm from '@/components/forms/ChildProfileForm';
-import { activateChild, deactivateChild, getChildById } from '@/lib/store/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  deactivateFamilyStudent,
+  familyKeys,
+  getFamilyStudent,
+  reactivateFamilyStudent,
+} from '@/lib/api/family';
 import {
   displayGrade,
   displaySchedule,
   displaySubject,
-  type Child,
 } from '@/lib/types';
 
 export default function ChildDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const [child, setChild] = useState<Child | null | undefined>(undefined);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deactivationReason, setDeactivationReason] = useState('');
 
-  useEffect(() => {
-    setChild(getChildById(params.id) ?? null);
-  }, [params.id]);
+  const {
+    data: child,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: familyKeys.student(params.id),
+    queryFn: () => getFamilyStudent(params.id),
+  });
 
-  if (child === undefined) {
-    return <p className="text-sm text-gray-400 dark:text-muted-foreground">Loading…</p>;
+  const invalidateStudent = () => {
+    queryClient.invalidateQueries({ queryKey: familyKeys.students });
+    queryClient.invalidateQueries({ queryKey: familyKeys.student(params.id) });
+  };
+
+  const deactivateMutation = useMutation({
+    mutationFn: () => deactivateFamilyStudent(params.id, deactivationReason),
+    onSuccess: () => {
+      invalidateStudent();
+      setDeactivationReason('');
+      setDeactivateOpen(false);
+      toast({ title: 'Student deactivated' });
+    },
+    onError: (mutationError) => {
+      toast({
+        title: 'Could not deactivate student',
+        description:
+          mutationError instanceof Error
+            ? mutationError.message
+            : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: () => reactivateFamilyStudent(params.id),
+    onSuccess: () => {
+      invalidateStudent();
+      toast({ title: 'Student activated' });
+    },
+    onError: (mutationError) => {
+      toast({
+        title: 'Could not activate student',
+        description:
+          mutationError instanceof Error
+            ? mutationError.message
+            : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <p className="text-sm text-gray-400 dark:text-muted-foreground">
+        Loading...
+      </p>
+    );
   }
-  if (child === null) {
+
+  if (isError) {
+    return (
+      <p className="text-sm text-red-600">
+        {error instanceof Error ? error.message : 'Could not load student.'}
+      </p>
+    );
+  }
+
+  if (!child) {
     return (
       <div>
-        <p className="text-sm text-gray-700 dark:text-foreground/90">Child not found.</p>
+        <p className="text-sm text-gray-700 dark:text-foreground/90">
+          Child not found.
+        </p>
         <Button
           onClick={() => router.push('/family/children')}
           className="mt-4"
@@ -55,25 +126,13 @@ export default function ChildDetailPage() {
 
   const isDeactivated = child.status === 'Deactivated';
 
-  const handleDeactivate = () => {
-    const updated = deactivateChild(child.id, deactivationReason);
-    if (!updated) return;
-    setChild(updated);
-    setDeactivationReason('');
-    setDeactivateOpen(false);
-  };
-
-  const handleActivate = () => {
-    const updated = activateChild(child.id);
-    if (!updated) return;
-    setChild(updated);
-  };
-
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
         title={child.fullName}
-        description={`Age ${child.age} · ${displayGrade(child)}${child.school ? ` · ${child.school}` : ''}`}
+        description={`Age ${child.age} - ${displayGrade(child)}${
+          child.school ? ` - ${child.school}` : ''
+        }`}
         action={
           <div className="flex flex-wrap gap-2">
             <Link href={`/family/children/${child.id}/intake`}>
@@ -88,7 +147,12 @@ export default function ChildDetailPage() {
                   ? 'rounded-full text-accent2-700 border-accent2-200 hover:bg-accent2-50'
                   : 'rounded-full text-amber-700 border-amber-200 hover:bg-amber-50'
               }
-              onClick={isDeactivated ? handleActivate : () => setDeactivateOpen(true)}
+              disabled={deactivateMutation.isPending || reactivateMutation.isPending}
+              onClick={
+                isDeactivated
+                  ? () => reactivateMutation.mutate()
+                  : () => setDeactivateOpen(true)
+              }
             >
               {isDeactivated ? (
                 <PlayCircle className="w-4 h-4 mr-2" />
@@ -170,7 +234,7 @@ export default function ChildDetailPage() {
           <div className="space-y-2">
             <Textarea
               value={deactivationReason}
-              onChange={(e) => setDeactivationReason(e.target.value)}
+              onChange={(event) => setDeactivationReason(event.target.value)}
               placeholder="Reason for pausing lessons"
               rows={4}
             />
@@ -190,10 +254,14 @@ export default function ChildDetailPage() {
             </Button>
             <Button
               className="bg-amber-600 hover:bg-amber-700"
-              disabled={!deactivationReason.trim()}
-              onClick={handleDeactivate}
+              disabled={
+                !deactivationReason.trim() || deactivateMutation.isPending
+              }
+              onClick={() => deactivateMutation.mutate()}
             >
-              Deactivate student
+              {deactivateMutation.isPending
+                ? 'Deactivating...'
+                : 'Deactivate student'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -205,8 +273,12 @@ export default function ChildDetailPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-gray-500 dark:text-muted-foreground">{label}</dt>
-      <dd className="text-sm text-gray-900 dark:text-foreground font-medium">{value}</dd>
+      <dt className="text-xs text-gray-500 dark:text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="text-sm text-gray-900 dark:text-foreground font-medium">
+        {value}
+      </dd>
     </div>
   );
 }

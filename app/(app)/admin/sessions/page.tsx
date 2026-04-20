@@ -1,27 +1,27 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, LinkIcon, Search, X } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import {
+  adminKeys,
+  approveAdminCancellation,
+  listAdminSessions,
+  rejectAdminCancellation,
+  updateAdminSessionMeetingLink,
+} from '@/lib/api/admin';
 import { cn } from '@/lib/utils';
-import {
-  adminChildById,
-  adminSessions,
-  adminTeacherById,
-} from '@/lib/store/admin';
-import {
-  resolveSessionCancellation,
-  updateSessionMeetingLink,
-} from '@/lib/store/client';
 import {
   isSessionPayoutEligible,
   type Session,
   type SessionStatus,
 } from '@/lib/types';
-import { useMounted } from '@/lib/use-mounted';
 
 const TAB_ORDER: ('All' | SessionStatus)[] = [
   'All',
@@ -31,9 +31,73 @@ const TAB_ORDER: ('All' | SessionStatus)[] = [
 ];
 
 export default function AdminSessionsPage() {
-  const mounted = useMounted();
-  const [sessions, setSessions] = useState<Session[]>(() => adminSessions());
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [query, setQuery] = useState('');
+
+  const sessionsQuery = useQuery({
+    queryKey: adminKeys.sessions,
+    queryFn: listAdminSessions,
+  });
+
+  const sessions = useMemo(
+    () => sessionsQuery.data ?? [],
+    [sessionsQuery.data],
+  );
+
+  const invalidateSessions = () => {
+    queryClient.invalidateQueries({ queryKey: adminKeys.sessions });
+    queryClient.invalidateQueries({ queryKey: adminKeys.cancellations });
+  };
+
+  const meetingLinkMutation = useMutation({
+    mutationFn: ({ sessionId, meetLink }: { sessionId: string; meetLink: string }) =>
+      updateAdminSessionMeetingLink(sessionId, meetLink),
+    onSuccess: () => {
+      invalidateSessions();
+      toast({ title: 'Meeting link saved' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not save meeting link',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: approveAdminCancellation,
+    onSuccess: () => {
+      invalidateSessions();
+      toast({ title: 'Cancellation approved' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not approve cancellation',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: rejectAdminCancellation,
+    onSuccess: () => {
+      invalidateSessions();
+      toast({ title: 'Cancellation rejected' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not reject cancellation',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const sorted = useMemo(
     () => [...sessions].sort((a, b) => b.startsAt.localeCompare(a.startsAt)),
@@ -42,15 +106,13 @@ export default function AdminSessionsPage() {
 
   const filter = (status: (typeof TAB_ORDER)[number]) => {
     const q = query.trim().toLowerCase();
-    return sorted.filter((s) => {
-      if (status !== 'All' && s.status !== status) return false;
+    return sorted.filter((session) => {
+      if (status !== 'All' && session.status !== status) return false;
       if (!q) return true;
-      const child = adminChildById(s.childId);
-      const teacher = adminTeacherById(s.teacherId);
       return (
-        s.subject.toLowerCase().includes(q) ||
-        (child?.fullName ?? '').toLowerCase().includes(q) ||
-        (teacher?.name ?? '').toLowerCase().includes(q)
+        session.subject.toLowerCase().includes(q) ||
+        (session.childName ?? '').toLowerCase().includes(q) ||
+        (session.teacherName ?? '').toLowerCase().includes(q)
       );
     });
   };
@@ -58,18 +120,24 @@ export default function AdminSessionsPage() {
   const counts = useMemo(
     () => ({
       All: sessions.length,
-      Upcoming: sessions.filter((s) => s.status === 'Upcoming').length,
-      Completed: sessions.filter((s) => s.status === 'Completed').length,
-      Cancelled: sessions.filter((s) => s.status === 'Cancelled').length,
+      Upcoming: sessions.filter((session) => session.status === 'Upcoming').length,
+      Completed: sessions.filter((session) => session.status === 'Completed').length,
+      Cancelled: sessions.filter((session) => session.status === 'Cancelled').length,
     }),
     [sessions],
   );
 
-  if (!mounted) {
+  if (sessionsQuery.isLoading) {
+    return <PageShellSkeleton />;
+  }
+
+  if (sessionsQuery.error) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
-      </div>
+      <p className="text-sm text-red-600">
+        {sessionsQuery.error instanceof Error
+          ? sessionsQuery.error.message
+          : 'Could not load sessions.'}
+      </p>
     );
   }
 
@@ -84,7 +152,7 @@ export default function AdminSessionsPage() {
         <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
         <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           placeholder="Search subject, student or teacher"
           className="pl-9 rounded-full"
         />
@@ -92,22 +160,22 @@ export default function AdminSessionsPage() {
 
       <Tabs defaultValue="All" className="space-y-4">
         <TabsList className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-full p-1 w-fit">
-          {TAB_ORDER.map((t) => (
+          {TAB_ORDER.map((tab) => (
             <TabsTrigger
-              key={t}
-              value={t}
+              key={tab}
+              value={tab}
               className="rounded-full px-4 text-sm data-[state=active]:bg-brand data-[state=active]:text-white"
             >
-              {t}
-              <span className="ml-2 text-xs opacity-70">{counts[t]}</span>
+              {tab}
+              <span className="ml-2 text-xs opacity-70">{counts[tab]}</span>
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {TAB_ORDER.map((t) => {
-          const rows = filter(t);
+        {TAB_ORDER.map((tab) => {
+          const rows = filter(tab);
           return (
-            <TabsContent key={t} value={t}>
+            <TabsContent key={tab} value={tab}>
               {rows.length === 0 ? (
                 <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
                   <p className="text-sm text-gray-500 dark:text-muted-foreground">
@@ -115,38 +183,23 @@ export default function AdminSessionsPage() {
                   </p>
                 </div>
               ) : (
-                <SessionTable rows={rows} onUpdateMeetingLink={(id, link) => {
-                  updateSessionMeetingLink(id, link);
-                  setSessions((prev) =>
-                    prev.map((session) =>
-                      session.id === id
-                        ? { ...session, meetLink: link.trim() }
-                      : session,
-                    ),
-                  );
-                }} onResolveCancellation={(id, decision) => {
-                  resolveSessionCancellation(id, decision);
-                  setSessions((prev) =>
-                    prev.map((session) =>
-                      session.id === id
-                        ? {
-                            ...session,
-                            status:
-                              decision === 'Approved'
-                                ? 'Cancelled'
-                                : 'Upcoming',
-                            cancellation: session.cancellation
-                              ? {
-                                  ...session.cancellation,
-                                  status: decision,
-                                  resolvedAt: new Date().toISOString(),
-                                }
-                              : undefined,
-                          }
-                        : session,
-                    ),
-                  );
-                }} />
+                <SessionTable
+                  rows={rows}
+                  savingLink={meetingLinkMutation.isPending}
+                  resolvingCancellation={
+                    approveMutation.isPending || rejectMutation.isPending
+                  }
+                  onUpdateMeetingLink={(sessionId, meetLink) =>
+                    meetingLinkMutation.mutate({ sessionId, meetLink })
+                  }
+                  onResolveCancellation={(requestId, decision) => {
+                    if (decision === 'Approved') {
+                      approveMutation.mutate(requestId);
+                    } else {
+                      rejectMutation.mutate(requestId);
+                    }
+                  }}
+                />
               )}
             </TabsContent>
           );
@@ -158,13 +211,17 @@ export default function AdminSessionsPage() {
 
 function SessionTable({
   rows,
+  savingLink,
+  resolvingCancellation,
   onUpdateMeetingLink,
   onResolveCancellation,
 }: {
   rows: Session[];
+  savingLink: boolean;
+  resolvingCancellation: boolean;
   onUpdateMeetingLink: (sessionId: string, meetLink: string) => void;
   onResolveCancellation: (
-    sessionId: string,
+    requestId: string,
     decision: 'Approved' | 'Rejected',
   ) => void;
 }) {
@@ -191,68 +248,78 @@ function SessionTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.map((s) => {
-              const child = adminChildById(s.childId);
-              const teacher = adminTeacherById(s.teacherId);
-              return (
-                <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                  <td className="px-4 py-3 text-gray-700 dark:text-foreground/90 whitespace-nowrap">
-                    {new Date(s.startsAt).toLocaleString(undefined, {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                    {child?.fullName ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                    {teacher?.name ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">{s.subject}</td>
-                  <td className="px-4 py-3">
-                    <MeetingLinkEditor
-                      session={s}
-                      value={drafts[s.id] ?? s.meetLink}
-                      onChange={(value) =>
-                        setDrafts((prev) => ({ ...prev, [s.id]: value }))
-                      }
-                      onSave={() => {
-                        const link = drafts[s.id] ?? s.meetLink;
-                        onUpdateMeetingLink(s.id, link);
-                      }}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <CancellationReview
-                      session={s}
-                      onResolve={(decision) =>
-                        onResolveCancellation(s.id, decision)
-                      }
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <ConfirmationBadge confirmed={!!s.attendance?.teacherConfirmedAt} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <ConfirmationBadge confirmed={!!s.attendance?.familyConfirmedAt} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <PayoutBadge eligible={isSessionPayoutEligible(s.attendance)} />
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-500 dark:text-muted-foreground">
-                    {s.durationMins} min
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                    ${s.amount}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <StatusBadge status={s.status} />
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map((session) => (
+              <tr
+                key={session.id}
+                className="hover:bg-gray-50 dark:hover:bg-white/5"
+              >
+                <td className="px-4 py-3 text-gray-700 dark:text-foreground/90 whitespace-nowrap">
+                  {new Date(session.startsAt).toLocaleString(undefined, {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </td>
+                <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
+                  {session.childName ?? 'Student'}
+                </td>
+                <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
+                  {session.teacherName ?? 'Teacher'}
+                </td>
+                <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
+                  {session.subject}
+                </td>
+                <td className="px-4 py-3">
+                  <MeetingLinkEditor
+                    session={session}
+                    value={drafts[session.id] ?? session.meetLink}
+                    saving={savingLink}
+                    onChange={(value) =>
+                      setDrafts((previous) => ({
+                        ...previous,
+                        [session.id]: value,
+                      }))
+                    }
+                    onSave={() => {
+                      const link = drafts[session.id] ?? session.meetLink;
+                      onUpdateMeetingLink(session.id, link);
+                    }}
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <CancellationReview
+                    session={session}
+                    resolving={resolvingCancellation}
+                    onResolve={onResolveCancellation}
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <ConfirmationBadge
+                    confirmed={!!session.attendance?.teacherConfirmedAt}
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <ConfirmationBadge
+                    confirmed={!!session.attendance?.familyConfirmedAt}
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <PayoutBadge
+                    eligible={isSessionPayoutEligible(session.attendance)}
+                  />
+                </td>
+                <td className="px-4 py-3 text-right text-gray-500 dark:text-muted-foreground">
+                  {session.durationMins} min
+                </td>
+                <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
+                  ${session.amount}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <StatusBadge status={session.status} />
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -292,10 +359,12 @@ function PayoutBadge({ eligible }: { eligible: boolean }) {
 
 function CancellationReview({
   session,
+  resolving,
   onResolve,
 }: {
   session: Session;
-  onResolve: (decision: 'Approved' | 'Rejected') => void;
+  resolving: boolean;
+  onResolve: (requestId: string, decision: 'Approved' | 'Rejected') => void;
 }) {
   const cancellation = session.cancellation;
   if (!cancellation) {
@@ -324,12 +393,13 @@ function CancellationReview({
           {cancellation.reason}
         </p>
       </div>
-      {cancellation.status === 'Pending' && (
+      {cancellation.status === 'Pending' && cancellation.id && (
         <div className="flex gap-2">
           <Button
             size="sm"
             className="h-8 rounded-full bg-red-600 hover:bg-red-700"
-            onClick={() => onResolve('Approved')}
+            disabled={resolving}
+            onClick={() => onResolve(cancellation.id!, 'Approved')}
           >
             <Check className="w-3.5 h-3.5 mr-1" />
             Approve
@@ -338,7 +408,8 @@ function CancellationReview({
             size="sm"
             variant="outline"
             className="h-8 rounded-full"
-            onClick={() => onResolve('Rejected')}
+            disabled={resolving}
+            onClick={() => onResolve(cancellation.id!, 'Rejected')}
           >
             <X className="w-3.5 h-3.5 mr-1" />
             Reject
@@ -352,11 +423,13 @@ function CancellationReview({
 function MeetingLinkEditor({
   session,
   value,
+  saving,
   onChange,
   onSave,
 }: {
   session: Session;
   value: string;
+  saving: boolean;
   onChange: (value: string) => void;
   onSave: () => void;
 }) {
@@ -367,7 +440,7 @@ function MeetingLinkEditor({
         <LinkIcon className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         <Input
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           placeholder="Paste class meeting link"
           className="h-9 pl-8 text-xs"
         />
@@ -376,11 +449,11 @@ function MeetingLinkEditor({
         size="sm"
         variant={changed ? 'default' : 'outline'}
         className={cn('h-9 rounded-full', changed && 'bg-brand hover:bg-brand-600')}
-        disabled={!changed}
+        disabled={!changed || saving}
         onClick={onSave}
       >
         <Check className="w-3.5 h-3.5 mr-1" />
-        Save
+        {saving ? 'Saving' : 'Save'}
       </Button>
     </div>
   );

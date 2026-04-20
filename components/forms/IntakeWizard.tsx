@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,8 +26,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
+  familyKeys,
+  saveFamilyStudentIntake,
+} from '@/lib/api/family';
 import { cn } from '@/lib/utils';
-import { saveIntake } from '@/lib/store/client';
 import type { DayOfWeek, IntakeForm, PreferredSchedule, TimeBlock } from '@/lib/types';
 
 const SUBJECTS = [
@@ -115,6 +120,8 @@ const steps = [
 
 export default function IntakeWizard({ childId }: { childId: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [step, setStep] = useState(0);
 
   const form = useForm<Values>({
@@ -148,6 +155,28 @@ export default function IntakeWizard({ childId }: { childId: string }) {
 
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  const mutation = useMutation({
+    mutationFn: (intake: IntakeForm) => saveFamilyStudentIntake(childId, intake),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: familyKeys.students });
+      queryClient.invalidateQueries({ queryKey: familyKeys.student(childId) });
+      toast({
+        title: 'Intake submitted',
+        description: 'Admin can now review this student for matching.',
+      });
+      router.push('/family');
+      router.refresh();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not submit intake',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const onSubmit = (values: Values) => {
     const firstPreferredDay =
       DAYS.find((day) => values.preferredSchedule[day]) ?? 'Mon';
@@ -174,8 +203,7 @@ export default function IntakeWizard({ childId }: { childId: string }) {
           : (Number(values.sessionsPerWeek) as 1 | 2 | 3),
       budget: values.budget,
     };
-    saveIntake(childId, intake);
-    router.push('/family');
+    mutation.mutate(intake);
   };
 
   return (
@@ -207,9 +235,10 @@ export default function IntakeWizard({ childId }: { childId: string }) {
             ) : (
               <Button
                 type="submit"
+                disabled={mutation.isPending}
                 className="bg-brand hover:bg-brand-600 rounded-full"
               >
-                Submit intake
+                {mutation.isPending ? 'Submitting...' : 'Submit intake'}
               </Button>
             )}
           </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import {
   Select,
   SelectContent,
@@ -19,13 +21,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  teacherChild,
-  teacherMe,
-  teacherSessions,
-} from '@/lib/store/teacher';
+  getTeacherProfile,
+  listTeacherSessions,
+  teacherKeys,
+} from '@/lib/api/teacher';
 import { cn } from '@/lib/utils';
-import { isSessionPayoutEligible } from '@/lib/types';
-import { useMounted } from '@/lib/use-mounted';
+import { isSessionPayoutEligible, type Session } from '@/lib/types';
+
+const EMPTY_SESSIONS: Session[] = [];
 
 function monthKey(date: string) {
   return date.slice(0, 7);
@@ -39,9 +42,16 @@ function monthLabel(key: string) {
 }
 
 export default function TeacherReportsPage() {
-  const mounted = useMounted();
-  const teacher = teacherMe();
-  const sessions = teacherSessions(teacher.id);
+  const profileQuery = useQuery({
+    queryKey: teacherKeys.profile,
+    queryFn: getTeacherProfile,
+  });
+  const sessionsQuery = useQuery({
+    queryKey: teacherKeys.sessions,
+    queryFn: listTeacherSessions,
+  });
+  const teacher = profileQuery.data;
+  const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
 
   const monthOptions = useMemo(() => {
     const keys = new Set<string>([new Date().toISOString().slice(0, 7)]);
@@ -49,9 +59,12 @@ export default function TeacherReportsPage() {
     return Array.from(keys).sort((a, b) => b.localeCompare(a));
   }, [sessions]);
 
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toISOString().slice(0, 7),
+  );
 
   const report = useMemo(() => {
+    if (!teacher) return null;
     const monthlySessions = sessions.filter(
       (session) => monthKey(session.startsAt) === selectedMonth,
     );
@@ -68,7 +81,9 @@ export default function TeacherReportsPage() {
       verified.reduce((sum, session) => sum + session.durationMins, 0) / 60;
     const expectedPayout = Math.round(verifiedHours * teacher.hourlyRate);
     const confirmationRate =
-      completed.length > 0 ? Math.round((verified.length / completed.length) * 100) : 0;
+      completed.length > 0
+        ? Math.round((verified.length / completed.length) * 100)
+        : 0;
     const byStudent = Array.from(uniqueStudentIds).map((studentId) => {
       const studentSessions = monthlySessions.filter(
         (session) => session.childId === studentId,
@@ -82,7 +97,8 @@ export default function TeacherReportsPage() {
           0,
         ) / 60;
       return {
-        student: teacherChild(studentId),
+        studentId,
+        studentName: studentSessions[0]?.childName ?? 'Student',
         sessions: studentSessions.length,
         verifiedSessions: verifiedStudentSessions.length,
         hours,
@@ -101,12 +117,19 @@ export default function TeacherReportsPage() {
       confirmationRate,
       byStudent,
     };
-  }, [selectedMonth, sessions, teacher.hourlyRate]);
+  }, [selectedMonth, sessions, teacher]);
 
-  if (!mounted) {
+  if (profileQuery.isLoading || sessionsQuery.isLoading) {
+    return <PageShellSkeleton />;
+  }
+
+  if (profileQuery.isError || sessionsQuery.isError || !teacher || !report) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
+        <PageHeader title="Monthly report" description="" />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          We could not load your report right now. Please try again.
+        </div>
       </div>
     );
   }
@@ -199,18 +222,23 @@ export default function TeacherReportsPage() {
                   <th className="text-left px-4 py-3 font-medium">Student</th>
                   <th className="text-right px-4 py-3 font-medium">Sessions</th>
                   <th className="text-right px-4 py-3 font-medium">Verified</th>
-                  <th className="text-right px-4 py-3 font-medium">Verified hours</th>
+                  <th className="text-right px-4 py-3 font-medium">
+                    Verified hours
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {report.byStudent.map((row) => (
-                  <tr key={row.student?.id ?? 'unknown'} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                  <tr
+                    key={row.studentId}
+                    className="hover:bg-gray-50 dark:hover:bg-white/5"
+                  >
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-900 dark:text-foreground">
-                        {row.student?.fullName ?? 'Student'}
+                        {row.studentName}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                        {row.student?.school ?? 'No school listed'}
+                        Backend session record
                       </p>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
@@ -246,7 +274,7 @@ export default function TeacherReportsPage() {
           empty="Every completed session is verified."
           rows={report.awaitingAttendance.map((session) => ({
             id: session.id,
-            label: `${session.subject} with ${teacherChild(session.childId)?.fullName ?? 'Student'}`,
+            label: `${session.subject} with ${session.childName ?? 'Student'}`,
             sub: `${new Date(session.startsAt).toLocaleDateString()} - ${session.durationMins} min`,
             tone: 'warning',
           }))}
@@ -262,8 +290,8 @@ export default function TeacherReportsPage() {
               session.cancellation?.status === 'Approved'
                 ? 'danger'
                 : session.cancellation?.status === 'Rejected'
-                ? 'muted'
-                : 'warning',
+                  ? 'muted'
+                  : 'warning',
           }))}
         />
       </section>
@@ -286,7 +314,9 @@ function ReportList({
         {title}
       </h2>
       {rows.length === 0 ? (
-        <p className="text-xs text-gray-500 dark:text-muted-foreground">{empty}</p>
+        <p className="text-xs text-gray-500 dark:text-muted-foreground">
+          {empty}
+        </p>
       ) : (
         <div className="space-y-2">
           {rows.map((row) => (

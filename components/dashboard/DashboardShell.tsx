@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bell,
@@ -13,6 +13,7 @@ import {
   CreditCard,
   GraduationCap,
   Home,
+  LogOut,
   Menu,
   Settings,
   Users,
@@ -21,6 +22,25 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { FullScreenLoader } from '@/components/ui/loader';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { dashboardPathForRole, logout } from '@/lib/api/auth';
+import { getAuthUser, type AuthUser } from '@/lib/api/auth-storage';
+
+function initialsOf(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 type NavItem = {
   label: string;
@@ -78,6 +98,13 @@ function navForRole(role: Role): NavItem[] {
   }
 }
 
+function roleForAuthUser(user: AuthUser | null): Role | null {
+  if (!user) return null;
+  if (user.role === 'ADMIN') return 'admin';
+  if (user.role === 'TEACHER') return 'teacher';
+  return 'family';
+}
+
 const roleLabel: Record<Role, string> = {
   family: 'Family',
   teacher: 'Teacher',
@@ -90,9 +117,54 @@ export default function DashboardShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const role = roleFromPath(pathname);
+  const router = useRouter();
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const routeRole = roleFromPath(pathname);
+  const allowedRole = roleForAuthUser(authUser);
+  const role = allowedRole ?? routeRole;
   const nav = navForRole(role);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const user = getAuthUser();
+    setAuthUser(user);
+    setAuthChecked(true);
+  }, []);
+
+  useEffect(() => {
+    if (!authChecked) return;
+
+    if (!authUser) {
+      router.replace('/login');
+      return;
+    }
+
+    if (authUser.mustChangePassword) {
+      router.replace('/change-password');
+      return;
+    }
+
+    const expectedPath = dashboardPathForRole(authUser.role);
+    if (!pathname.startsWith(expectedPath)) {
+      router.replace(expectedPath);
+    }
+  }, [authChecked, authUser, pathname, router]);
+
+  const isWrongWorkspace = useMemo(() => {
+    if (!authChecked || !allowedRole) return false;
+    return routeRole !== allowedRole;
+  }, [allowedRole, authChecked, routeRole]);
+
+  const handleLogout = async () => {
+    await logout();
+    setAuthUser(null);
+    router.replace('/login');
+  };
+
+  if (!authChecked || !authUser || isWrongWorkspace) {
+    return <FullScreenLoader label="Loading your dashboard" />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background flex">
@@ -150,7 +222,7 @@ export default function DashboardShell({
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <RoleSwitcher current={role} />
+            <UserMenu user={authUser} onLogout={handleLogout} />
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-x-hidden">
@@ -223,38 +295,50 @@ function SidebarContents({
   );
 }
 
-function RoleSwitcher({ current }: { current: Role }) {
-  const items: { role: Role; href: string }[] = [
-    { role: 'family', href: '/family' },
-    { role: 'teacher', href: '/teacher' },
-    { role: 'admin', href: '/admin' },
-  ];
+function UserMenu({
+  user,
+  onLogout,
+}: {
+  user: AuthUser;
+  onLogout: () => void | Promise<void>;
+}) {
   return (
-    <div className="flex items-center gap-1 bg-gray-100 dark:bg-secondary rounded-full p-1 text-xs">
-      {items.map((it) => {
-        const active = current === it.role;
-        return (
-          <Link
-            key={it.role}
-            href={it.href}
-            className={cn(
-              'relative px-3 py-1 rounded-full transition capitalize',
-              active
-                ? 'text-white dark:text-background'
-                : 'text-gray-600 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-foreground',
-            )}
-          >
-            {active && (
-              <motion.span
-                layoutId="role-switcher-pill"
-                className="absolute inset-0 rounded-full bg-brand dark:bg-accent2-400"
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              />
-            )}
-            <span className="relative">{it.role}</span>
-          </Link>
-        );
-      })}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="flex items-center gap-2 rounded-full pl-1 pr-2 py-1 hover:bg-gray-100 dark:hover:bg-white/5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+        aria-label="Open account menu"
+      >
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={undefined} alt={user.name} />
+          <AvatarFallback className="bg-brand text-white text-xs font-semibold">
+            {initialsOf(user.name)}
+          </AvatarFallback>
+        </Avatar>
+        <span className="hidden sm:block text-sm font-medium text-gray-800 dark:text-foreground max-w-[120px] truncate">
+          {user.name.split(' ')[0]}
+        </span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="flex flex-col gap-0.5 py-2">
+          <span className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
+            {user.name}
+          </span>
+          <span className="text-xs font-normal text-gray-500 dark:text-muted-foreground truncate">
+            {user.email}
+          </span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            void onLogout();
+          }}
+          className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-500/10 cursor-pointer"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

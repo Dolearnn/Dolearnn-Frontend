@@ -1,16 +1,21 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ClipboardCheck, Filter, Search, Sparkles } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ClipboardCheck, Search, Sparkles } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
+import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import {
-  adminChildWithIntake,
-  adminTeachers,
-  adminTeachersForSubjects,
-} from '@/lib/store/admin';
+  adminKeys,
+  assignAdminTeacherToStudent,
+  listAdminStudents,
+  listAdminTeachers,
+  unassignAdminTeacherFromStudent,
+} from '@/lib/api/admin';
 import {
   displayGrade,
   displaySchedule,
@@ -18,59 +23,98 @@ import {
   type Child,
   type Teacher,
 } from '@/lib/types';
-import { useMounted } from '@/lib/use-mounted';
 
 type Filter = 'All' | 'Pending' | 'Matched';
 
 export default function AdminIntakesPage() {
-  const mounted = useMounted();
-  const initial = adminChildWithIntake();
-  const allTeachers = adminTeachers();
-
-  const [children, setChildren] = useState<Child[]>(initial);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [filter, setFilter] = useState<Filter>('Pending');
   const [query, setQuery] = useState('');
 
+  const studentsQuery = useQuery({
+    queryKey: adminKeys.students,
+    queryFn: listAdminStudents,
+  });
+  const teachersQuery = useQuery({
+    queryKey: adminKeys.teachers,
+    queryFn: listAdminTeachers,
+  });
+
+  const children = useMemo(
+    () => (studentsQuery.data ?? []).filter((child) => !!child.intake),
+    [studentsQuery.data],
+  );
+  const allTeachers = teachersQuery.data ?? [];
+
+  const invalidateStudents = () => {
+    queryClient.invalidateQueries({ queryKey: adminKeys.students });
+  };
+
+  const assignMutation = useMutation({
+    mutationFn: ({ childId, teacherId }: { childId: string; teacherId: string }) =>
+      assignAdminTeacherToStudent(childId, teacherId),
+    onSuccess: () => {
+      invalidateStudents();
+      toast({ title: 'Teacher assigned' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not assign teacher',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const unassignMutation = useMutation({
+    mutationFn: unassignAdminTeacherFromStudent,
+    onSuccess: () => {
+      invalidateStudents();
+      toast({ title: 'Teacher unassigned' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not unassign teacher',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const filtered = useMemo(() => {
-    return children.filter((c) => {
-      if (filter === 'Pending' && c.assignedTeacherId) return false;
-      if (filter === 'Matched' && !c.assignedTeacherId) return false;
+    return children.filter((child) => {
+      if (filter === 'Pending' && child.assignedTeacherId) return false;
+      if (filter === 'Matched' && !child.assignedTeacherId) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
         if (
-          !c.fullName.toLowerCase().includes(q) &&
-          !(c.intake && displaySubject(c.intake).toLowerCase().includes(q))
-        )
+          !child.fullName.toLowerCase().includes(q) &&
+          !(child.intake && displaySubject(child.intake).toLowerCase().includes(q))
+        ) {
           return false;
+        }
       }
       return true;
     });
   }, [children, filter, query]);
 
-  const assign = (childId: string, teacherId: string) => {
-    setChildren((prev) =>
-      prev.map((c) =>
-        c.id === childId ? { ...c, assignedTeacherId: teacherId } : c,
-      ),
-    );
-  };
-
-  const unassign = (childId: string) => {
-    setChildren((prev) =>
-      prev.map((c) =>
-        c.id === childId ? { ...c, assignedTeacherId: undefined } : c,
-      ),
-    );
-  };
-
-  const pendingCount = children.filter((c) => !c.assignedTeacherId).length;
+  const pendingCount = children.filter((child) => !child.assignedTeacherId).length;
   const matchedCount = children.length - pendingCount;
+  const isLoading = studentsQuery.isLoading || teachersQuery.isLoading;
+  const error = studentsQuery.error ?? teachersQuery.error;
 
-  if (!mounted) {
+  if (isLoading) {
+    return <PageShellSkeleton />;
+  }
+
+  if (error) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Loading…" description="" />
-      </div>
+      <p className="text-sm text-red-600">
+        {error instanceof Error ? error.message : 'Could not load intakes.'}
+      </p>
     );
   }
 
@@ -83,24 +127,24 @@ export default function AdminIntakesPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-center gap-2 bg-white dark:bg-card border border-gray-200 dark:border-border rounded-full p-1 w-fit">
-          {(['Pending', 'Matched', 'All'] as Filter[]).map((f) => (
+          {(['Pending', 'Matched', 'All'] as Filter[]).map((item) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
+              key={item}
+              onClick={() => setFilter(item)}
               className={cn(
                 'px-4 py-1.5 rounded-full text-sm transition',
-                filter === f
+                filter === item
                   ? 'bg-brand text-white'
                   : 'text-gray-600 dark:text-muted-foreground hover:text-gray-900',
               )}
             >
-              {f}
+              {item}
               <span className="ml-2 text-xs opacity-70">
-                {f === 'Pending'
+                {item === 'Pending'
                   ? pendingCount
-                  : f === 'Matched'
-                  ? matchedCount
-                  : children.length}
+                  : item === 'Matched'
+                    ? matchedCount
+                    : children.length}
               </span>
             </button>
           ))}
@@ -109,7 +153,7 @@ export default function AdminIntakesPage() {
           <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Search name or subject"
             className="pl-9 rounded-full"
           />
@@ -132,8 +176,12 @@ export default function AdminIntakesPage() {
               key={child.id}
               child={child}
               allTeachers={allTeachers}
-              onAssign={(t) => assign(child.id, t)}
-              onUnassign={() => unassign(child.id)}
+              assigning={assignMutation.isPending}
+              unassigning={unassignMutation.isPending}
+              onAssign={(teacherId) =>
+                assignMutation.mutate({ childId: child.id, teacherId })
+              }
+              onUnassign={() => unassignMutation.mutate(child.id)}
             />
           ))}
         </div>
@@ -145,11 +193,15 @@ export default function AdminIntakesPage() {
 function IntakeCard({
   child,
   allTeachers,
+  assigning,
+  unassigning,
   onAssign,
   onUnassign,
 }: {
   child: Child;
   allTeachers: Teacher[];
+  assigning: boolean;
+  unassigning: boolean;
   onAssign: (teacherId: string) => void;
   onUnassign: () => void;
 }) {
@@ -163,9 +215,20 @@ function IntakeCard({
           : subject,
       )
     : [displaySubject(intake)];
-  const suggestions = adminTeachersForSubjects(selectedSubjects);
+
+  const suggestions = allTeachers.filter(
+    (teacher) =>
+      (teacher.status ?? 'Active') !== 'Terminated' &&
+      teacher.subjects.some((teacherSubject) =>
+        selectedSubjects.some((subject) => {
+          const a = teacherSubject.toLowerCase();
+          const b = subject.toLowerCase();
+          return a.includes(b) || b.includes(a);
+        }),
+      ),
+  );
   const assigned = child.assignedTeacherId
-    ? allTeachers.find((t) => t.id === child.assignedTeacherId)
+    ? allTeachers.find((teacher) => teacher.id === child.assignedTeacherId)
     : null;
 
   return (
@@ -175,7 +238,7 @@ function IntakeCard({
           <p className="font-semibold text-gray-900 dark:text-foreground">
             {child.fullName}{' '}
             <span className="text-xs text-gray-500 dark:text-muted-foreground font-normal">
-              · {displayGrade(child)} · Age {child.age}
+              - {displayGrade(child)} - Age {child.age}
             </span>
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
@@ -185,7 +248,9 @@ function IntakeCard({
         <span
           className={cn(
             'text-[11px] font-medium px-2 py-0.5 rounded-full',
-            assigned ? 'bg-accent2-50 text-accent2-700' : 'bg-amber-50 text-amber-700',
+            assigned
+              ? 'bg-accent2-50 text-accent2-700'
+              : 'bg-amber-50 text-amber-700',
           )}
         >
           {assigned ? 'Matched' : 'Pending'}
@@ -197,13 +262,10 @@ function IntakeCard({
         <Row label="Goal" value={intake.learningGoal} />
         <Row label="Current level" value={intake.currentLevel} />
         <Row label="Teacher pref" value={intake.teacherGenderPref} />
-        <Row
-          label="Availability"
-          value={displaySchedule(intake)}
-        />
+        <Row label="Availability" value={displaySchedule(intake)} />
         <Row
           label="Frequency"
-          value={`${intake.sessionsPerWeek}x / week · ${intake.budget}`}
+          value={`${intake.sessionsPerWeek}x / week - ${intake.budget}`}
         />
         {intake.specificTopics && (
           <Row label="Topics" value={intake.specificTopics} full />
@@ -219,7 +281,7 @@ function IntakeCard({
             <div className="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center text-xs font-semibold shrink-0">
               {assigned.name
                 .split(' ')
-                .map((p) => p[0])
+                .map((part) => part[0])
                 .join('')
                 .slice(0, 2)}
             </div>
@@ -228,7 +290,7 @@ function IntakeCard({
                 {assigned.name}
               </p>
               <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-                ★ {assigned.rating.toFixed(1)} ·{' '}
+                Star {assigned.rating.toFixed(1)} -{' '}
                 {assigned.subjects.join(', ')}
               </p>
             </div>
@@ -236,9 +298,10 @@ function IntakeCard({
           <Button
             variant="outline"
             className="rounded-full text-xs"
+            disabled={unassigning}
             onClick={onUnassign}
           >
-            Unassign
+            {unassigning ? 'Removing...' : 'Unassign'}
           </Button>
         </div>
       ) : (
@@ -251,13 +314,17 @@ function IntakeCard({
           </div>
           {suggestions.length === 0 ? (
             <p className="text-xs text-gray-500 dark:text-muted-foreground">
-              No teacher currently covers {displaySubject(intake)}. Try a different
-              subject or add a teacher to the roster.
+              No active teacher currently covers {displaySubject(intake)}.
             </p>
           ) : (
             <div className="grid sm:grid-cols-2 gap-2">
-              {suggestions.map((t) => (
-                <SuggestionRow key={t.id} teacher={t} onAssign={onAssign} />
+              {suggestions.map((teacher) => (
+                <SuggestionRow
+                  key={teacher.id}
+                  teacher={teacher}
+                  assigning={assigning}
+                  onAssign={onAssign}
+                />
               ))}
             </div>
           )}
@@ -269,9 +336,11 @@ function IntakeCard({
 
 function SuggestionRow({
   teacher,
+  assigning,
   onAssign,
 }: {
   teacher: Teacher;
+  assigning: boolean;
   onAssign: (teacherId: string) => void;
 }) {
   return (
@@ -281,16 +350,17 @@ function SuggestionRow({
           {teacher.name}
         </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-          ★ {teacher.rating.toFixed(1)} · ${teacher.hourlyRate}/hr ·{' '}
+          Star {teacher.rating.toFixed(1)} - ${teacher.hourlyRate}/hr -{' '}
           {teacher.totalSessions} sessions
         </p>
       </div>
       <Button
         size="sm"
         className="rounded-full bg-brand hover:bg-brand-600 shrink-0"
+        disabled={assigning}
         onClick={() => onAssign(teacher.id)}
       >
-        Assign
+        {assigning ? 'Assigning...' : 'Assign'}
       </Button>
     </div>
   );
