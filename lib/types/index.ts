@@ -56,6 +56,8 @@ export interface StudentSubjectAssignment {
   childId: string;
   teacherId: string;
   teacherName?: string;
+  teacherEmail?: string;
+  teacherPhone?: string;
   subject: string;
   createdAt: string;
 }
@@ -146,6 +148,7 @@ export interface Teacher {
   email?: string;
   phoneCountry?: string;
   phoneNumber?: string;
+  gender?: 'Male' | 'Female';
   photoUrl?: string;
   bio: string;
   subjects: string[];
@@ -168,6 +171,7 @@ export interface Session {
   id: string;
   childId: string;
   teacherId: string;
+  lessonPackageId?: string;
   childName?: string;
   teacherName?: string;
   subject: string;
@@ -221,6 +225,52 @@ export interface SessionProposal {
   };
   createdAt: string;
   resolvedAt?: string;
+}
+
+export type BookingRequestStatus = 'Pending' | 'Scheduled' | 'Cancelled';
+
+export interface SessionBookingRequest {
+  id: string;
+  childId: string;
+  childName?: string;
+  subject: string;
+  day: DayOfWeek;
+  timeBlock: TimeBlock;
+  startTime: string;
+  startDate: string;
+  sessionsRequested: number;
+  status: BookingRequestStatus;
+  createdAt: string;
+}
+
+export interface SessionCreditSummary {
+  paidSessions: number;
+  usedSessions: number;
+  pendingSessions: number;
+  availableSessions: number;
+  packages: LessonPackageCredit[];
+}
+
+export type LessonPackageStatus = 'Active' | 'Exhausted' | 'Cancelled';
+
+export interface LessonPackageCredit {
+  id: string;
+  childId: string;
+  subject: string;
+  paidSessions: number;
+  usedSessions: number;
+  completedSessions: number;
+  availableSessions: number;
+  status: LessonPackageStatus;
+}
+
+export interface StudentLessonPackage extends LessonPackageCredit {
+  childName?: string;
+  parentId: string;
+  parentName?: string;
+  amountPaid: number;
+  gateway: PaymentGateway;
+  createdAt: string;
 }
 
 export function isSessionPayoutEligible(

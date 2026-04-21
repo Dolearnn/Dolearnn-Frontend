@@ -6,31 +6,58 @@ import { ClipboardCheck, Search, Sparkles } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
   adminKeys,
   assignAdminTeacherToStudent,
+  createAdminStudent,
   listAdminStudents,
   listAdminTeachers,
   unassignAdminTeacherFromStudent,
 } from '@/lib/api/admin';
+import { listAdminPaymentParents, paymentKeys } from '@/lib/api/payments';
 import {
   displayGrade,
   displaySchedule,
   displaySubject,
   type Child,
+  type GradeLevel,
   type Teacher,
 } from '@/lib/types';
 
 type Filter = 'All' | 'Pending' | 'Matched';
+const GRADES: GradeLevel[] = ['Primary', 'JSS', 'SSS', 'College Year 1', 'College Year 2', 'College Year 3', 'College Year 4', 'Other'];
 
 export default function AdminIntakesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [filter, setFilter] = useState<Filter>('Pending');
   const [query, setQuery] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [studentForm, setStudentForm] = useState({
+    parentId: '',
+    fullName: '',
+    age: '10',
+    grade: 'Primary' as GradeLevel,
+    gradeOther: '',
+    school: '',
+  });
 
   const studentsQuery = useQuery({
     queryKey: adminKeys.students,
@@ -39,6 +66,10 @@ export default function AdminIntakesPage() {
   const teachersQuery = useQuery({
     queryKey: adminKeys.teachers,
     queryFn: listAdminTeachers,
+  });
+  const parentsQuery = useQuery({
+    queryKey: paymentKeys.adminParents,
+    queryFn: listAdminPaymentParents,
   });
 
   const children = useMemo(
@@ -50,6 +81,31 @@ export default function AdminIntakesPage() {
   const invalidateStudents = () => {
     queryClient.invalidateQueries({ queryKey: adminKeys.students });
   };
+
+  const createStudentMutation = useMutation({
+    mutationFn: createAdminStudent,
+    onSuccess: () => {
+      invalidateStudents();
+      setAddOpen(false);
+      setStudentForm({
+        parentId: '',
+        fullName: '',
+        age: '10',
+        grade: 'Primary',
+        gradeOther: '',
+        school: '',
+      });
+      toast({ title: 'Student created' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not create student',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const assignMutation = useMutation({
     mutationFn: ({
@@ -153,6 +209,14 @@ export default function AdminIntakesPage() {
       <PageHeader
         title="Intakes"
         description="Review new family enquiries and assign the right teacher."
+        action={
+          <Button
+            className="rounded-full bg-brand hover:bg-brand-600"
+            onClick={() => setAddOpen(true)}
+          >
+            Create student
+          </Button>
+        }
       />
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
@@ -218,6 +282,115 @@ export default function AdminIntakesPage() {
           ))}
         </div>
       )}
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create student for parent</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select
+              value={studentForm.parentId}
+              onValueChange={(value) =>
+                setStudentForm((form) => ({ ...form, parentId: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select parent" />
+              </SelectTrigger>
+              <SelectContent>
+                {(parentsQuery.data ?? []).map((parent) => (
+                  <SelectItem key={parent.id} value={parent.id}>
+                    {parent.name} - {parent.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              value={studentForm.fullName}
+              onChange={(event) =>
+                setStudentForm((form) => ({ ...form, fullName: event.target.value }))
+              }
+              placeholder="Student full name"
+            />
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Input
+                value={studentForm.age}
+                onChange={(event) =>
+                  setStudentForm((form) => ({ ...form, age: event.target.value }))
+                }
+                type="number"
+                min={3}
+                placeholder="Age"
+              />
+              <Select
+                value={studentForm.grade}
+                onValueChange={(value) =>
+                  setStudentForm((form) => ({
+                    ...form,
+                    grade: value as GradeLevel,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRADES.map((grade) => (
+                    <SelectItem key={grade} value={grade}>
+                      {grade}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {studentForm.grade === 'Other' && (
+              <Input
+                value={studentForm.gradeOther}
+                onChange={(event) =>
+                  setStudentForm((form) => ({
+                    ...form,
+                    gradeOther: event.target.value,
+                  }))
+                }
+                placeholder="Enter grade"
+              />
+            )}
+            <Input
+              value={studentForm.school}
+              onChange={(event) =>
+                setStudentForm((form) => ({ ...form, school: event.target.value }))
+              }
+              placeholder="School"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-brand hover:bg-brand-600"
+              disabled={
+                !studentForm.parentId ||
+                !studentForm.fullName.trim() ||
+                createStudentMutation.isPending
+              }
+              onClick={() =>
+                createStudentMutation.mutate({
+                  parentId: studentForm.parentId,
+                  fullName: studentForm.fullName.trim(),
+                  age: Number(studentForm.age) || 10,
+                  grade: studentForm.grade,
+                  gradeOther: studentForm.gradeOther.trim(),
+                  school: studentForm.school.trim(),
+                })
+              }
+            >
+              {createStudentMutation.isPending ? 'Creating...' : 'Create student'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -306,6 +479,13 @@ function IntakeCard({
             ? allTeachers.find((teacher) => teacher.id === assignment.teacherId)
             : null;
           const suggestions = teachersForSubject(allTeachers, subject);
+          const preferredSuggestions = teachersForSubject(
+            allTeachers,
+            subject,
+            intake.teacherGenderPref,
+          );
+          const visibleSuggestions =
+            preferredSuggestions.length > 0 ? preferredSuggestions : suggestions;
 
           return (
             <div
@@ -350,13 +530,13 @@ function IntakeCard({
                     {unassigning ? 'Removing...' : 'Unassign'}
                   </Button>
                 </div>
-              ) : suggestions.length === 0 ? (
+              ) : visibleSuggestions.length === 0 ? (
                 <p className="text-xs text-gray-500 dark:text-muted-foreground">
                   No active teacher currently covers {subject}.
                 </p>
               ) : (
                 <div className="grid sm:grid-cols-2 gap-2">
-                  {suggestions.map((teacher) => (
+                  {visibleSuggestions.map((teacher) => (
                     <SuggestionRow
                       key={teacher.id}
                       subject={subject}
@@ -395,10 +575,19 @@ function assignmentForSubject(child: Child, subject: string) {
   );
 }
 
-function teachersForSubject(teachers: Teacher[], subject: string) {
+function teachersForSubject(
+  teachers: Teacher[],
+  subject: string,
+  genderPreference?: string,
+) {
   return teachers.filter(
     (teacher) =>
       (teacher.status ?? 'Active') !== 'Terminated' &&
+      (genderPreference === 'Female'
+        ? teacher.gender === 'Female'
+        : genderPreference === 'Male'
+          ? teacher.gender === 'Male'
+          : true) &&
       teacher.subjects.some((teacherSubject) => {
         const a = teacherSubject.toLowerCase();
         const b = subject.toLowerCase();

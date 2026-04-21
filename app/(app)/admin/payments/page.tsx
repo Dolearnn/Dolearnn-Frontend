@@ -34,6 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import {
   createAdminPayment,
+  listAdminLessonPackages,
   listAdminPaymentParents,
   listAdminPayments,
   listAdminTeacherPayouts,
@@ -42,12 +43,21 @@ import {
   type TeacherPayoutSummary,
   type PaymentParent,
 } from '@/lib/api/payments';
+import { adminKeys, listAdminStudents } from '@/lib/api/admin';
 import { cn } from '@/lib/utils';
-import type { Payment, PaymentGateway, PaymentPlan } from '@/lib/types';
+import type {
+  Child,
+  Payment,
+  PaymentGateway,
+  PaymentPlan,
+  StudentLessonPackage,
+} from '@/lib/types';
 
 const EMPTY_PAYMENTS: Payment[] = [];
 const EMPTY_PARENTS: PaymentParent[] = [];
 const EMPTY_PAYOUT_SUMMARIES: TeacherPayoutSummary[] = [];
+const EMPTY_PACKAGES: StudentLessonPackage[] = [];
+const EMPTY_CHILDREN: Child[] = [];
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
@@ -65,6 +75,14 @@ export default function AdminPaymentsPage() {
     queryKey: paymentKeys.adminParents,
     queryFn: listAdminPaymentParents,
   });
+  const studentsQuery = useQuery({
+    queryKey: adminKeys.students,
+    queryFn: listAdminStudents,
+  });
+  const packagesQuery = useQuery({
+    queryKey: paymentKeys.adminLessonPackages,
+    queryFn: listAdminLessonPackages,
+  });
   const payoutsQuery = useQuery({
     queryKey: paymentKeys.adminPayouts(month),
     queryFn: () => listAdminTeacherPayouts(month),
@@ -72,11 +90,21 @@ export default function AdminPaymentsPage() {
 
   const payments = paymentsQuery.data ?? EMPTY_PAYMENTS;
   const parents = parentsQuery.data ?? EMPTY_PARENTS;
+  const children = studentsQuery.data ?? EMPTY_CHILDREN;
+  const packages = packagesQuery.data ?? EMPTY_PACKAGES;
   const teacherPayouts = payoutsQuery.data ?? EMPTY_PAYOUT_SUMMARIES;
   const isLoading =
-    paymentsQuery.isLoading || parentsQuery.isLoading || payoutsQuery.isLoading;
+    paymentsQuery.isLoading ||
+    parentsQuery.isLoading ||
+    studentsQuery.isLoading ||
+    packagesQuery.isLoading ||
+    payoutsQuery.isLoading;
   const isError =
-    paymentsQuery.isError || parentsQuery.isError || payoutsQuery.isError;
+    paymentsQuery.isError ||
+    parentsQuery.isError ||
+    studentsQuery.isError ||
+    packagesQuery.isError ||
+    payoutsQuery.isError;
 
   const markPaidMutation = useMutation({
     mutationFn: (teacherId: string) => markAdminTeacherPayoutPaid(teacherId, month),
@@ -169,7 +197,7 @@ export default function AdminPaymentsPage() {
       <PageHeader
         title="Payments"
         description="Revenue, teacher payouts and active plans."
-        action={<RecordPaymentDialog parents={parents} />}
+        action={<RecordPaymentDialog parents={parents} students={children} />}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -298,21 +326,18 @@ export default function AdminPaymentsPage() {
 
       <section>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
-          Active plans
+          Student lesson packages
         </h2>
-        {payments.length === 0 ? (
+        {packages.length === 0 ? (
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
-            No plans yet.
+            No student packages yet.
           </p>
         ) : (
           <div className="grid lg:grid-cols-2 gap-3">
-            {payments.map((p) => (
-              <PlanRow
-                key={p.id}
-                payment={p}
-                parentName={
-                  parents.find((pa) => pa.id === p.parentId)?.name ?? 'Parent'
-                }
+            {packages.map((lessonPackage) => (
+              <PackageRow
+                key={lessonPackage.id}
+                lessonPackage={lessonPackage}
               />
             ))}
           </div>
@@ -385,11 +410,27 @@ export default function AdminPaymentsPage() {
   );
 }
 
-function RecordPaymentDialog({ parents }: { parents: PaymentParent[] }) {
+function RecordPaymentDialog({
+  parents,
+  students,
+}: {
+  parents: PaymentParent[];
+  students: Child[];
+}) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [parentId, setParentId] = useState(parents[0]?.id ?? '');
+  const parentChildren = students.filter((child) => child.parentId === parentId);
+  const [studentId, setStudentId] = useState('');
+  const selectedStudent = parentChildren.find((child) => child.id === studentId);
+  const subjects = Array.from(
+    new Set(
+      selectedStudent?.subjectAssignments?.map((assignment) => assignment.subject) ??
+        [],
+    ),
+  );
+  const [subject, setSubject] = useState('');
   const [plan, setPlan] = useState<PaymentPlan>('Starter Bundle');
   const [gateway, setGateway] = useState<PaymentGateway>('Stripe');
   const [amount, setAmount] = useState('150');
@@ -398,6 +439,9 @@ function RecordPaymentDialog({ parents }: { parents: PaymentParent[] }) {
     mutationFn: createAdminPayment,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: paymentKeys.adminPayments });
+      await queryClient.invalidateQueries({
+        queryKey: paymentKeys.adminLessonPackages,
+      });
       setOpen(false);
       toast({
         title: 'Payment recorded',
@@ -429,7 +473,14 @@ function RecordPaymentDialog({ parents }: { parents: PaymentParent[] }) {
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label>Parent</Label>
-            <Select value={parentId} onValueChange={setParentId}>
+            <Select
+              value={parentId}
+              onValueChange={(value) => {
+                setParentId(value);
+                setStudentId('');
+                setSubject('');
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select parent" />
               </SelectTrigger>
@@ -441,6 +492,51 @@ function RecordPaymentDialog({ parents }: { parents: PaymentParent[] }) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Student</Label>
+            <Select
+              value={studentId}
+              onValueChange={(value) => {
+                setStudentId(value);
+                const child = students.find((item) => item.id === value);
+                setSubject(child?.subjectAssignments?.[0]?.subject ?? '');
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select student" />
+              </SelectTrigger>
+              <SelectContent>
+                {parentChildren.map((child) => (
+                  <SelectItem key={child.id} value={child.id}>
+                    {child.fullName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Subject</Label>
+            {subjects.length > 0 ? (
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-xs text-amber-600">
+                {studentId
+                  ? 'Assign a teacher to this student before recording a payment.'
+                  : 'Pick a student to see their assigned subjects.'}
+              </p>
+            )}
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="grid gap-2">
@@ -501,10 +597,12 @@ function RecordPaymentDialog({ parents }: { parents: PaymentParent[] }) {
           </Button>
           <Button
             className="bg-brand hover:bg-brand-600"
-            disabled={!parentId || mutation.isPending}
+            disabled={!parentId || !studentId || !subject || mutation.isPending}
             onClick={() =>
               mutation.mutate({
                 parentId,
+                studentId,
+                subject,
                 plan,
                 gateway,
                 amount: Number(amount),
@@ -520,31 +618,28 @@ function RecordPaymentDialog({ parents }: { parents: PaymentParent[] }) {
   );
 }
 
-function PlanRow({
-  payment,
-  parentName,
+function PackageRow({
+  lessonPackage,
 }: {
-  payment: Payment;
-  parentName: string;
+  lessonPackage: StudentLessonPackage;
 }) {
   const percent =
-    payment.sessionsIncluded > 0
-      ? (payment.sessionsUsed / payment.sessionsIncluded) * 100
+    lessonPackage.paidSessions > 0
+      ? (lessonPackage.usedSessions / lessonPackage.paidSessions) * 100
       : 0;
-  const remaining = payment.sessionsIncluded - payment.sessionsUsed;
   return (
     <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
           <p className="font-semibold text-gray-900 dark:text-foreground text-sm">
-            {payment.plan}
+            {lessonPackage.parentName ?? 'Parent'}
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
-            {parentName} - via {payment.gateway}
+            {lessonPackage.childName ?? 'Student'} - {lessonPackage.subject}
           </p>
         </div>
         <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-          ${payment.amount}
+          ${lessonPackage.amountPaid}
         </p>
       </div>
       <div className="h-1.5 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
@@ -554,8 +649,8 @@ function PlanRow({
         />
       </div>
       <p className="text-[11px] text-gray-500 dark:text-muted-foreground mt-2">
-        {payment.sessionsUsed}/{payment.sessionsIncluded} used - {remaining}{' '}
-        remaining
+        {lessonPackage.usedSessions}/{lessonPackage.paidSessions} scheduled -{' '}
+        {lessonPackage.availableSessions} remaining - {lessonPackage.status}
       </p>
     </div>
   );

@@ -13,6 +13,8 @@ import type {
   PreferredSchedule,
   Rating,
   Session,
+  SessionBookingRequest,
+  SessionCreditSummary,
   SessionNote,
   SessionProposal,
   TimeBlock,
@@ -154,8 +156,11 @@ interface ApiGoal {
 
 interface ApiTeacherProfile {
   id: string;
+  phoneCountry?: string | null;
+  phoneNumber?: string | null;
   user?: {
     name: string;
+    email?: string;
   };
 }
 
@@ -163,6 +168,7 @@ interface ApiStudentSubjectAssignment {
   id: string;
   studentId: string;
   teacherId: string;
+  lessonPackageId?: string | null;
   subject: string;
   createdAt: string;
   teacher?: ApiTeacherProfile | null;
@@ -189,6 +195,7 @@ interface ApiSession {
   id: string;
   studentId: string;
   teacherId: string;
+  lessonPackageId?: string | null;
   subject: string;
   startsAt: string;
   durationMins: number;
@@ -247,7 +254,44 @@ export const familyKeys = {
   student: (studentId: string) => ['family', 'students', studentId] as const,
   sessions: ['family', 'sessions'] as const,
   proposals: ['family', 'session-proposals'] as const,
+  credits: ['family', 'session-credits'] as const,
+  bookingRequests: ['family', 'booking-requests'] as const,
 };
+
+interface ApiBookingRequest {
+  id: string;
+  studentId: string;
+  subject: string;
+  day: string;
+  timeBlock: string;
+  startTime: string;
+  startDate: string;
+  sessionsRequested: number;
+  status: string;
+  createdAt: string;
+  student?: ApiStudent | null;
+}
+
+function mapBookingRequest(request: ApiBookingRequest): SessionBookingRequest {
+  return {
+    id: request.id,
+    childId: request.studentId,
+    childName: request.student?.fullName,
+    subject: request.subject,
+    day: dayFromApi[request.day] ?? 'Mon',
+    timeBlock: timeFromApi[request.timeBlock] ?? 'Evening',
+    startTime: request.startTime,
+    startDate: request.startDate,
+    sessionsRequested: request.sessionsRequested,
+    status:
+      request.status === 'SCHEDULED'
+        ? 'Scheduled'
+        : request.status === 'CANCELLED'
+          ? 'Cancelled'
+          : 'Pending',
+    createdAt: request.createdAt,
+  };
+}
 
 export interface CreateStudentInput {
   fullName: string;
@@ -330,6 +374,11 @@ export function mapStudent(student: ApiStudent): Child {
       childId: assignment.studentId,
       teacherId: assignment.teacherId,
       teacherName: assignment.teacher?.user?.name,
+      teacherEmail: assignment.teacher?.user?.email,
+      teacherPhone:
+        assignment.teacher?.phoneCountry && assignment.teacher?.phoneNumber
+          ? `${assignment.teacher.phoneCountry}${assignment.teacher.phoneNumber}`
+          : undefined,
       subject: assignment.subject,
       createdAt: assignment.createdAt,
     })),
@@ -390,6 +439,7 @@ export function mapSession(session: ApiSession): Session {
     id: session.id,
     childId: session.studentId,
     teacherId: session.teacherId,
+    lessonPackageId: session.lessonPackageId ?? undefined,
     childName: session.student?.fullName,
     teacherName: session.teacher?.user?.name,
     subject: session.subject,
@@ -577,6 +627,69 @@ export async function reactivateFamilyStudent(studentId: string) {
 export async function listFamilySessions() {
   const response = await apiFetch<{ sessions: ApiSession[] }>('/family/sessions');
   return response.sessions.map(mapSession);
+}
+
+export async function getFamilySessionCredits() {
+  const response = await apiFetch<{
+    credits: Omit<SessionCreditSummary, 'packages'> & {
+      packages: Array<{
+        id: string;
+        childId: string;
+        subject: string;
+        paidSessions: number;
+        usedSessions: number;
+        completedSessions: number;
+        availableSessions: number;
+        status: string;
+      }>;
+    };
+  }>('/family/session-credits');
+  return {
+    ...response.credits,
+    packages: response.credits.packages.map((lessonPackage) => ({
+      ...lessonPackage,
+      status:
+        lessonPackage.status === 'EXHAUSTED'
+          ? 'Exhausted'
+          : lessonPackage.status === 'CANCELLED'
+            ? 'Cancelled'
+            : 'Active',
+    })),
+  } satisfies SessionCreditSummary;
+}
+
+export async function listFamilyBookingRequests() {
+  const response = await apiFetch<{ requests: ApiBookingRequest[] }>(
+    '/family/booking-requests',
+  );
+  return response.requests.map(mapBookingRequest);
+}
+
+export async function createFamilyBookingRequest(input: {
+  studentId: string;
+  subject: string;
+  day: DayOfWeek;
+  timeBlock: TimeBlock;
+  startTime: string;
+  startDate: string;
+  sessionsRequested: number;
+}) {
+  const response = await apiFetch<{ request: ApiBookingRequest }>(
+    '/family/booking-requests',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        studentId: input.studentId,
+        subject: input.subject,
+        day: dayToApi[input.day],
+        timeBlock: timeToApi[input.timeBlock],
+        startTime: input.startTime,
+        startDate: input.startDate,
+        sessionsRequested: input.sessionsRequested,
+      }),
+    },
+  );
+  return mapBookingRequest(response.request);
 }
 
 export async function listFamilySessionProposals() {

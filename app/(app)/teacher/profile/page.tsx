@@ -15,6 +15,7 @@ import {
   getTeacherProfile,
   teacherKeys,
   updateTeacherPayoutAccount,
+  updateTeacherProfile,
 } from '@/lib/api/teacher';
 import { cn } from '@/lib/utils';
 import type { DayOfWeek, TimeBlock } from '@/lib/types';
@@ -52,6 +53,26 @@ export default function TeacherProfilePage() {
     setAccountNumber(me.accountNumber ?? '');
   }, [me]);
 
+  const profileMutation = useMutation({
+    mutationFn: updateTeacherProfile,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: teacherKeys.profile });
+      setSavedAt(new Date().toISOString());
+      toast({
+        title: 'Profile saved',
+        description: 'Your bio and subjects are up to date.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not save profile',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const payoutMutation = useMutation({
     mutationFn: updateTeacherPayoutAccount,
     onSuccess: async () => {
@@ -83,10 +104,12 @@ export default function TeacherProfilePage() {
   };
 
   const save = () => {
-    setSavedAt(new Date().toISOString());
-    toast({
-      title: 'Saved locally',
-      description: 'The backend profile update endpoint is the next piece to add.',
+    profileMutation.mutate({
+      bio: bio.trim(),
+      subjects: subjects
+        .split(',')
+        .map((subject) => subject.trim())
+        .filter(Boolean),
     });
   };
 
@@ -348,8 +371,9 @@ export default function TeacherProfilePage() {
         <Button
           className="bg-brand hover:bg-brand-600 rounded-full"
           onClick={save}
+          disabled={profileMutation.isPending}
         >
-          Save changes
+          {profileMutation.isPending ? 'Saving...' : 'Save changes'}
         </Button>
       </div>
     </div>

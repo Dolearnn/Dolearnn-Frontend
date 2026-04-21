@@ -1,6 +1,14 @@
 import { apiFetch } from '@/lib/api/client';
 import { mapSession, mapStudent } from '@/lib/api/family';
-import type { Child, Session, Teacher } from '@/lib/types';
+import type {
+  Child,
+  DayOfWeek,
+  GradeLevel,
+  Session,
+  SessionBookingRequest,
+  Teacher,
+  TimeBlock,
+} from '@/lib/types';
 
 interface ApiUser {
   name: string;
@@ -16,6 +24,7 @@ interface ApiTeacher {
   email: string;
   phoneCountry?: string | null;
   phoneNumber?: string | null;
+  gender?: string | null;
   bio?: string | null;
   subjects: string[];
   qualifications: string[];
@@ -77,11 +86,55 @@ interface ApiCancellation {
   status: string;
 }
 
+interface ApiBookingRequest {
+  id: string;
+  studentId: string;
+  subject: string;
+  day: string;
+  timeBlock: string;
+  startTime: string;
+  startDate: string;
+  sessionsRequested: number;
+  status: string;
+  createdAt: string;
+  student?: {
+    fullName?: string;
+  } | null;
+}
+
 export const adminKeys = {
   teachers: ['admin', 'teachers'] as const,
   students: ['admin', 'students'] as const,
   sessions: ['admin', 'sessions'] as const,
+  bookingRequests: ['admin', 'sessions', 'booking-requests'] as const,
   cancellations: ['admin', 'sessions', 'cancellations'] as const,
+};
+
+const dayFromApi: Record<string, DayOfWeek> = {
+  MON: 'Mon',
+  TUE: 'Tue',
+  WED: 'Wed',
+  THU: 'Thu',
+  FRI: 'Fri',
+  SAT: 'Sat',
+  SUN: 'Sun',
+};
+
+const timeFromApi: Record<string, TimeBlock> = {
+  MORNING: 'Morning',
+  AFTERNOON: 'Afternoon',
+  EVENING: 'Evening',
+};
+
+const gradeToApi: Record<GradeLevel, string> = {
+  Primary: 'PRIMARY',
+  JSS: 'JSS',
+  SSS: 'SSS',
+  'College Year 1': 'COLLEGE_YEAR_1',
+  'College Year 2': 'COLLEGE_YEAR_2',
+  'College Year 3': 'COLLEGE_YEAR_3',
+  'College Year 4': 'COLLEGE_YEAR_4',
+  Other: 'OTHER',
 };
 
 function asNumber(value: string | number | null | undefined) {
@@ -98,6 +151,12 @@ function mapTeacher(teacher: ApiTeacher): Teacher {
     email: teacher.email,
     phoneCountry: teacher.phoneCountry ?? undefined,
     phoneNumber: teacher.phoneNumber ?? undefined,
+    gender:
+      teacher.gender === 'MALE'
+        ? 'Male'
+        : teacher.gender === 'FEMALE'
+          ? 'Female'
+          : undefined,
     bio: teacher.bio ?? `${teacher.subjects.join(', ')} teacher.`,
     subjects: teacher.subjects,
     qualifications: teacher.qualifications,
@@ -117,6 +176,7 @@ export interface CreateTeacherInput {
   email: string;
   phoneCountry?: string;
   phoneNumber?: string;
+  gender: 'Male' | 'Female';
   bio?: string;
   subjects: string[];
   qualifications: string[];
@@ -132,7 +192,10 @@ export async function listAdminTeachers() {
 export async function createAdminTeacher(input: CreateTeacherInput) {
   const response = await apiFetch<{ teacher: ApiTeacher }>('/admin/teachers', {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      ...input,
+      gender: input.gender === 'Male' ? 'MALE' : 'FEMALE',
+    }),
   });
   return mapTeacher(response.teacher);
 }
@@ -170,16 +233,39 @@ export async function listAdminStudents() {
   return response.students.map((student) => mapStudent(student as never));
 }
 
+export async function createAdminStudent(input: {
+  parentId: string;
+  fullName: string;
+  age: number;
+  grade: GradeLevel;
+  gradeOther?: string;
+  school?: string;
+}) {
+  const response = await apiFetch<{ student: ApiStudent }>('/admin/students', {
+    method: 'POST',
+    body: JSON.stringify({
+      parentId: input.parentId,
+      fullName: input.fullName,
+      age: input.age,
+      grade: gradeToApi[input.grade],
+      gradeOther: input.grade === 'Other' ? input.gradeOther : undefined,
+      school: input.school,
+    }),
+  });
+  return mapStudent(response.student as never);
+}
+
 export async function assignAdminTeacherToStudent(
   studentId: string,
   teacherId: string,
   subject?: string,
+  meetLink?: string,
 ) {
   const response = await apiFetch<{ student: ApiStudent }>(
     `/admin/students/${studentId}/assign-teacher`,
     {
       method: 'POST',
-      body: JSON.stringify({ teacherId, subject }),
+      body: JSON.stringify({ teacherId, subject, meetLink }),
     },
   );
   return mapStudent(response.student as never);
@@ -202,6 +288,62 @@ export async function unassignAdminTeacherFromStudent(
 export async function listAdminSessions() {
   const response = await apiFetch<{ sessions: ApiSession[] }>('/admin/sessions');
   return response.sessions.map((session) => mapSession(session as never));
+}
+
+export interface CreateAdminSessionInput {
+  studentId: string;
+  subject: string;
+  startsAt: string;
+  durationMins?: number;
+  meetLink?: string;
+}
+
+export async function createAdminSession(input: CreateAdminSessionInput) {
+  const response = await apiFetch<{ session: ApiSession }>('/admin/sessions', {
+    method: 'POST',
+    body: JSON.stringify({
+      studentId: input.studentId,
+      subject: input.subject,
+      startsAt: input.startsAt,
+      durationMins: input.durationMins ?? 60,
+      meetLink: input.meetLink || undefined,
+    }),
+  });
+  return mapSession(response.session as never);
+}
+
+function mapBookingRequest(request: ApiBookingRequest): SessionBookingRequest {
+  return {
+    id: request.id,
+    childId: request.studentId,
+    childName: request.student?.fullName,
+    subject: request.subject,
+    day: dayFromApi[request.day] ?? 'Mon',
+    timeBlock: timeFromApi[request.timeBlock] ?? 'Evening',
+    startTime: request.startTime,
+    startDate: request.startDate,
+    sessionsRequested: request.sessionsRequested,
+    status:
+      request.status === 'SCHEDULED'
+        ? 'Scheduled'
+        : request.status === 'CANCELLED'
+          ? 'Cancelled'
+          : 'Pending',
+    createdAt: request.createdAt,
+  };
+}
+
+export async function listAdminBookingRequests() {
+  const response = await apiFetch<{ requests: ApiBookingRequest[] }>(
+    '/admin/sessions/booking-requests',
+  );
+  return response.requests.map(mapBookingRequest);
+}
+
+export async function scheduleAdminBookingRequest(requestId: string) {
+  await apiFetch(`/admin/sessions/booking-requests/${requestId}/schedule`, {
+    method: 'POST',
+  });
 }
 
 export async function updateAdminSessionMeetingLink(

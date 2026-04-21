@@ -1,32 +1,11 @@
 'use client';
 
 import { useMemo, useState, type ComponentType } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookOpen, CalendarPlus, Flame, Target, Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { BookOpen, Flame, Target, Users } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
 import {
-  createTeacherSessionProposal,
   getTeacherProfile,
   listTeacherNotes,
   listTeacherSessions,
@@ -38,12 +17,9 @@ import {
   displayGrade,
   displaySchedule,
   displaySubject,
-  scheduleEntries,
   type Child,
-  type DayOfWeek,
   type Session,
   type SessionNote,
-  type TimeBlock,
 } from '@/lib/types';
 
 const EMPTY_STUDENTS: Child[] = [];
@@ -161,7 +137,6 @@ export default function TeacherStudentsPage() {
           <StudentCard
             key={s.id}
             student={s}
-            teacherId={teacher.id}
             sessions={byStudent.get(s.id) ?? []}
             notes={notesByStudent.get(s.id) ?? []}
           />
@@ -173,12 +148,10 @@ export default function TeacherStudentsPage() {
 
 function StudentCard({
   student,
-  teacherId,
   sessions,
   notes,
 }: {
   student: Child;
-  teacherId: string;
   sessions: Session[];
   notes: SessionNote[];
 }) {
@@ -262,7 +235,15 @@ function StudentCard({
       )}
 
       {student.intake && (
-        <ScheduleProposalForm student={student} teacherId={teacherId} />
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-border">
+          <p className="text-xs font-semibold text-gray-900 dark:text-foreground">
+            Scheduling handled by admin
+          </p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+            Admin will create the 60-minute calendar sessions and assign the
+            meeting link for this student.
+          </p>
+        </div>
       )}
 
       {latestNote && (
@@ -300,287 +281,6 @@ function StudentCard({
           </span>{' '}
           - {upcoming.subject}
         </div>
-      )}
-    </div>
-  );
-}
-
-const TIME_BLOCK_RANGES: Record<
-  TimeBlock,
-  { start: string; end: string; label: string }
-> = {
-  Morning: { start: '06:00', end: '12:00', label: '06:00 - 12:00' },
-  Afternoon: { start: '12:00', end: '17:00', label: '12:00 - 17:00' },
-  Evening: { start: '17:00', end: '22:00', label: '17:00 - 22:00' },
-};
-
-const DATE_DAY: Record<number, DayOfWeek> = {
-  0: 'Sun',
-  1: 'Mon',
-  2: 'Tue',
-  3: 'Wed',
-  4: 'Thu',
-  5: 'Fri',
-  6: 'Sat',
-};
-
-function dayForDate(dateValue: string): DayOfWeek | null {
-  if (!dateValue) return null;
-  const date = new Date(`${dateValue}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return null;
-  return DATE_DAY[date.getDay()];
-}
-
-function timeIsInBlock(time: string, block: TimeBlock) {
-  const range = TIME_BLOCK_RANGES[block];
-  return time >= range.start && time < range.end;
-}
-
-function intakeSchedule(student: Child) {
-  const intake = student.intake;
-  if (!intake) return [];
-  const fromSchedule = scheduleEntries(intake.preferredSchedule ?? {});
-  if (fromSchedule.length > 0) return fromSchedule;
-  return intake.preferredDays.map((day) => ({
-    day,
-    time: intake.preferredTime,
-  }));
-}
-
-function subjectOptions(student: Child) {
-  if (student.subjectAssignments?.length) {
-    return Array.from(
-      new Set(
-        student.subjectAssignments
-          .map((assignment) => assignment.subject)
-          .filter(Boolean),
-      ),
-    );
-  }
-
-  const intake = student.intake;
-  if (!intake) return ['General lesson'];
-  const subjects =
-    intake.subjects && intake.subjects.length > 0
-      ? intake.subjects.map((subject) =>
-          subject === 'Other' && intake.subjectOther?.trim()
-            ? intake.subjectOther.trim()
-            : subject,
-        )
-      : [displaySubject(intake)];
-  return Array.from(new Set(subjects.filter(Boolean)));
-}
-
-function ScheduleProposalForm({
-  student,
-  teacherId,
-}: {
-  student: Child;
-  teacherId: string;
-}) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [sent, setSent] = useState(false);
-  const entries = intakeSchedule(student);
-  const subjects = subjectOptions(student);
-  const [selectedDay, setSelectedDay] = useState<DayOfWeek>(
-    entries[0]?.day ?? 'Mon',
-  );
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [duration, setDuration] = useState('60');
-  const [subject, setSubject] = useState(subjects[0] ?? 'General lesson');
-  const [note, setNote] = useState('');
-  const selectedEntry = entries.find((entry) => entry.day === selectedDay);
-  const selectedBlock = selectedEntry?.time;
-  const dateDay = dayForDate(date);
-  const dateMatchesDay = !dateDay || dateDay === selectedDay;
-  const timeMatchesBlock = selectedBlock
-    ? !time || timeIsInBlock(time, selectedBlock)
-    : false;
-  const canSubmit =
-    !!selectedBlock &&
-    !!date &&
-    !!time &&
-    !!subject &&
-    dateMatchesDay &&
-    timeMatchesBlock;
-
-  const proposalMutation = useMutation({
-    mutationFn: createTeacherSessionProposal,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: teacherKeys.sessions });
-      setSent(true);
-      setOpen(false);
-      setDate('');
-      setTime('');
-      setNote('');
-      toast({
-        title: 'Proposal sent',
-        description: 'The family can now accept or decline this session.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Could not send proposal',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const submitProposal = () => {
-    if (!canSubmit || !selectedBlock) return;
-    proposalMutation.mutate({
-      studentId: student.id,
-      subject,
-      startsAt: new Date(`${date}T${time}:00`).toISOString(),
-      durationMins: Number(duration),
-      timeBlock: selectedBlock,
-      note: note.trim() || undefined,
-    });
-  };
-
-  if (entries.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-border">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-gray-900 dark:text-foreground">
-            Student availability
-          </p>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-            {displaySchedule(student.intake!)}
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="rounded-full bg-brand hover:bg-brand-600">
-              <CalendarPlus className="w-4 h-4 mr-2" />
-              Propose session
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Propose a session</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-2">
-              <div className="grid gap-2">
-                <Label>Subject</Label>
-                <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {item}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>Available day</Label>
-                <Select
-                  value={selectedDay}
-                  onValueChange={(value) => setSelectedDay(value as DayOfWeek)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {entries.map((entry) => (
-                      <SelectItem key={entry.day} value={entry.day}>
-                        {entry.day} - {entry.time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div className="grid gap-2">
-                  <Label>Date</Label>
-                  <Input
-                    type="date"
-                    min={new Date().toISOString().slice(0, 10)}
-                    value={date}
-                    onChange={(event) => setDate(event.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Start time</Label>
-                  <Input
-                    type="time"
-                    value={time}
-                    onChange={(event) => setTime(event.target.value)}
-                  />
-                </div>
-              </div>
-              {selectedBlock && (
-                <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                  {selectedDay} is inside {selectedBlock.toLowerCase()} (
-                  {TIME_BLOCK_RANGES[selectedBlock].label}) in{' '}
-                  {student.intake?.timezone ?? 'the student timezone'}.
-                </p>
-              )}
-              {!dateMatchesDay && (
-                <p className="text-xs font-medium text-red-600">
-                  Choose a date that falls on {selectedDay}.
-                </p>
-              )}
-              {!timeMatchesBlock && time && selectedBlock && (
-                <p className="text-xs font-medium text-red-600">
-                  Choose a time inside the {selectedBlock.toLowerCase()} session.
-                </p>
-              )}
-              <div className="grid gap-2">
-                <Label>Duration</Label>
-                <Select value={duration} onValueChange={setDuration}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="60">60 minutes</SelectItem>
-                    <SelectItem value="90">90 minutes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>Note</Label>
-                <Textarea
-                  rows={3}
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="Optional message for the family"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                className="bg-brand hover:bg-brand-600"
-                disabled={!canSubmit || proposalMutation.isPending}
-                onClick={submitProposal}
-              >
-                {proposalMutation.isPending ? 'Sending...' : 'Send proposal'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-      {sent && (
-        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
-          Proposal sent to the family.
-        </p>
       )}
     </div>
   );

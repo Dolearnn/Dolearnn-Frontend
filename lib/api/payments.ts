@@ -1,5 +1,11 @@
 import { apiFetch } from '@/lib/api/client';
-import type { Payment, PaymentGateway, PaymentPlan, PayoutStatus } from '@/lib/types';
+import type {
+  Payment,
+  PaymentGateway,
+  PaymentPlan,
+  PayoutStatus,
+  StudentLessonPackage,
+} from '@/lib/types';
 
 interface ApiPayment {
   id: string;
@@ -15,6 +21,28 @@ interface ApiPayment {
       name: string;
       email: string;
     };
+  };
+}
+
+interface ApiLessonPackage {
+  id: string;
+  parentId: string;
+  studentId: string;
+  subject: string;
+  hoursPurchased: number;
+  hoursScheduled: number;
+  hoursCompleted: number;
+  amountPaid: string | number;
+  gateway: string;
+  status: string;
+  createdAt: string;
+  parent?: {
+    user?: {
+      name: string;
+    };
+  };
+  student?: {
+    fullName: string;
   };
 }
 
@@ -82,6 +110,7 @@ interface ApiTeacherPayout {
 
 export const paymentKeys = {
   adminPayments: ['admin', 'payments'] as const,
+  adminLessonPackages: ['admin', 'payments', 'lesson-packages'] as const,
   adminParents: ['admin', 'payments', 'parents'] as const,
   adminPayouts: (month: string) => ['admin', 'payments', 'payouts', month] as const,
   familyPayments: ['family', 'payments'] as const,
@@ -111,6 +140,30 @@ const gatewayToApi: Record<PaymentGateway, string> = {
 function asNumber(value: string | number | null | undefined) {
   if (value === null || value === undefined) return 0;
   return typeof value === 'number' ? value : Number(value);
+}
+
+function mapLessonPackage(item: ApiLessonPackage): StudentLessonPackage {
+  return {
+    id: item.id,
+    parentId: item.parentId,
+    parentName: item.parent?.user?.name,
+    childId: item.studentId,
+    childName: item.student?.fullName,
+    subject: item.subject,
+    paidSessions: item.hoursPurchased,
+    usedSessions: item.hoursScheduled,
+    completedSessions: item.hoursCompleted,
+    availableSessions: Math.max(0, item.hoursPurchased - item.hoursScheduled),
+    amountPaid: asNumber(item.amountPaid),
+    gateway: gatewayFromApi[item.gateway] ?? 'Stripe',
+    status:
+      item.status === 'EXHAUSTED'
+        ? 'Exhausted'
+        : item.status === 'CANCELLED'
+          ? 'Cancelled'
+          : 'Active',
+    createdAt: item.createdAt,
+  };
 }
 
 export function mapPayment(payment: ApiPayment): Payment {
@@ -157,6 +210,13 @@ export async function listAdminPayments() {
   return response.payments.map(mapPayment);
 }
 
+export async function listAdminLessonPackages() {
+  const response = await apiFetch<{ packages: ApiLessonPackage[] }>(
+    '/admin/payments/lesson-packages',
+  );
+  return response.packages.map(mapLessonPackage);
+}
+
 export async function listAdminPaymentParents() {
   const response = await apiFetch<{ parents: ApiParent[] }>(
     '/admin/payments/parents',
@@ -171,12 +231,17 @@ export async function listAdminPaymentParents() {
 
 export async function createAdminPayment(input: {
   parentId: string;
+  studentId: string;
+  subject: string;
   plan: PaymentPlan;
   amount: number;
   gateway: PaymentGateway;
   sessionsIncluded: number;
 }) {
-  const response = await apiFetch<{ payment: ApiPayment }>('/admin/payments', {
+  const response = await apiFetch<{
+    payment: ApiPayment;
+    lessonPackage: ApiLessonPackage;
+  }>('/admin/payments', {
     method: 'POST',
     body: JSON.stringify({
       ...input,
@@ -184,7 +249,10 @@ export async function createAdminPayment(input: {
       gateway: gatewayToApi[input.gateway],
     }),
   });
-  return mapPayment(response.payment);
+  return {
+    payment: mapPayment(response.payment),
+    lessonPackage: mapLessonPackage(response.lessonPackage),
+  };
 }
 
 export async function listAdminTeacherPayouts(month: string) {

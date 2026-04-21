@@ -44,7 +44,7 @@ export default function IntakePage() {
         description="Tell us what they need - we'll pair them with the right teacher."
       />
       <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-6">
-        <IntakeWizard childId={child.id} />
+        <IntakeWizard childId={child.id} initial={child.intake} />
       </div>
     </div>
   );

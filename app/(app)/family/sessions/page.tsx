@@ -32,8 +32,11 @@ import { useToast } from '@/hooks/use-toast';
 import {
   acceptFamilySessionProposal,
   confirmFamilySessionAttendance,
+  createFamilyBookingRequest,
   declineFamilySessionProposal,
   familyKeys,
+  getFamilySessionCredits,
+  listFamilyBookingRequests,
   listFamilySessionProposals,
   listFamilySessions,
   listFamilyStudents,
@@ -43,6 +46,8 @@ import type {
   Child,
   DayOfWeek,
   Session,
+  SessionBookingRequest,
+  SessionCreditSummary,
   SessionProposal,
   SessionStatus,
   TimeBlock,
@@ -84,6 +89,14 @@ export default function FamilySessionsPage() {
     queryKey: familyKeys.proposals,
     queryFn: listFamilySessionProposals,
   });
+  const creditsQuery = useQuery({
+    queryKey: familyKeys.credits,
+    queryFn: getFamilySessionCredits,
+  });
+  const bookingRequestsQuery = useQuery({
+    queryKey: familyKeys.bookingRequests,
+    queryFn: listFamilyBookingRequests,
+  });
 
   const children = useMemo(() => studentsQuery.data ?? [], [studentsQuery.data]);
   const active = useMemo(
@@ -97,7 +110,28 @@ export default function FamilySessionsPage() {
   const invalidateSessions = () => {
     queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
     queryClient.invalidateQueries({ queryKey: familyKeys.proposals });
+    queryClient.invalidateQueries({ queryKey: familyKeys.credits });
+    queryClient.invalidateQueries({ queryKey: familyKeys.bookingRequests });
   };
+
+  const bookingMutation = useMutation({
+    mutationFn: createFamilyBookingRequest,
+    onSuccess: () => {
+      invalidateSessions();
+      toast({
+        title: 'Calendar request sent',
+        description: 'Admin will review and schedule the sessions.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not send calendar request',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const acceptMutation = useMutation({
     mutationFn: acceptFamilySessionProposal,
@@ -269,6 +303,16 @@ export default function FamilySessionsPage() {
         onChange={setActiveId}
       />
 
+      <CalendarRequestPanel
+        child={active}
+        credits={creditsQuery.data}
+        requests={(bookingRequestsQuery.data ?? []).filter(
+          (request) => request.childId === active.id,
+        )}
+        submitting={bookingMutation.isPending}
+        onSubmit={(input) => bookingMutation.mutate(input)}
+      />
+
       {pendingProposals.length > 0 && (
         <div className="space-y-3">
           {pendingProposals.map((proposal) => (
@@ -368,6 +412,194 @@ export default function FamilySessionsPage() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function CalendarRequestPanel({
+  child,
+  credits,
+  requests,
+  submitting,
+  onSubmit,
+}: {
+  child: Child;
+  credits?: SessionCreditSummary;
+  requests: SessionBookingRequest[];
+  submitting: boolean;
+  onSubmit: (input: {
+    studentId: string;
+    subject: string;
+    day: DayOfWeek;
+    timeBlock: TimeBlock;
+    startTime: string;
+    startDate: string;
+    sessionsRequested: number;
+  }) => void;
+}) {
+  const assignments = child.subjectAssignments ?? [];
+  const availability = Object.entries(child.intake?.preferredSchedule ?? {}) as Array<
+    [DayOfWeek, TimeBlock]
+  >;
+  const [subject, setSubject] = useState(assignments[0]?.subject ?? '');
+  const [slot, setSlot] = useState(
+    availability[0] ? `${availability[0][0]}:${availability[0][1]}` : '',
+  );
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [sessionsRequested, setSessionsRequested] = useState('1');
+  const [day, timeBlock] = slot
+    ? (slot.split(':') as [DayOfWeek, TimeBlock])
+    : [undefined, undefined];
+  const exactTimeInvalid =
+    !!startTime && !!timeBlock && !timeIsInBlock(startTime, timeBlock);
+  const subjectCredits = (credits?.packages ?? [])
+    .filter(
+      (lessonPackage) =>
+        lessonPackage.childId === child.id &&
+        lessonPackage.subject.toLowerCase() === subject.toLowerCase() &&
+        lessonPackage.status === 'Active',
+    )
+    .reduce((sum, lessonPackage) => sum + lessonPackage.availableSessions, 0);
+  const pendingSubjectRequests = requests
+    .filter(
+      (request) =>
+        request.status === 'Pending' &&
+        request.subject.toLowerCase() === subject.toLowerCase(),
+    )
+    .reduce((sum, request) => sum + request.sessionsRequested, 0);
+  const availableSessions = Math.max(
+    0,
+    subjectCredits - pendingSubjectRequests,
+  );
+  const requestedCount = Number(sessionsRequested) || 0;
+  const canSubmit =
+    !!subject &&
+    !!day &&
+    !!timeBlock &&
+    !!startDate &&
+    !!startTime &&
+    requestedCount > 0 &&
+    requestedCount <= availableSessions &&
+    !exactTimeInvalid;
+
+  return (
+    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <p className="font-semibold text-gray-900 dark:text-foreground">
+            Plan paid sessions
+          </p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+            Pick a consistent weekly 60-minute slot from the hours already paid.
+          </p>
+        </div>
+        <span className="text-xs font-medium rounded-full bg-brand/10 text-brand px-3 py-1">
+          {availableSessions} hour(s) available
+        </span>
+      </div>
+
+      {assignments.length === 0 ? (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
+          Admin needs to match this student by subject before sessions can be
+          planned.
+        </p>
+      ) : availability.length === 0 ? (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
+          Update this student&apos;s availability before picking calendar days.
+        </p>
+      ) : (
+        <div className="grid lg:grid-cols-5 gap-3">
+          <Select value={subject} onValueChange={setSubject}>
+            <SelectTrigger>
+              <SelectValue placeholder="Subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {assignments.map((assignment) => (
+                <SelectItem key={assignment.id} value={assignment.subject}>
+                  {assignment.subject}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={slot} onValueChange={setSlot}>
+            <SelectTrigger>
+              <SelectValue placeholder="Weekly slot" />
+            </SelectTrigger>
+            <SelectContent>
+              {availability.map(([itemDay, itemTime]) => (
+                <SelectItem key={`${itemDay}:${itemTime}`} value={`${itemDay}:${itemTime}`}>
+                  {itemDay} - {itemTime}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            min={new Date().toISOString().slice(0, 10)}
+            value={startDate}
+            onChange={(event) => setStartDate(event.target.value)}
+          />
+          <Input
+            type="time"
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+          />
+          <Input
+            type="number"
+            min={1}
+            max={Math.max(1, availableSessions)}
+            value={sessionsRequested}
+            onChange={(event) => setSessionsRequested(event.target.value)}
+            placeholder="Hours"
+          />
+          <div className="lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <p className="text-xs text-gray-500 dark:text-muted-foreground">
+              {exactTimeInvalid && timeBlock
+                ? `Start time must be inside the ${timeBlock.toLowerCase()} block.`
+                : 'Admin will review this request and create the calendar sessions.'}
+            </p>
+            <Button
+              className="rounded-full bg-brand hover:bg-brand-600"
+              disabled={!canSubmit || submitting}
+              onClick={() => {
+                if (!day || !timeBlock) return;
+                onSubmit({
+                  studentId: child.id,
+                  subject,
+                  day,
+                  timeBlock,
+                  startDate,
+                  startTime,
+                  sessionsRequested: requestedCount,
+                });
+              }}
+            >
+              {submitting ? 'Sending...' : 'Send calendar request'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {requests.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-700 dark:text-foreground/90">
+            Calendar requests
+          </p>
+          {requests.slice(0, 3).map((request) => (
+            <div
+              key={request.id}
+              className="flex items-center justify-between gap-3 text-xs rounded-xl bg-gray-50 dark:bg-background px-3 py-2"
+            >
+              <span>
+                {request.sessionsRequested}x {request.subject} on {request.day}s at{' '}
+                {request.startTime}
+              </span>
+              <span className="font-medium text-brand">{request.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

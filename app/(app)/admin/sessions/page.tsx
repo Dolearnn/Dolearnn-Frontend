@@ -2,24 +2,46 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, LinkIcon, Search, X } from 'lucide-react';
+import { CalendarPlus, Check, LinkIcon, Search, X } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import {
   adminKeys,
   approveAdminCancellation,
+  createAdminSession,
+  listAdminBookingRequests,
   listAdminSessions,
+  listAdminStudents,
   rejectAdminCancellation,
+  scheduleAdminBookingRequest,
   updateAdminSessionMeetingLink,
 } from '@/lib/api/admin';
 import { cn } from '@/lib/utils';
 import {
   isSessionPayoutEligible,
+  type Child,
   type Session,
+  type SessionBookingRequest,
   type SessionStatus,
 } from '@/lib/types';
 
@@ -39,6 +61,14 @@ export default function AdminSessionsPage() {
     queryKey: adminKeys.sessions,
     queryFn: listAdminSessions,
   });
+  const bookingRequestsQuery = useQuery({
+    queryKey: adminKeys.bookingRequests,
+    queryFn: listAdminBookingRequests,
+  });
+  const studentsQuery = useQuery({
+    queryKey: adminKeys.students,
+    queryFn: listAdminStudents,
+  });
 
   const sessions = useMemo(
     () => sessionsQuery.data ?? [],
@@ -47,8 +77,25 @@ export default function AdminSessionsPage() {
 
   const invalidateSessions = () => {
     queryClient.invalidateQueries({ queryKey: adminKeys.sessions });
+    queryClient.invalidateQueries({ queryKey: adminKeys.bookingRequests });
     queryClient.invalidateQueries({ queryKey: adminKeys.cancellations });
   };
+
+  const scheduleRequestMutation = useMutation({
+    mutationFn: scheduleAdminBookingRequest,
+    onSuccess: () => {
+      invalidateSessions();
+      toast({ title: 'Calendar sessions created' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not create sessions',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const meetingLinkMutation = useMutation({
     mutationFn: ({ sessionId, meetLink }: { sessionId: string; meetLink: string }) =>
@@ -148,15 +195,24 @@ export default function AdminSessionsPage() {
         description="Every session across the platform, at a glance."
       />
 
-      <div className="relative w-full sm:w-80">
-        <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search subject, student or teacher"
-          className="pl-9 rounded-full"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search subject, student or teacher"
+            className="pl-9 rounded-full"
+          />
+        </div>
+        <ScheduleSessionDialog students={studentsQuery.data ?? []} />
       </div>
+
+      <BookingRequestsPanel
+        requests={bookingRequestsQuery.data ?? []}
+        scheduling={scheduleRequestMutation.isPending}
+        onSchedule={(requestId) => scheduleRequestMutation.mutate(requestId)}
+      />
 
       <Tabs defaultValue="All" className="space-y-4">
         <TabsList className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-full p-1 w-fit">
@@ -205,6 +261,59 @@ export default function AdminSessionsPage() {
           );
         })}
       </Tabs>
+    </div>
+  );
+}
+
+function BookingRequestsPanel({
+  requests,
+  scheduling,
+  onSchedule,
+}: {
+  requests: SessionBookingRequest[];
+  scheduling: boolean;
+  onSchedule: (requestId: string) => void;
+}) {
+  const pending = requests.filter((request) => request.status === 'Pending');
+
+  if (pending.length === 0) return null;
+
+  return (
+    <div className="bg-white dark:bg-card rounded-2xl border border-amber-200 dark:border-amber-500/30 p-4 space-y-3">
+      <div>
+        <p className="font-semibold text-gray-900 dark:text-foreground">
+          Calendar requests
+        </p>
+        <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+          Families picked consistent paid slots. Review and create the 60-minute
+          sessions.
+        </p>
+      </div>
+      <div className="grid md:grid-cols-2 gap-3">
+        {pending.map((request) => (
+          <div
+            key={request.id}
+            className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-3 flex items-center justify-between gap-3"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
+                {request.childName ?? 'Student'} - {request.subject}
+              </p>
+              <p className="text-xs text-gray-600 dark:text-muted-foreground">
+                {request.sessionsRequested}x {request.day}s at {request.startTime}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="rounded-full bg-brand hover:bg-brand-600 shrink-0"
+              disabled={scheduling}
+              onClick={() => onSchedule(request.id)}
+            >
+              {scheduling ? 'Creating...' : 'Create sessions'}
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -324,6 +433,169 @@ function SessionTable({
         </table>
       </div>
     </div>
+  );
+}
+
+function ScheduleSessionDialog({ students }: { students: Child[] }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [studentId, setStudentId] = useState('');
+  const [subject, setSubject] = useState('');
+  const [startsAt, setStartsAt] = useState('');
+  const [duration, setDuration] = useState('60');
+  const [meetLink, setMeetLink] = useState('');
+
+  const selectedStudent = students.find((child) => child.id === studentId);
+  const subjects = Array.from(
+    new Set(
+      selectedStudent?.subjectAssignments?.map((assignment) => assignment.subject) ??
+        [],
+    ),
+  );
+
+  const mutation = useMutation({
+    mutationFn: createAdminSession,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminKeys.sessions });
+      toast({ title: 'Session scheduled' });
+      setOpen(false);
+      setStudentId('');
+      setSubject('');
+      setStartsAt('');
+      setMeetLink('');
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not schedule session',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const submit = () => {
+    if (!studentId || !subject || !startsAt) return;
+    mutation.mutate({
+      studentId,
+      subject,
+      startsAt: new Date(startsAt).toISOString(),
+      durationMins: Number(duration) || 60,
+      meetLink: meetLink || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="rounded-full bg-brand hover:bg-brand-600">
+          <CalendarPlus className="w-4 h-4 mr-2" />
+          Schedule session
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Schedule a session</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label>Student</Label>
+            <Select
+              value={studentId}
+              onValueChange={(value) => {
+                setStudentId(value);
+                const child = students.find((item) => item.id === value);
+                setSubject(child?.subjectAssignments?.[0]?.subject ?? '');
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select student" />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map((child) => (
+                  <SelectItem key={child.id} value={child.id}>
+                    {child.fullName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Subject</Label>
+            {subjects.length > 0 ? (
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-xs text-amber-600">
+                {studentId
+                  ? 'Assign a teacher to this student before scheduling a session.'
+                  : 'Pick a student to see their assigned subjects.'}
+              </p>
+            )}
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid gap-2">
+              <Label>Start</Label>
+              <Input
+                type="datetime-local"
+                value={startsAt}
+                onChange={(event) => setStartsAt(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Duration (minutes)</Label>
+              <Input
+                type="number"
+                min={15}
+                max={240}
+                value={duration}
+                onChange={(event) => setDuration(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Meeting link (optional)</Label>
+            <Input
+              value={meetLink}
+              onChange={(event) => setMeetLink(event.target.value)}
+              placeholder="https://meet.google.com/..."
+            />
+            <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
+              Leave empty to reuse the teacher-student assignment link.
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            onClick={submit}
+            disabled={
+              !studentId ||
+              !subject ||
+              !startsAt ||
+              subjects.length === 0 ||
+              mutation.isPending
+            }
+            className="rounded-full bg-brand hover:bg-brand-600"
+          >
+            {mutation.isPending ? 'Scheduling...' : 'Schedule'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

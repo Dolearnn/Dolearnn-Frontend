@@ -17,6 +17,10 @@ interface ApiTeacherProfile {
   email: string;
   firstName: string;
   lastName: string;
+  phoneCountry?: string | null;
+  phoneNumber?: string | null;
+  gender?: string | null;
+  bio?: string | null;
   subjects: string[];
   qualifications: string[];
   bankName?: string | null;
@@ -114,8 +118,18 @@ function mapProfile(profile: ApiTeacherProfile): Teacher {
     name: profile.name,
     firstName: profile.firstName,
     lastName: profile.lastName,
+    gender:
+      profile.gender === 'MALE'
+        ? 'Male'
+        : profile.gender === 'FEMALE'
+          ? 'Female'
+          : undefined,
     email: profile.email,
-    bio: `${profile.subjects.join(', ')} teacher.`,
+    phoneCountry: profile.phoneCountry ?? undefined,
+    phoneNumber: profile.phoneNumber ?? undefined,
+    bio: profile.bio?.trim()
+      ? profile.bio.trim()
+      : `${profile.subjects.join(', ')} teacher.`,
     subjects: profile.subjects,
     qualifications: profile.qualifications,
     bankName: profile.bankName ?? undefined,
@@ -178,6 +192,38 @@ export async function updateTeacherPayoutAccount(
     {
       method: 'PATCH',
       body: JSON.stringify(input),
+    },
+  );
+  return mapProfile(response.profile);
+}
+
+export interface UpdateTeacherProfileInput {
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  phoneCountry?: string;
+  phoneNumber?: string;
+  gender?: 'Male' | 'Female' | null;
+  subjects?: string[];
+  qualifications?: string[];
+}
+
+export async function updateTeacherProfile(input: UpdateTeacherProfileInput) {
+  const response = await apiFetch<{ profile: ApiTeacherProfile }>(
+    '/teacher/me',
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        ...input,
+        gender:
+          input.gender === undefined
+            ? undefined
+            : input.gender === null
+              ? null
+              : input.gender === 'Male'
+                ? 'MALE'
+                : 'FEMALE',
+      }),
     },
   );
   return mapProfile(response.profile);

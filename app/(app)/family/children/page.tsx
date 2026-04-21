@@ -2,11 +2,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Plus, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Mail, Phone, User } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 import { displayGrade, displaySubject } from '@/lib/types';
+
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'hello@dolearnn.com';
+const ADMIN_PHONE =
+  process.env.NEXT_PUBLIC_ADMIN_PHONE ?? '+234 800 000 0000';
 
 export default function ChildrenList() {
   const {
@@ -23,15 +27,34 @@ export default function ChildrenList() {
     <div>
       <PageHeader
         title="My Children"
-        description="Manage every child under your account."
-        action={
-          <Link href="/family/children/new">
-            <Button className="bg-brand hover:bg-brand-600 rounded-full">
-              <Plus className="w-4 h-4 mr-2" /> Add child
-            </Button>
-          </Link>
-        }
+        description="View and update the student profiles created by admin."
       />
+
+      <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl p-5 mb-6">
+        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+          Need help? Contact admin
+        </p>
+        <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1 mb-3">
+          Scheduling, payments, and changes to your child&apos;s teacher are
+          handled offline by admin.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={`mailto:${ADMIN_EMAIL}`}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent2-50 text-accent2-700 text-xs font-medium hover:bg-accent2-100"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            {ADMIN_EMAIL}
+          </a>
+          <a
+            href={`tel:${ADMIN_PHONE.replace(/\s/g, '')}`}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent2-50 text-accent2-700 text-xs font-medium hover:bg-accent2-100"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            {ADMIN_PHONE}
+          </a>
+        </div>
+      </div>
 
       {isLoading ? (
         <p className="text-sm text-gray-400 dark:text-muted-foreground">
@@ -48,56 +71,103 @@ export default function ChildrenList() {
             No children yet
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1 mb-4">
-            Add your first child to get matched with a teacher.
+            Admin will create student profiles after confirming the family
+            details offline.
           </p>
-          <Link href="/family/children/new">
-            <Button className="bg-brand hover:bg-brand-600 rounded-full">
-              Add child
-            </Button>
-          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {children.map((child) => (
-            <Link
+            <div
               key={child.id}
-              href={`/family/children/${child.id}`}
-              className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 hover:border-brand transition"
+              className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 hover:border-brand transition flex flex-col"
             >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="w-12 h-12 rounded-full bg-accent2-100 text-brand flex items-center justify-center font-semibold">
-                  {child.fullName
-                    .split(' ')
-                    .map((word) => word[0])
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase()}
+              <Link href={`/family/children/${child.id}`} className="block">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-accent2-100 text-brand flex items-center justify-center font-semibold">
+                    {child.fullName
+                      .split(' ')
+                      .map((word) => word[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                  {child.status === 'Deactivated' && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                      Deactivated
+                    </span>
+                  )}
                 </div>
-                {child.status === 'Deactivated' && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-                    Deactivated
-                  </span>
-                )}
-              </div>
-              <p className="font-semibold text-gray-900 dark:text-foreground">
-                {child.fullName}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                Age {child.age} - {displayGrade(child)}
-                {child.school ? ` - ${child.school}` : ''}
-              </p>
-              <p className="text-xs mt-3">
-                {child.intake ? (
-                  <span className="text-accent2-600 font-medium">
-                    Intake submitted - {displaySubject(child.intake)}
-                  </span>
-                ) : (
-                  <span className="text-amber-600 font-medium">
-                    Intake pending
-                  </span>
-                )}
-              </p>
-            </Link>
+                <p className="font-semibold text-gray-900 dark:text-foreground">
+                  {child.fullName}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+                  Age {child.age} - {displayGrade(child)}
+                  {child.school ? ` - ${child.school}` : ''}
+                </p>
+                <p className="text-xs mt-3">
+                  {child.intake ? (
+                    <span className="text-accent2-600 font-medium">
+                      Intake submitted - {displaySubject(child.intake)}
+                    </span>
+                  ) : (
+                    <span className="text-amber-600 font-medium">
+                      Intake pending
+                    </span>
+                  )}
+                </p>
+              </Link>
+
+              {child.subjectAssignments && child.subjectAssignments.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-border">
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-muted-foreground uppercase tracking-wide mb-2">
+                    Teachers
+                  </p>
+                  <div className="space-y-2">
+                    {child.subjectAssignments.map((assignment) => (
+                      <div
+                        key={assignment.id}
+                        className="text-xs text-gray-700 dark:text-foreground/80"
+                      >
+                        <p className="font-medium">
+                          {assignment.teacherName ?? 'Teacher'}
+                          <span className="text-gray-400 dark:text-muted-foreground font-normal">
+                            {' '}
+                            - {assignment.subject}
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {assignment.teacherEmail && (
+                            <a
+                              href={`mailto:${assignment.teacherEmail}`}
+                              className="inline-flex items-center gap-1 text-accent2-700 hover:underline"
+                            >
+                              <Mail className="w-3 h-3" />
+                              Email
+                            </a>
+                          )}
+                          {assignment.teacherPhone && (
+                            <a
+                              href={`tel:${assignment.teacherPhone.replace(/\s/g, '')}`}
+                              className="inline-flex items-center gap-1 text-accent2-700 hover:underline"
+                            >
+                              <Phone className="w-3 h-3" />
+                              Call
+                            </a>
+                          )}
+                          {!assignment.teacherEmail &&
+                            !assignment.teacherPhone && (
+                              <span className="text-gray-400 dark:text-muted-foreground">
+                                Contact admin for this teacher
+                              </span>
+                            )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}

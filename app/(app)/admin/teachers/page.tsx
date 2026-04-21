@@ -74,6 +74,7 @@ type AddTeacherForm = {
   email: string;
   phoneCountry: string;
   phoneNumber: string;
+  gender: 'Male' | 'Female' | '';
   subjects: string[];
   qualifications: string;
   hourlyRate: string;
@@ -86,6 +87,7 @@ const emptyTeacherForm: AddTeacherForm = {
   email: '',
   phoneCountry: '+234',
   phoneNumber: '',
+  gender: '',
   subjects: [],
   qualifications: '',
   hourlyRate: '0',
@@ -267,6 +269,7 @@ export default function AdminTeachersPage() {
     teacherForm.lastName.trim() &&
     teacherForm.email.trim() &&
     teacherForm.phoneNumber.trim() &&
+    teacherForm.gender &&
     teacherForm.subjects.length > 0 &&
     teacherForm.qualifications.trim() &&
     teacherForm.defaultPassword.trim().length >= 8;
@@ -279,6 +282,7 @@ export default function AdminTeachersPage() {
       email: teacherForm.email.trim(),
       phoneCountry: teacherForm.phoneCountry,
       phoneNumber: teacherForm.phoneNumber.trim(),
+      gender: teacherForm.gender || 'Female',
       bio: `${teacherForm.subjects.join(', ')} teacher added by admin.`,
       subjects: teacherForm.subjects,
       qualifications: teacherForm.qualifications
@@ -521,6 +525,7 @@ function TeacherCard({
             {teacher.phoneCountry} {teacher.phoneNumber}
           </p>
         )}
+        {teacher.gender && <p>Gender: {teacher.gender}</p>}
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -674,6 +679,20 @@ function AddTeacherDialog({
               inputMode="tel"
             />
           </div>
+          <Select
+            value={form.gender}
+            onValueChange={(value) =>
+              patch({ gender: value as AddTeacherForm['gender'] })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Teacher gender" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Female">Female</SelectItem>
+              <SelectItem value="Male">Male</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700 dark:text-foreground">
               Subjects

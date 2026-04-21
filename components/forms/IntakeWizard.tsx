@@ -118,16 +118,12 @@ const steps = [
   { key: 'time', label: 'Availability & budget' },
 ] as const;
 
-export default function IntakeWizard({ childId }: { childId: string }) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [step, setStep] = useState(0);
+type SubjectValue = Values['subjects'][number];
+const KNOWN_SUBJECTS: readonly SubjectValue[] = SUBJECTS;
 
-  const form = useForm<Values>({
-    resolver: zodResolver(schema),
-    mode: 'onTouched',
-    defaultValues: {
+function defaultsFromIntake(initial?: IntakeForm): Values {
+  if (!initial) {
+    return {
       subjects: [],
       subjectOther: '',
       learningGoal: 'Exam prep',
@@ -139,7 +135,62 @@ export default function IntakeWizard({ childId }: { childId: string }) {
       timezone: 'UTC',
       sessionsPerWeek: '1',
       budget: '$20–$35',
-    },
+    };
+  }
+
+  const knownSubjects = (initial.subjects ?? []).filter((subject): subject is SubjectValue =>
+    (KNOWN_SUBJECTS as readonly string[]).includes(subject),
+  );
+  const hasOther = Boolean(initial.subjectOther?.trim());
+  const subjects = Array.from(
+    new Set<SubjectValue>([...knownSubjects, ...(hasOther ? (['Other'] as const) : [])]),
+  );
+  const timezone: Values['timezone'] =
+    initial.timezone && (TIMEZONES as readonly string[]).includes(initial.timezone)
+      ? (initial.timezone as Values['timezone'])
+      : 'UTC';
+  const sessionsPerWeek: Values['sessionsPerWeek'] =
+    initial.sessionsPerWeek === 'Flexible'
+      ? 'Flexible'
+      : initial.sessionsPerWeek === 1
+        ? '1'
+        : initial.sessionsPerWeek === 2
+          ? '2'
+          : initial.sessionsPerWeek === 3
+            ? '3'
+            : '1';
+
+  return {
+    subjects,
+    subjectOther: initial.subjectOther ?? '',
+    learningGoal: initial.learningGoal,
+    currentLevel: initial.currentLevel,
+    specificTopics: initial.specificTopics ?? '',
+    teacherGenderPref: initial.teacherGenderPref,
+    specialNotes: initial.specialNotes ?? '',
+    preferredSchedule: initial.preferredSchedule ?? {},
+    timezone,
+    sessionsPerWeek,
+    budget: initial.budget,
+  };
+}
+
+export default function IntakeWizard({
+  childId,
+  initial,
+}: {
+  childId: string;
+  initial?: IntakeForm;
+}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [step, setStep] = useState(0);
+
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    mode: 'onTouched',
+    defaultValues: defaultsFromIntake(initial),
   });
 
   const fieldsPerStep: Record<number, (keyof Values)[]> = {

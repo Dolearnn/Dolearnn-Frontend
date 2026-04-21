@@ -245,7 +245,7 @@ export default function Home() {
                     </p>
                   </div>
                   <p className="text-[11px] text-gray-500 dark:text-muted-foreground mt-2 leading-relaxed">
-                    We matched Ayo with a Maths teacher based on her goals,
+                    We matched Alex with a Maths teacher based on her goals,
                     schedule, and how she learns best.
                   </p>
                 </div>
