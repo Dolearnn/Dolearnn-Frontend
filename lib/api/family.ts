@@ -4,6 +4,7 @@ import type {
   CurrentLevel,
   DayOfWeek,
   GenderPreference,
+  Goal,
   GradeLevel,
   IntakeForm,
   LearningGoal,
@@ -143,6 +144,30 @@ interface ApiIntake {
   schedule: ApiIntakeSchedule[];
 }
 
+interface ApiGoal {
+  id: string;
+  studentId: string;
+  title: string;
+  targetDate?: string | null;
+  progress: number;
+}
+
+interface ApiTeacherProfile {
+  id: string;
+  user?: {
+    name: string;
+  };
+}
+
+interface ApiStudentSubjectAssignment {
+  id: string;
+  studentId: string;
+  teacherId: string;
+  subject: string;
+  createdAt: string;
+  teacher?: ApiTeacherProfile | null;
+}
+
 interface ApiStudent {
   id: string;
   parentId: string;
@@ -156,13 +181,8 @@ interface ApiStudent {
   deactivationReason?: string | null;
   deactivatedAt?: string | null;
   intake?: ApiIntake | null;
-}
-
-interface ApiTeacherProfile {
-  id: string;
-  user?: {
-    name: string;
-  };
+  goals?: ApiGoal[];
+  subjectAssignments?: ApiStudentSubjectAssignment[];
 }
 
 interface ApiSession {
@@ -213,6 +233,10 @@ interface ApiSessionProposal {
   status: string;
   createdAt: string;
   resolvedAt?: string | null;
+  declineReason?: string | null;
+  preferredAlternativeDay?: string | null;
+  preferredAlternativeTime?: string | null;
+  preferredAlternativeExactTime?: string | null;
   student?: ApiStudent | null;
   teacher?: ApiTeacherProfile | null;
 }
@@ -279,7 +303,19 @@ function mapIntake(intake: ApiIntake): IntakeForm {
   };
 }
 
+function mapGoal(goal: ApiGoal): Goal {
+  return {
+    id: goal.id,
+    childId: goal.studentId,
+    title: goal.title,
+    targetDate: goal.targetDate ?? undefined,
+    progress: goal.progress,
+  };
+}
+
 export function mapStudent(student: ApiStudent): Child {
+  const goal = student.goals?.[0];
+
   return {
     id: student.id,
     parentId: student.parentId,
@@ -289,7 +325,16 @@ export function mapStudent(student: ApiStudent): Child {
     gradeOther: student.gradeOther ?? undefined,
     school: student.school ?? undefined,
     assignedTeacherId: student.assignedTeacherId ?? undefined,
+    subjectAssignments: student.subjectAssignments?.map((assignment) => ({
+      id: assignment.id,
+      childId: assignment.studentId,
+      teacherId: assignment.teacherId,
+      teacherName: assignment.teacher?.user?.name,
+      subject: assignment.subject,
+      createdAt: assignment.createdAt,
+    })),
     intake: student.intake ? mapIntake(student.intake) : undefined,
+    goal: goal ? mapGoal(goal) : undefined,
     streak: { current: 0, longest: 0, lastActiveAt: new Date().toISOString() },
     badges: [],
     status: student.status === 'DEACTIVATED' ? 'Deactivated' : 'Active',
@@ -391,6 +436,15 @@ function mapProposal(proposal: ApiSessionProposal): SessionProposal {
     timeBlock: timeFromApi[proposal.timeBlock] ?? 'Evening',
     note: proposal.note ?? undefined,
     status: mapProposalStatus(proposal.status),
+    declineReason: proposal.declineReason ?? undefined,
+    preferredAlternative:
+      proposal.preferredAlternativeDay && proposal.preferredAlternativeTime
+        ? {
+            day: dayFromApi[proposal.preferredAlternativeDay],
+            time: timeFromApi[proposal.preferredAlternativeTime],
+            exactTime: proposal.preferredAlternativeExactTime ?? undefined,
+          }
+        : undefined,
     createdAt: proposal.createdAt,
     resolvedAt: proposal.resolvedAt ?? undefined,
   };
@@ -417,6 +471,26 @@ export async function createFamilyStudent(input: CreateStudentInput) {
       school: input.school,
     }),
   });
+  return mapStudent(response.student);
+}
+
+export async function updateFamilyStudent(
+  studentId: string,
+  input: CreateStudentInput,
+) {
+  const response = await apiFetch<{ student: ApiStudent }>(
+    `/family/students/${studentId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        fullName: input.fullName,
+        age: input.age,
+        grade: gradeToApi[input.grade],
+        gradeOther: input.grade === 'Other' ? input.gradeOther : undefined,
+        school: input.school,
+      }),
+    },
+  );
   return mapStudent(response.student);
 }
 
@@ -453,6 +527,30 @@ export async function saveFamilyStudentIntake(
   );
 
   return mapIntake(response.intake);
+}
+
+export interface SaveFamilyGoalInput {
+  title: string;
+  targetDate?: string;
+  progress?: number;
+}
+
+export async function saveFamilyStudentGoal(
+  studentId: string,
+  input: SaveFamilyGoalInput,
+) {
+  const response = await apiFetch<{ goal: ApiGoal }>(
+    `/family/students/${studentId}/goal`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: input.title,
+        targetDate: input.targetDate || undefined,
+        progress: input.progress,
+      }),
+    },
+  );
+  return mapGoal(response.goal);
 }
 
 export async function deactivateFamilyStudent(studentId: string, reason: string) {
@@ -494,9 +592,32 @@ export async function acceptFamilySessionProposal(proposalId: string) {
   });
 }
 
-export async function declineFamilySessionProposal(proposalId: string) {
+export interface DeclineSessionProposalInput {
+  reason: string;
+  preferredAlternative?: {
+    day: DayOfWeek;
+    time: TimeBlock;
+  };
+  preferredAlternativeExactTime?: string;
+}
+
+export async function declineFamilySessionProposal(
+  proposalId: string,
+  input: DeclineSessionProposalInput,
+) {
   await apiFetch(`/family/session-proposals/${proposalId}/decline`, {
     method: 'POST',
+    body: JSON.stringify({
+      reason: input.reason,
+      preferredAlternative: input.preferredAlternative
+        ? {
+            day: dayToApi[input.preferredAlternative.day],
+            time: timeToApi[input.preferredAlternative.time],
+          }
+        : undefined,
+      preferredAlternativeExactTime:
+        input.preferredAlternativeExactTime || undefined,
+    }),
   });
 }
 

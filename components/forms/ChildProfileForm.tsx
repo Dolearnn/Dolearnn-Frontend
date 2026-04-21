@@ -17,8 +17,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { SelectWithOther } from '@/components/forms/SelectWithOther';
 import { useToast } from '@/hooks/use-toast';
-import { createFamilyStudent, familyKeys } from '@/lib/api/family';
-import { updateChild } from '@/lib/store/client';
+import {
+  createFamilyStudent,
+  familyKeys,
+  updateFamilyStudent,
+} from '@/lib/api/family';
 import type { Child, GradeLevel } from '@/lib/types';
 
 const grades: GradeLevel[] = [
@@ -97,6 +100,32 @@ export default function ChildProfileForm({
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (values: Values) => {
+      if (!initial) throw new Error('Student not found');
+      return updateFamilyStudent(initial.id, {
+        ...values,
+        gradeOther:
+          values.grade === 'Other' ? values.gradeOther?.trim() : undefined,
+      });
+    },
+    onSuccess: (child) => {
+      queryClient.invalidateQueries({ queryKey: familyKeys.students });
+      queryClient.invalidateQueries({ queryKey: familyKeys.student(child.id) });
+      toast({ title: 'Student profile updated' });
+      router.push(`/family/children/${child.id}`);
+      router.refresh();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not update child',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const onSubmit = (values: Values) => {
     const payload = {
       ...values,
@@ -105,8 +134,7 @@ export default function ChildProfileForm({
     if (mode === 'create') {
       createMutation.mutate(payload);
     } else if (initial) {
-      updateChild(initial.id, payload);
-      router.push(`/family/children/${initial.id}`);
+      updateMutation.mutate(values);
     }
   };
 
@@ -182,10 +210,10 @@ export default function ChildProfileForm({
         />
         <Button
           type="submit"
-          disabled={createMutation.isPending}
+          disabled={createMutation.isPending || updateMutation.isPending}
           className="w-full bg-brand hover:bg-brand-600 rounded-full"
         >
-          {createMutation.isPending
+          {createMutation.isPending || updateMutation.isPending
             ? 'Saving...'
             : mode === 'create'
               ? 'Continue to intake'

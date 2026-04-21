@@ -41,6 +41,7 @@ export interface Child {
   school?: string;
   avatarUrl?: string;
   assignedTeacherId?: string;
+  subjectAssignments?: StudentSubjectAssignment[];
   intake?: IntakeForm;
   goal?: Goal;
   streak: Streak;
@@ -48,6 +49,15 @@ export interface Child {
   status?: ChildStatus;
   deactivationReason?: string;
   deactivatedAt?: string;
+}
+
+export interface StudentSubjectAssignment {
+  id: string;
+  childId: string;
+  teacherId: string;
+  teacherName?: string;
+  subject: string;
+  createdAt: string;
 }
 
 export type ChildStatus = 'Active' | 'Deactivated';
@@ -140,6 +150,9 @@ export interface Teacher {
   bio: string;
   subjects: string[];
   qualifications: string[];
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
   hourlyRate: number;
   rating: number;
   totalSessions: number;
@@ -200,6 +213,12 @@ export interface SessionProposal {
   timeBlock: TimeBlock;
   note?: string;
   status: SessionProposalStatus;
+  declineReason?: string;
+  preferredAlternative?: {
+    day: DayOfWeek;
+    time: TimeBlock;
+    exactTime?: string;
+  };
   createdAt: string;
   resolvedAt?: string;
 }

@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,16 +15,11 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { familyTeacher } from '@/lib/store/family';
-import {
-  confirmSessionAttendance,
-  requestSessionCancellation,
-} from '@/lib/store/client';
 import type { Session, SessionAttendance, SessionCancellation } from '@/lib/types';
 
 function formatDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+  const date = new Date(iso);
+  return date.toLocaleString(undefined, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -45,7 +40,6 @@ export default function SessionRow({
     reason: string,
   ) => Promise<void> | void;
 }) {
-  const teacher = familyTeacher(session.teacherId);
   const [attendance, setAttendance] = useState<SessionAttendance | undefined>(
     session.attendance,
   );
@@ -61,12 +55,14 @@ export default function SessionRow({
   const familyConfirmed = !!attendance?.familyConfirmedAt;
   const cancellationPending = cancellation?.status === 'Pending';
 
+  useEffect(() => {
+    setAttendance(session.attendance);
+    setCancellation(session.cancellation);
+  }, [session.attendance, session.cancellation]);
+
   const confirmHeld = async () => {
-    if (onConfirmHeld) {
-      await onConfirmHeld(session.id);
-    } else {
-      confirmSessionAttendance(session.id, 'family');
-    }
+    if (!onConfirmHeld) return;
+    await onConfirmHeld(session.id);
     setAttendance((prev) => ({
       ...prev,
       familyConfirmedAt: new Date().toISOString(),
@@ -74,24 +70,14 @@ export default function SessionRow({
   };
 
   const requestCancel = async () => {
-    if (onRequestCancellation) {
-      await onRequestCancellation(session.id, cancelReason);
-      setCancellation({
-        requestedBy: 'family',
-        requestedAt: new Date().toISOString(),
-        reason: cancelReason,
-        status: 'Pending',
-      });
-    } else {
-      const next = requestSessionCancellation({
-        session,
-        requestedBy: 'family',
-        reason: cancelReason,
-        teacherName: teacher.name,
-      });
-      if (!next) return;
-      setCancellation(next[session.id]?.cancellation);
-    }
+    if (!onRequestCancellation) return;
+    await onRequestCancellation(session.id, cancelReason);
+    setCancellation({
+      requestedBy: 'family',
+      requestedAt: new Date().toISOString(),
+      reason: cancelReason,
+      status: 'Pending',
+    });
     setCancelReason('');
     setCancelOpen(false);
   };
@@ -105,70 +91,72 @@ export default function SessionRow({
         transition={{ duration: 0.22, ease: 'easeOut' }}
         className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-brand/40 dark:hover:border-accent2-400/40 transition-colors"
       >
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="text-xs font-medium text-accent2-600 dark:text-accent2-400 bg-accent2-50 dark:bg-accent2-500/10 px-2 py-0.5 rounded-full">
-            {session.subject}
-          </span>
-          <StatusBadge status={session.status} />
-          {cancellationPending && (
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-              Cancellation pending
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="text-xs font-medium text-accent2-600 dark:text-accent2-400 bg-accent2-50 dark:bg-accent2-500/10 px-2 py-0.5 rounded-full">
+              {session.subject}
             </span>
-          )}
+            <StatusBadge status={session.status} />
+            {cancellationPending && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                Cancellation pending
+              </span>
+            )}
+          </div>
+          <p className="font-semibold text-gray-900 dark:text-foreground truncate">
+            {session.teacherName ?? 'Teacher'}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+            {formatDate(session.startsAt)} - {session.durationMins} min
+          </p>
         </div>
-        <p className="font-semibold text-gray-900 dark:text-foreground truncate">
-          {session.teacherName ?? teacher.name}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-          {formatDate(session.startsAt)} · {session.durationMins} min
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
-        {session.status === 'Upcoming' && session.meetLink && (
-          <Link href={session.meetLink} target="_blank" rel="noreferrer">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
+          {session.status === 'Upcoming' && session.meetLink && (
+            <Link href={session.meetLink} target="_blank" rel="noreferrer">
+              <Button
+                size="sm"
+                className="bg-brand hover:bg-brand-600 dark:bg-accent2-500 dark:hover:bg-accent2-400 dark:text-brand rounded-full"
+              >
+                <Video className="w-3.5 h-3.5 mr-1.5" />
+                Join
+              </Button>
+            </Link>
+          )}
+          {session.status === 'Upcoming' && !session.meetLink && (
+            <Button size="sm" variant="outline" className="rounded-full" disabled>
+              Awaiting link
+            </Button>
+          )}
+          {canConfirm && (
             <Button
               size="sm"
-              className="bg-brand hover:bg-brand-600 dark:bg-accent2-500 dark:hover:bg-accent2-400 dark:text-brand rounded-full"
+              variant={familyConfirmed ? 'outline' : 'default'}
+              className={cn(
+                'rounded-full',
+                !familyConfirmed && 'bg-brand hover:bg-brand-600',
+              )}
+              disabled={familyConfirmed || !onConfirmHeld}
+              onClick={confirmHeld}
             >
-              <Video className="w-3.5 h-3.5 mr-1.5" />
-              Join
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+              {familyConfirmed ? 'Confirmed' : 'Confirm held'}
             </Button>
-          </Link>
-        )}
-        {session.status === 'Upcoming' && !session.meetLink && (
-          <Button size="sm" variant="outline" className="rounded-full" disabled>
-            Awaiting link
-          </Button>
-        )}
-        {canConfirm && (
-          <Button
-            size="sm"
-            variant={familyConfirmed ? 'outline' : 'default'}
-            className={cn(
-              'rounded-full',
-              !familyConfirmed && 'bg-brand hover:bg-brand-600',
+          )}
+          {session.status === 'Upcoming' &&
+            !cancellationPending &&
+            onRequestCancellation && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5"
+                onClick={() => setCancelOpen(true)}
+                aria-label="Request cancellation"
+                title="Request cancellation"
+              >
+                <XCircle className="w-4 h-4" />
+              </Button>
             )}
-            disabled={familyConfirmed}
-            onClick={confirmHeld}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-            {familyConfirmed ? 'Confirmed' : 'Confirm held'}
-          </Button>
-        )}
-        {session.status === 'Upcoming' && !cancellationPending && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5"
-            onClick={() => setCancelOpen(true)}
-            aria-label="Request cancellation"
-            title="Request cancellation"
-          >
-            <XCircle className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+        </div>
       </motion.div>
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
@@ -181,7 +169,7 @@ export default function SessionRow({
           </DialogHeader>
           <Textarea
             value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
+            onChange={(event) => setCancelReason(event.target.value)}
             placeholder="Reason for cancelling this class"
             rows={4}
           />

@@ -348,6 +348,16 @@ function intakeSchedule(student: Child) {
 }
 
 function subjectOptions(student: Child) {
+  if (student.subjectAssignments?.length) {
+    return Array.from(
+      new Set(
+        student.subjectAssignments
+          .map((assignment) => assignment.subject)
+          .filter(Boolean),
+      ),
+    );
+  }
+
   const intake = student.intake;
   if (!intake) return ['General lesson'];
   const subjects =

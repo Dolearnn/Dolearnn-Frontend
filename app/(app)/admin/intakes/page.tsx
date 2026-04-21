@@ -52,8 +52,15 @@ export default function AdminIntakesPage() {
   };
 
   const assignMutation = useMutation({
-    mutationFn: ({ childId, teacherId }: { childId: string; teacherId: string }) =>
-      assignAdminTeacherToStudent(childId, teacherId),
+    mutationFn: ({
+      childId,
+      teacherId,
+      subject,
+    }: {
+      childId: string;
+      teacherId: string;
+      subject: string;
+    }) => assignAdminTeacherToStudent(childId, teacherId, subject),
     onSuccess: () => {
       invalidateStudents();
       toast({ title: 'Teacher assigned' });
@@ -69,7 +76,13 @@ export default function AdminIntakesPage() {
   });
 
   const unassignMutation = useMutation({
-    mutationFn: unassignAdminTeacherFromStudent,
+    mutationFn: ({
+      childId,
+      subject,
+    }: {
+      childId: string;
+      subject: string;
+    }) => unassignAdminTeacherFromStudent(childId, subject),
     onSuccess: () => {
       invalidateStudents();
       toast({ title: 'Teacher unassigned' });
@@ -86,8 +99,16 @@ export default function AdminIntakesPage() {
 
   const filtered = useMemo(() => {
     return children.filter((child) => {
-      if (filter === 'Pending' && child.assignedTeacherId) return false;
-      if (filter === 'Matched' && !child.assignedTeacherId) return false;
+      const subjects = subjectList(child);
+      const matchedCount = subjects.filter((subject) =>
+        child.subjectAssignments?.some(
+          (assignment) =>
+            assignment.subject.toLowerCase() === subject.toLowerCase(),
+        ),
+      ).length;
+      const fullyMatched = subjects.length > 0 && matchedCount === subjects.length;
+      if (filter === 'Pending' && fullyMatched) return false;
+      if (filter === 'Matched' && !fullyMatched) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
         if (
@@ -101,7 +122,16 @@ export default function AdminIntakesPage() {
     });
   }, [children, filter, query]);
 
-  const pendingCount = children.filter((child) => !child.assignedTeacherId).length;
+  const pendingCount = children.filter((child) => {
+    const subjects = subjectList(child);
+    return subjects.some(
+      (subject) =>
+        !child.subjectAssignments?.some(
+          (assignment) =>
+            assignment.subject.toLowerCase() === subject.toLowerCase(),
+        ),
+    );
+  }).length;
   const matchedCount = children.length - pendingCount;
   const isLoading = studentsQuery.isLoading || teachersQuery.isLoading;
   const error = studentsQuery.error ?? teachersQuery.error;
@@ -178,10 +208,12 @@ export default function AdminIntakesPage() {
               allTeachers={allTeachers}
               assigning={assignMutation.isPending}
               unassigning={unassignMutation.isPending}
-              onAssign={(teacherId) =>
-                assignMutation.mutate({ childId: child.id, teacherId })
+              onAssign={(subject, teacherId) =>
+                assignMutation.mutate({ childId: child.id, subject, teacherId })
               }
-              onUnassign={() => unassignMutation.mutate(child.id)}
+              onUnassign={(subject) =>
+                unassignMutation.mutate({ childId: child.id, subject })
+              }
             />
           ))}
         </div>
@@ -202,34 +234,18 @@ function IntakeCard({
   allTeachers: Teacher[];
   assigning: boolean;
   unassigning: boolean;
-  onAssign: (teacherId: string) => void;
-  onUnassign: () => void;
+  onAssign: (subject: string, teacherId: string) => void;
+  onUnassign: (subject: string) => void;
 }) {
   const intake = child.intake;
   if (!intake) return null;
 
-  const selectedSubjects = intake.subjects?.length
-    ? intake.subjects.map((subject) =>
-        subject === 'Other' && intake.subjectOther?.trim()
-          ? intake.subjectOther.trim()
-          : subject,
-      )
-    : [displaySubject(intake)];
-
-  const suggestions = allTeachers.filter(
-    (teacher) =>
-      (teacher.status ?? 'Active') !== 'Terminated' &&
-      teacher.subjects.some((teacherSubject) =>
-        selectedSubjects.some((subject) => {
-          const a = teacherSubject.toLowerCase();
-          const b = subject.toLowerCase();
-          return a.includes(b) || b.includes(a);
-        }),
-      ),
-  );
-  const assigned = child.assignedTeacherId
-    ? allTeachers.find((teacher) => teacher.id === child.assignedTeacherId)
-    : null;
+  const selectedSubjects = subjectList(child);
+  const assignedCount = selectedSubjects.filter((subject) =>
+    assignmentForSubject(child, subject),
+  ).length;
+  const fullyAssigned =
+    selectedSubjects.length > 0 && assignedCount === selectedSubjects.length;
 
   return (
     <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
@@ -248,12 +264,14 @@ function IntakeCard({
         <span
           className={cn(
             'text-[11px] font-medium px-2 py-0.5 rounded-full',
-            assigned
+            fullyAssigned
               ? 'bg-accent2-50 text-accent2-700'
               : 'bg-amber-50 text-amber-700',
           )}
         >
-          {assigned ? 'Matched' : 'Pending'}
+          {fullyAssigned
+            ? 'Matched'
+            : `${assignedCount}/${selectedSubjects.length} matched`}
         </span>
       </div>
 
@@ -275,73 +293,130 @@ function IntakeCard({
         )}
       </div>
 
-      {assigned ? (
-        <div className="bg-accent2-50 border border-accent2-100 rounded-xl p-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center text-xs font-semibold shrink-0">
-              {assigned.name
-                .split(' ')
-                .map((part) => part[0])
-                .join('')
-                .slice(0, 2)}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
-                {assigned.name}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-                Star {assigned.rating.toFixed(1)} -{' '}
-                {assigned.subjects.join(', ')}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="rounded-full text-xs"
-            disabled={unassigning}
-            onClick={onUnassign}
-          >
-            {unassigning ? 'Removing...' : 'Unassign'}
-          </Button>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-brand" />
+          <p className="text-xs font-semibold text-gray-700 dark:text-foreground/90">
+            Subject matching
+          </p>
         </div>
-      ) : (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-brand" />
-            <p className="text-xs font-semibold text-gray-700 dark:text-foreground/90">
-              Suggested teachers
-            </p>
-          </div>
-          {suggestions.length === 0 ? (
-            <p className="text-xs text-gray-500 dark:text-muted-foreground">
-              No active teacher currently covers {displaySubject(intake)}.
-            </p>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-2">
-              {suggestions.map((teacher) => (
-                <SuggestionRow
-                  key={teacher.id}
-                  teacher={teacher}
-                  assigning={assigning}
-                  onAssign={onAssign}
-                />
-              ))}
+        {selectedSubjects.map((subject) => {
+          const assignment = assignmentForSubject(child, subject);
+          const assignedTeacher = assignment
+            ? allTeachers.find((teacher) => teacher.id === assignment.teacherId)
+            : null;
+          const suggestions = teachersForSubject(allTeachers, subject);
+
+          return (
+            <div
+              key={subject}
+              className="rounded-xl border border-gray-200 dark:border-border p-3 space-y-3"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                  {subject}
+                </p>
+                <span
+                  className={cn(
+                    'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                    assignment
+                      ? 'bg-accent2-50 text-accent2-700'
+                      : 'bg-amber-50 text-amber-700',
+                  )}
+                >
+                  {assignment ? 'Assigned' : 'Needs match'}
+                </span>
+              </div>
+
+              {assignment ? (
+                <div className="bg-accent2-50 border border-accent2-100 rounded-xl p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
+                      {assignedTeacher?.name ?? assignment.teacherName ?? 'Teacher'}
+                    </p>
+                    {assignedTeacher && (
+                      <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
+                        Star {assignedTeacher.rating.toFixed(1)} -{' '}
+                        {assignedTeacher.subjects.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="rounded-full text-xs"
+                    disabled={unassigning}
+                    onClick={() => onUnassign(subject)}
+                  >
+                    {unassigning ? 'Removing...' : 'Unassign'}
+                  </Button>
+                </div>
+              ) : suggestions.length === 0 ? (
+                <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                  No active teacher currently covers {subject}.
+                </p>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {suggestions.map((teacher) => (
+                    <SuggestionRow
+                      key={teacher.id}
+                      subject={subject}
+                      teacher={teacher}
+                      assigning={assigning}
+                      onAssign={onAssign}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
+function subjectList(child: Child) {
+  const intake = child.intake;
+  if (!intake) return [];
+  const subjects = intake.subjects?.length
+    ? intake.subjects.map((subject) =>
+        subject === 'Other' && intake.subjectOther?.trim()
+          ? intake.subjectOther.trim()
+          : subject,
+      )
+    : [displaySubject(intake)];
+  return Array.from(new Set(subjects.filter(Boolean)));
+}
+
+function assignmentForSubject(child: Child, subject: string) {
+  return child.subjectAssignments?.find(
+    (assignment) =>
+      assignment.subject.toLowerCase() === subject.toLowerCase(),
+  );
+}
+
+function teachersForSubject(teachers: Teacher[], subject: string) {
+  return teachers.filter(
+    (teacher) =>
+      (teacher.status ?? 'Active') !== 'Terminated' &&
+      teacher.subjects.some((teacherSubject) => {
+        const a = teacherSubject.toLowerCase();
+        const b = subject.toLowerCase();
+        return a.includes(b) || b.includes(a);
+      }),
+  );
+}
+
 function SuggestionRow({
+  subject,
   teacher,
   assigning,
   onAssign,
 }: {
+  subject: string;
   teacher: Teacher;
   assigning: boolean;
-  onAssign: (teacherId: string) => void;
+  onAssign: (subject: string, teacherId: string) => void;
 }) {
   return (
     <div className="bg-gray-50 dark:bg-background rounded-xl p-3 flex items-center justify-between gap-3">
@@ -358,7 +433,7 @@ function SuggestionRow({
         size="sm"
         className="rounded-full bg-brand hover:bg-brand-600 shrink-0"
         disabled={assigning}
-        onClick={() => onAssign(teacher.id)}
+        onClick={() => onAssign(subject, teacher.id)}
       >
         {assigning ? 'Assigning...' : 'Assign'}
       </Button>

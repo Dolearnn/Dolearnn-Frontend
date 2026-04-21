@@ -19,6 +19,9 @@ interface ApiTeacherProfile {
   lastName: string;
   subjects: string[];
   qualifications: string[];
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumber?: string | null;
   hourlyRate: string | number;
   status: string;
 }
@@ -115,6 +118,9 @@ function mapProfile(profile: ApiTeacherProfile): Teacher {
     bio: `${profile.subjects.join(', ')} teacher.`,
     subjects: profile.subjects,
     qualifications: profile.qualifications,
+    bankName: profile.bankName ?? undefined,
+    accountName: profile.accountName ?? undefined,
+    accountNumber: profile.accountNumber ?? undefined,
     hourlyRate: asNumber(profile.hourlyRate),
     rating: 0,
     totalSessions: 0,
@@ -153,8 +159,27 @@ export interface CreateSessionNoteInput {
   concerns?: string;
 }
 
+export interface UpdatePayoutAccountInput {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+}
+
 export async function getTeacherProfile() {
   const response = await apiFetch<{ profile: ApiTeacherProfile }>('/teacher/me');
+  return mapProfile(response.profile);
+}
+
+export async function updateTeacherPayoutAccount(
+  input: UpdatePayoutAccountInput,
+) {
+  const response = await apiFetch<{ profile: ApiTeacherProfile }>(
+    '/teacher/payout-account',
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  );
   return mapProfile(response.profile);
 }
 

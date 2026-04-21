@@ -238,7 +238,7 @@ function SessionTable({
               <th className="text-left px-4 py-3 font-medium">Teacher</th>
               <th className="text-left px-4 py-3 font-medium">Subject</th>
               <th className="text-left px-4 py-3 font-medium">Meeting link</th>
-              <th className="text-left px-4 py-3 font-medium">Cancellation</th>
+              <th className="text-left px-4 py-3 font-medium">Request</th>
               <th className="text-left px-4 py-3 font-medium">Teacher confirm</th>
               <th className="text-left px-4 py-3 font-medium">Family</th>
               <th className="text-left px-4 py-3 font-medium">Payout</th>
@@ -378,17 +378,26 @@ function CancellationReview({
   return (
     <div className="min-w-[240px] space-y-2">
       <div>
-        <span
-          className={cn(
-            'text-[11px] font-medium px-2 py-0.5 rounded-full capitalize',
-            cancellation.status === 'Pending' && 'bg-amber-50 text-amber-700',
-            cancellation.status === 'Approved' && 'bg-red-50 text-red-600',
-            cancellation.status === 'Rejected' &&
-              'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-muted-foreground',
-          )}
-        >
-          {cancellation.status} by {cancellation.requestedBy}
-        </span>
+        {(() => {
+          const requestLabel =
+            cancellation.requestedBy === 'teacher'
+              ? 'Reschedule'
+              : 'Cancellation';
+          return (
+            <span
+              className={cn(
+                'text-[11px] font-medium px-2 py-0.5 rounded-full capitalize',
+                cancellation.status === 'Pending' && 'bg-amber-50 text-amber-700',
+                cancellation.status === 'Approved' && 'bg-red-50 text-red-600',
+                cancellation.status === 'Rejected' &&
+                  'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-muted-foreground',
+              )}
+            >
+              {requestLabel} {cancellation.status.toLowerCase()} by{' '}
+              {cancellation.requestedBy}
+            </span>
+          );
+        })()}
         <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1 line-clamp-2">
           {cancellation.reason}
         </p>

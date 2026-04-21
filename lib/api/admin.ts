@@ -41,6 +41,7 @@ interface ApiStudent {
   deactivationReason?: string | null;
   deactivatedAt?: string | null;
   intake?: unknown;
+  subjectAssignments?: unknown[];
 }
 
 interface ApiSession {
@@ -172,21 +173,28 @@ export async function listAdminStudents() {
 export async function assignAdminTeacherToStudent(
   studentId: string,
   teacherId: string,
+  subject?: string,
 ) {
   const response = await apiFetch<{ student: ApiStudent }>(
     `/admin/students/${studentId}/assign-teacher`,
     {
       method: 'POST',
-      body: JSON.stringify({ teacherId }),
+      body: JSON.stringify({ teacherId, subject }),
     },
   );
   return mapStudent(response.student as never);
 }
 
-export async function unassignAdminTeacherFromStudent(studentId: string) {
+export async function unassignAdminTeacherFromStudent(
+  studentId: string,
+  subject?: string,
+) {
   const response = await apiFetch<{ student: ApiStudent }>(
     `/admin/students/${studentId}/unassign-teacher`,
-    { method: 'POST' },
+    {
+      method: 'POST',
+      body: JSON.stringify({ subject }),
+    },
   );
   return mapStudent(response.student as never);
 }

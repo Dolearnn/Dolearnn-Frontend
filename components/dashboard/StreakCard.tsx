@@ -33,8 +33,8 @@ export default function StreakCard({ streak }: { streak: Streak }) {
         </div>
       </div>
       <p className="text-xs text-gray-500 dark:text-muted-foreground mt-3">
-        Longest: {streak.longest} week{streak.longest === 1 ? '' : 's'} · Don&apos;t
-        break the chain 🔥
+        Longest: {streak.longest} week{streak.longest === 1 ? '' : 's'} - keep
+        the rhythm going
       </p>
     </motion.div>
   );

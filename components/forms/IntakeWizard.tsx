@@ -600,8 +600,8 @@ function StepAvailability({ form }: { form: FormApi }) {
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="Under $20">Under $20</SelectItem>
-                  <SelectItem value="$20â€“$35">$20â€“$35</SelectItem>
-                  <SelectItem value="$35â€“$50">$35â€“$50</SelectItem>
+                  <SelectItem value="$20–$35">$20–$35</SelectItem>
+                  <SelectItem value="$35–$50">$35–$50</SelectItem>
                   <SelectItem value="$50+">$50+</SelectItem>
                 </SelectContent>
               </Select>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bell,
@@ -34,6 +35,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { dashboardPathForRole, logout } from '@/lib/api/auth';
 import { getAuthUser, type AuthUser } from '@/lib/api/auth-storage';
+import {
+  listNotifications,
+  notificationKeys,
+} from '@/lib/api/notifications';
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -156,6 +161,21 @@ export default function DashboardShell({
     return routeRole !== allowedRole;
   }, [allowedRole, authChecked, routeRole]);
 
+  const notificationsQuery = useQuery({
+    queryKey: notificationKeys.all,
+    queryFn: listNotifications,
+    enabled: authChecked && !!authUser && !isWrongWorkspace,
+    refetchInterval: 30000,
+  });
+
+  const unreadNotificationCount = useMemo(
+    () =>
+      (notificationsQuery.data ?? []).filter(
+        (notification) => !notification.read,
+      ).length,
+    [notificationsQuery.data],
+  );
+
   const handleLogout = async () => {
     await logout();
     setAuthUser(null);
@@ -170,7 +190,12 @@ export default function DashboardShell({
     <div className="min-h-screen bg-gray-50 dark:bg-background flex">
       {/* Sidebar — desktop */}
       <aside className="hidden lg:flex lg:flex-col w-64 bg-brand text-white dark:bg-[hsl(215,40%,6%)] dark:border-r dark:border-white/5">
-        <SidebarContents nav={nav} role={role} pathname={pathname} />
+        <SidebarContents
+          nav={nav}
+          role={role}
+          pathname={pathname}
+          unreadNotificationCount={unreadNotificationCount}
+        />
       </aside>
 
       {/* Sidebar — mobile drawer */}
@@ -199,7 +224,12 @@ export default function DashboardShell({
               >
                 <X className="w-5 h-5" />
               </button>
-              <SidebarContents nav={nav} role={role} pathname={pathname} />
+              <SidebarContents
+                nav={nav}
+                role={role}
+                pathname={pathname}
+                unreadNotificationCount={unreadNotificationCount}
+              />
             </motion.aside>
           </div>
         )}
@@ -237,10 +267,12 @@ function SidebarContents({
   nav,
   role,
   pathname,
+  unreadNotificationCount,
 }: {
   nav: NavItem[];
   role: Role;
   pathname: string;
+  unreadNotificationCount: number;
 }) {
   return (
     <>
@@ -255,6 +287,8 @@ function SidebarContents({
           const active =
             pathname === item.href ||
             (item.href !== `/${role}` && pathname.startsWith(item.href));
+          const hasUnreadNotifications =
+            item.label === 'Notifications' && unreadNotificationCount > 0;
           const Icon = item.icon;
           return (
             <motion.div
@@ -279,9 +313,15 @@ function SidebarContents({
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
-                <span className="relative flex items-center gap-3">
+                <span className="relative flex items-center gap-3 min-w-0">
                   <Icon className="w-4 h-4" />
-                  {item.label}
+                  <span className="truncate">{item.label}</span>
+                  {hasUnreadNotifications && (
+                    <span
+                      className="h-2 w-2 rounded-full bg-red-500 ring-2 ring-white/20"
+                      aria-label={`${unreadNotificationCount} unread notifications`}
+                    />
+                  )}
                 </span>
               </Link>
             </motion.div>

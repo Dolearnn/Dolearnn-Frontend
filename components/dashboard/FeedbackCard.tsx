@@ -2,13 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { StarRating } from '@/components/ui/star-rating';
-import { familySessionNote, familyTeacher } from '@/lib/store/family';
 import { cn } from '@/lib/utils';
 import type { Session } from '@/lib/types';
 
 export default function FeedbackCard({ session }: { session: Session }) {
-  const note = session.note ?? familySessionNote(session.noteId);
-  const teacher = familyTeacher(session.teacherId);
+  const note = session.note;
 
   if (!note) {
     return (
@@ -38,7 +36,7 @@ export default function FeedbackCard({ session }: { session: Session }) {
       <div className="flex items-start justify-between mb-3 gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
-            {session.teacherName ?? teacher.name}
+            {session.teacherName ?? 'Teacher'}
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
             {session.subject} -{' '}
