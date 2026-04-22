@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   listTeacherNotes,
   listTeacherSessions,
+  reportTeacherContactAttempt,
   submitTeacherSessionNote,
   teacherKeys,
 } from '@/lib/api/teacher';
@@ -28,6 +29,8 @@ import { cn } from '@/lib/utils';
 import type { Performance, Rating, Session, SessionNote } from '@/lib/types';
 
 const PERFORMANCE_OPTIONS: Performance[] = ['Excellent', 'Good', 'Needs Work'];
+const PHONE_NUMBER_MESSAGE =
+  'Do not include phone numbers. This has been reported to admin.';
 
 type DraftMap = Record<string, DraftNote>;
 
@@ -39,10 +42,32 @@ interface DraftNote {
   concerns?: string;
 }
 
+function containsPhoneNumber(value?: string) {
+  if (!value) return false;
+  const candidates = value.match(/\+?\d[\d\s().-]{5,}\d/g) ?? [];
+  return candidates.some((candidate) => candidate.replace(/\D/g, '').length >= 7);
+}
+
+function notePhoneFields(draft?: DraftNote) {
+  if (!draft) return [];
+  return [
+    ['covered', draft.covered] as const,
+    ['focusNext', draft.focusNext] as const,
+    ['concerns', draft.concerns] as const,
+  ]
+    .filter(([, value]) => containsPhoneNumber(value))
+    .map(([field]) => field);
+}
+
+type NoteField = 'covered' | 'focusNext' | 'concerns';
+
 export default function TeacherNotesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [drafts, setDrafts] = useState<DraftMap>({});
+  const [reportedAttempts, setReportedAttempts] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const sessionsQuery = useQuery({
     queryKey: teacherKeys.sessions,
@@ -81,6 +106,31 @@ export default function TeacherNotesPage() {
     },
   });
 
+  const reportMutation = useMutation({
+    mutationFn: ({
+      sessionId,
+      field,
+      value,
+    }: {
+      sessionId: string;
+      field: NoteField;
+      value: string;
+    }) => reportTeacherContactAttempt(sessionId, field, value),
+    onSuccess: (_result, variables) => {
+      setReportedAttempts((previous) => {
+        const next = new Set(previous);
+        next.add(`${variables.sessionId}:${variables.field}`);
+        return next;
+      });
+      toast({
+        title: 'Reported to admin',
+        description:
+          'Phone numbers are not allowed in feedback. Admin has been notified.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const needsNotes = useMemo(
     () =>
       sessions
@@ -106,6 +156,20 @@ export default function TeacherNotesPage() {
   }, [notes, sessions]);
 
   const updateDraft = (sessionId: string, patch: Partial<DraftNote>) => {
+    for (const [field, value] of Object.entries(patch) as Array<
+      [NoteField, string | Performance | Rating | undefined]
+    >) {
+      if (
+        (field === 'covered' || field === 'focusNext' || field === 'concerns') &&
+        typeof value === 'string' &&
+        containsPhoneNumber(value) &&
+        !reportedAttempts.has(`${sessionId}:${field}`) &&
+        !reportMutation.isPending
+      ) {
+        reportMutation.mutate({ sessionId, field, value });
+      }
+    }
+
     setDrafts((previous) => {
       const current: DraftNote = previous[sessionId] ?? {
         covered: '',
@@ -120,6 +184,14 @@ export default function TeacherNotesPage() {
   const submitDraft = (session: Session) => {
     const draft = drafts[session.id];
     if (!draft || !draft.covered.trim() || !draft.focusNext.trim() || !draft.rating) {
+      return;
+    }
+    if (notePhoneFields(draft).length > 0) {
+      toast({
+        title: 'Remove phone numbers',
+        description: PHONE_NUMBER_MESSAGE,
+        variant: 'destructive',
+      });
       return;
     }
     noteMutation.mutate({ session, draft });
@@ -172,6 +244,9 @@ export default function TeacherNotesPage() {
                 session={session}
                 draft={drafts[session.id]}
                 submitting={noteMutation.isPending}
+                reportedFields={Array.from(reportedAttempts)
+                  .filter((key) => key.startsWith(`${session.id}:`))
+                  .map((key) => key.split(':')[1] as NoteField)}
                 onChange={(patch) => updateDraft(session.id, patch)}
                 onSubmit={() => submitDraft(session)}
               />
@@ -207,21 +282,30 @@ function DraftCard({
   session,
   draft,
   submitting,
+  reportedFields,
   onChange,
   onSubmit,
 }: {
   session: Session;
   draft?: DraftNote;
   submitting: boolean;
+  reportedFields: NoteField[];
   onChange: (patch: Partial<DraftNote>) => void;
   onSubmit: () => void;
 }) {
   const rating = draft?.rating ?? 0;
+  const blockedFields = notePhoneFields(draft);
+  const hasPhoneNumber = blockedFields.length > 0;
   const canSubmit =
     !!draft &&
     draft.covered.trim().length > 0 &&
     draft.focusNext.trim().length > 0 &&
-    rating > 0;
+    rating > 0 &&
+    !hasPhoneNumber;
+  const warningText = (field: NoteField) =>
+    reportedFields.includes(field)
+      ? PHONE_NUMBER_MESSAGE
+      : 'Phone numbers are not allowed in feedback.';
 
   return (
     <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
@@ -267,7 +351,13 @@ function DraftCard({
           value={draft?.covered ?? ''}
           onChange={(event) => onChange({ covered: event.target.value })}
           rows={2}
+          className={cn(
+            blockedFields.includes('covered') && 'border-red-300 focus-visible:ring-red-500',
+          )}
         />
+        {blockedFields.includes('covered') && (
+          <p className="text-xs text-red-600">{warningText('covered')}</p>
+        )}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
@@ -300,7 +390,14 @@ function DraftCard({
             placeholder="e.g. Word problems with fractions"
             value={draft?.focusNext ?? ''}
             onChange={(event) => onChange({ focusNext: event.target.value })}
+            className={cn(
+              blockedFields.includes('focusNext') &&
+                'border-red-300 focus-visible:ring-red-500',
+            )}
           />
+          {blockedFields.includes('focusNext') && (
+            <p className="text-xs text-red-600">{warningText('focusNext')}</p>
+          )}
         </div>
       </div>
 
@@ -314,7 +411,13 @@ function DraftCard({
           value={draft?.concerns ?? ''}
           onChange={(event) => onChange({ concerns: event.target.value })}
           rows={2}
+          className={cn(
+            blockedFields.includes('concerns') && 'border-red-300 focus-visible:ring-red-500',
+          )}
         />
+        {blockedFields.includes('concerns') && (
+          <p className="text-xs text-red-600">{warningText('concerns')}</p>
+        )}
       </div>
 
       <div className="flex justify-end">

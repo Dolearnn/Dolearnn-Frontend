@@ -173,6 +173,8 @@ export interface CreateSessionNoteInput {
   concerns?: string;
 }
 
+export type ContactAttemptField = 'covered' | 'focusNext' | 'concerns';
+
 export interface UpdatePayoutAccountInput {
   bankName: string;
   accountName: string;
@@ -299,4 +301,15 @@ export async function submitTeacherSessionNote(
     },
   );
   return mapNote(response.note);
+}
+
+export async function reportTeacherContactAttempt(
+  sessionId: string,
+  field: ContactAttemptField,
+  value?: string,
+) {
+  await apiFetch(`/teacher/sessions/${sessionId}/notes/contact-attempt`, {
+    method: 'POST',
+    body: JSON.stringify({ field, value }),
+  });
 }

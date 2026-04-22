@@ -48,6 +48,7 @@ export default function SessionRow({
   >(session.cancellation);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
   const canConfirm =
     session.status === 'Completed' ||
     (session.status === 'Upcoming' &&
@@ -62,11 +63,16 @@ export default function SessionRow({
 
   const confirmHeld = async () => {
     if (!onConfirmHeld) return;
-    await onConfirmHeld(session.id);
-    setAttendance((prev) => ({
-      ...prev,
-      familyConfirmedAt: new Date().toISOString(),
-    }));
+    setIsConfirming(true);
+    try {
+      await onConfirmHeld(session.id);
+      setAttendance((prev) => ({
+        ...prev,
+        familyConfirmedAt: new Date().toISOString(),
+      }));
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   const requestCancel = async () => {
@@ -135,11 +141,15 @@ export default function SessionRow({
                 'rounded-full',
                 !familyConfirmed && 'bg-brand hover:bg-brand-600',
               )}
-              disabled={familyConfirmed || !onConfirmHeld}
+              disabled={familyConfirmed || !onConfirmHeld || isConfirming}
               onClick={confirmHeld}
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {familyConfirmed ? 'Confirmed' : 'Confirm held'}
+              {isConfirming
+                ? 'Confirming...'
+                : familyConfirmed
+                  ? 'Confirmed'
+                  : 'Confirm held'}
             </Button>
           )}
           {session.status === 'Upcoming' &&

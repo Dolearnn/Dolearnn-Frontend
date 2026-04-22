@@ -3,9 +3,11 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardCheck, Search, Sparkles } from 'lucide-react';
+import RecordPaymentDialog from '@/components/admin/RecordPaymentDialog';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -21,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -36,13 +40,80 @@ import {
   displayGrade,
   displaySchedule,
   displaySubject,
+  type BudgetTier,
   type Child,
+  type CurrentLevel,
+  type DayOfWeek,
+  type GenderPreference,
   type GradeLevel,
+  type IntakeForm,
+  type LearningGoal,
   type Teacher,
+  type TimeBlock,
 } from '@/lib/types';
 
 type Filter = 'All' | 'Pending' | 'Matched';
 const GRADES: GradeLevel[] = ['Primary', 'JSS', 'SSS', 'College Year 1', 'College Year 2', 'College Year 3', 'College Year 4', 'Other'];
+const SUBJECTS = ['Maths', 'English', 'Science', 'Coding', 'Music', 'French', 'SAT', 'Other'];
+const DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const TIME_BLOCKS: TimeBlock[] = ['Morning', 'Afternoon', 'Evening'];
+const LEARNING_GOALS: LearningGoal[] = [
+  'Exam prep',
+  'Catch up with school',
+  'Learn a new skill',
+  'General improvement',
+];
+const CURRENT_LEVELS: CurrentLevel[] = ['Struggling', 'Average', 'Above average'];
+const GENDER_PREFS: GenderPreference[] = ['No preference', 'Female', 'Male'];
+const BUDGETS: BudgetTier[] = ['Under $20', '$20–$35', '$35–$50', '$50+'];
+const TIMEZONES = [
+  'UTC',
+  'Africa/Lagos',
+  'Africa/Accra',
+  'Europe/London',
+  'America/New_York',
+  'Asia/Dubai',
+];
+
+type StudentForm = {
+  parentId: string;
+  fullName: string;
+  age: string;
+  grade: GradeLevel;
+  gradeOther: string;
+  school: string;
+  subjects: string[];
+  subjectOther: string;
+  learningGoal: LearningGoal;
+  currentLevel: CurrentLevel;
+  specificTopics: string;
+  teacherGenderPref: GenderPreference;
+  specialNotes: string;
+  preferredSchedule: Partial<Record<DayOfWeek, TimeBlock>>;
+  timezone: string;
+  sessionsPerWeek: '1' | '2' | '3' | 'Flexible';
+  budget: BudgetTier;
+};
+
+const emptyStudentForm: StudentForm = {
+  parentId: '',
+  fullName: '',
+  age: '10',
+  grade: 'Primary',
+  gradeOther: '',
+  school: '',
+  subjects: [],
+  subjectOther: '',
+  learningGoal: 'Exam prep',
+  currentLevel: 'Average',
+  specificTopics: '',
+  teacherGenderPref: 'No preference',
+  specialNotes: '',
+  preferredSchedule: {},
+  timezone: 'Africa/Lagos',
+  sessionsPerWeek: '1',
+  budget: '$20–$35',
+};
 
 export default function AdminIntakesPage() {
   const queryClient = useQueryClient();
@@ -50,14 +121,9 @@ export default function AdminIntakesPage() {
   const [filter, setFilter] = useState<Filter>('Pending');
   const [query, setQuery] = useState('');
   const [addOpen, setAddOpen] = useState(false);
-  const [studentForm, setStudentForm] = useState({
-    parentId: '',
-    fullName: '',
-    age: '10',
-    grade: 'Primary' as GradeLevel,
-    gradeOther: '',
-    school: '',
-  });
+  const [studentForm, setStudentForm] =
+    useState<StudentForm>(emptyStudentForm);
+  const [paymentStudent, setPaymentStudent] = useState<Child | null>(null);
 
   const studentsQuery = useQuery({
     queryKey: adminKeys.students,
@@ -77,6 +143,13 @@ export default function AdminIntakesPage() {
     [studentsQuery.data],
   );
   const allTeachers = teachersQuery.data ?? [];
+  const paymentStudents = useMemo(() => {
+    const students = studentsQuery.data ?? [];
+    if (!paymentStudent || students.some((child) => child.id === paymentStudent.id)) {
+      return students;
+    }
+    return [paymentStudent, ...students];
+  }, [paymentStudent, studentsQuery.data]);
 
   const invalidateStudents = () => {
     queryClient.invalidateQueries({ queryKey: adminKeys.students });
@@ -84,18 +157,15 @@ export default function AdminIntakesPage() {
 
   const createStudentMutation = useMutation({
     mutationFn: createAdminStudent,
-    onSuccess: () => {
-      invalidateStudents();
+    onSuccess: async (student) => {
+      await queryClient.invalidateQueries({ queryKey: adminKeys.students });
       setAddOpen(false);
-      setStudentForm({
-        parentId: '',
-        fullName: '',
-        age: '10',
-        grade: 'Primary',
-        gradeOther: '',
-        school: '',
+      setStudentForm(emptyStudentForm);
+      setPaymentStudent(student);
+      toast({
+        title: 'Student created',
+        description: 'Record parent payment is ready with this parent and student.',
       });
-      toast({ title: 'Student created' });
     },
     onError: (error) => {
       toast({
@@ -284,11 +354,11 @@ export default function AdminIntakesPage() {
       )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create student for parent</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-5">
             <Select
               value={studentForm.parentId}
               onValueChange={(value) =>
@@ -363,6 +433,259 @@ export default function AdminIntakesPage() {
               }
               placeholder="School"
             />
+            <div className="rounded-2xl border border-gray-200 dark:border-border p-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                  Learning needs
+                </p>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+                  Complete the intake now so the student is ready for matching.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Subjects</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {SUBJECTS.map((subject) => {
+                    const checked = studentForm.subjects.includes(subject);
+                    return (
+                      <label
+                        key={subject}
+                        className={cn(
+                          'flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer text-sm',
+                          checked
+                            ? 'border-brand bg-accent2-50 text-brand'
+                            : 'border-gray-200 dark:border-border',
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) => {
+                            setStudentForm((form) => {
+                              const set = new Set(form.subjects);
+                              if (value) set.add(subject);
+                              else set.delete(subject);
+                              return { ...form, subjects: Array.from(set) };
+                            });
+                          }}
+                        />
+                        {subject}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              {studentForm.subjects.includes('Other') && (
+                <Input
+                  value={studentForm.subjectOther}
+                  onChange={(event) =>
+                    setStudentForm((form) => ({
+                      ...form,
+                      subjectOther: event.target.value,
+                    }))
+                  }
+                  placeholder="Enter subject"
+                />
+              )}
+              <div className="grid sm:grid-cols-3 gap-3">
+                <Select
+                  value={studentForm.learningGoal}
+                  onValueChange={(value) =>
+                    setStudentForm((form) => ({
+                      ...form,
+                      learningGoal: value as LearningGoal,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Learning goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LEARNING_GOALS.map((goal) => (
+                      <SelectItem key={goal} value={goal}>
+                        {goal}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={studentForm.currentLevel}
+                  onValueChange={(value) =>
+                    setStudentForm((form) => ({
+                      ...form,
+                      currentLevel: value as CurrentLevel,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Current level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENT_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>
+                        {level}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={studentForm.teacherGenderPref}
+                  onValueChange={(value) =>
+                    setStudentForm((form) => ({
+                      ...form,
+                      teacherGenderPref: value as GenderPreference,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Teacher preference" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GENDER_PREFS.map((pref) => (
+                      <SelectItem key={pref} value={pref}>
+                        {pref}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Textarea
+                value={studentForm.specificTopics}
+                onChange={(event) =>
+                  setStudentForm((form) => ({
+                    ...form,
+                    specificTopics: event.target.value,
+                  }))
+                }
+                placeholder="Specific topics or learning gaps"
+                rows={3}
+              />
+              <Textarea
+                value={studentForm.specialNotes}
+                onChange={(event) =>
+                  setStudentForm((form) => ({
+                    ...form,
+                    specialNotes: event.target.value,
+                  }))
+                }
+                placeholder="Preferences or notes for matching"
+                rows={3}
+              />
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 dark:border-border p-4 space-y-4">
+              <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                Availability and budget
+              </p>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {DAYS.map((day) => {
+                  const selected = studentForm.preferredSchedule[day];
+                  return (
+                    <div
+                      key={day}
+                      className="rounded-xl border border-gray-200 dark:border-border p-3 space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={!!selected}
+                          onCheckedChange={(value) =>
+                            setStudentForm((form) => {
+                              const next = { ...form.preferredSchedule };
+                              if (value) next[day] = next[day] ?? 'Evening';
+                              else delete next[day];
+                              return { ...form, preferredSchedule: next };
+                            })
+                          }
+                        />
+                        {day}
+                      </label>
+                      <Select
+                        value={selected ?? ''}
+                        disabled={!selected}
+                        onValueChange={(value) =>
+                          setStudentForm((form) => ({
+                            ...form,
+                            preferredSchedule: {
+                              ...form.preferredSchedule,
+                              [day]: value as TimeBlock,
+                            },
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Time block" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIME_BLOCKS.map((block) => (
+                            <SelectItem key={block} value={block}>
+                              {block}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <Select
+                  value={studentForm.timezone}
+                  onValueChange={(value) =>
+                    setStudentForm((form) => ({ ...form, timezone: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONES.map((timezone) => (
+                      <SelectItem key={timezone} value={timezone}>
+                        {timezone}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={studentForm.sessionsPerWeek}
+                  onValueChange={(value) =>
+                    setStudentForm((form) => ({
+                      ...form,
+                      sessionsPerWeek: value as StudentForm['sessionsPerWeek'],
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sessions per week" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(['1', '2', '3', 'Flexible'] as const).map((count) => (
+                      <SelectItem key={count} value={count}>
+                        {count}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={studentForm.budget}
+                  onValueChange={(value) =>
+                    setStudentForm((form) => ({
+                      ...form,
+                      budget: value as BudgetTier,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Budget" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BUDGETS.map((budget) => (
+                      <SelectItem key={budget} value={budget}>
+                        {budget}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>
@@ -373,6 +696,10 @@ export default function AdminIntakesPage() {
               disabled={
                 !studentForm.parentId ||
                 !studentForm.fullName.trim() ||
+                studentForm.subjects.length === 0 ||
+                (studentForm.subjects.includes('Other') &&
+                  !studentForm.subjectOther.trim()) ||
+                Object.keys(studentForm.preferredSchedule).length === 0 ||
                 createStudentMutation.isPending
               }
               onClick={() =>
@@ -383,6 +710,7 @@ export default function AdminIntakesPage() {
                   grade: studentForm.grade,
                   gradeOther: studentForm.gradeOther.trim(),
                   school: studentForm.school.trim(),
+                  intake: buildIntake(studentForm),
                 })
               }
             >
@@ -391,8 +719,47 @@ export default function AdminIntakesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <RecordPaymentDialog
+        parents={parentsQuery.data ?? []}
+        students={paymentStudents}
+        initialParentId={paymentStudent?.parentId}
+        initialStudentId={paymentStudent?.id}
+        open={!!paymentStudent}
+        onOpenChange={(open) => {
+          if (!open) setPaymentStudent(null);
+        }}
+        showTrigger={false}
+      />
     </div>
   );
+}
+
+function buildIntake(form: StudentForm): IntakeForm {
+  const firstSubject =
+    form.subjects[0] === 'Other' && form.subjectOther.trim()
+      ? form.subjectOther.trim()
+      : form.subjects[0];
+
+  return {
+    subject: firstSubject,
+    subjects: form.subjects,
+    subjectOther: form.subjectOther.trim(),
+    learningGoal: form.learningGoal,
+    currentLevel: form.currentLevel,
+    specificTopics: form.specificTopics.trim(),
+    teacherGenderPref: form.teacherGenderPref,
+    specialNotes: form.specialNotes.trim(),
+    preferredSchedule: form.preferredSchedule,
+    preferredDays: Object.keys(form.preferredSchedule) as DayOfWeek[],
+    preferredTime:
+      Object.values(form.preferredSchedule)[0] ?? 'Evening',
+    timezone: form.timezone,
+    sessionsPerWeek:
+      form.sessionsPerWeek === 'Flexible'
+        ? 'Flexible'
+        : (Number(form.sessionsPerWeek) as 1 | 2 | 3),
+    budget: form.budget,
+  };
 }
 
 function IntakeCard({

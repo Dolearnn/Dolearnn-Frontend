@@ -3,7 +3,11 @@ import { mapSession, mapStudent } from '@/lib/api/family';
 import type {
   Child,
   DayOfWeek,
+  CurrentLevel,
+  GenderPreference,
   GradeLevel,
+  IntakeForm,
+  LearningGoal,
   Session,
   SessionBookingRequest,
   Teacher,
@@ -126,6 +130,41 @@ const timeFromApi: Record<string, TimeBlock> = {
   EVENING: 'Evening',
 };
 
+const dayToApi: Record<DayOfWeek, string> = {
+  Mon: 'MON',
+  Tue: 'TUE',
+  Wed: 'WED',
+  Thu: 'THU',
+  Fri: 'FRI',
+  Sat: 'SAT',
+  Sun: 'SUN',
+};
+
+const timeToApi: Record<TimeBlock, string> = {
+  Morning: 'MORNING',
+  Afternoon: 'AFTERNOON',
+  Evening: 'EVENING',
+};
+
+const learningGoalToApi: Record<LearningGoal, string> = {
+  'Exam prep': 'EXAM_PREP',
+  'Catch up with school': 'CATCH_UP_WITH_SCHOOL',
+  'Learn a new skill': 'LEARN_A_NEW_SKILL',
+  'General improvement': 'GENERAL_IMPROVEMENT',
+};
+
+const currentLevelToApi: Record<CurrentLevel, string> = {
+  Struggling: 'STRUGGLING',
+  Average: 'AVERAGE',
+  'Above average': 'ABOVE_AVERAGE',
+};
+
+const genderToApi: Record<GenderPreference, string> = {
+  'No preference': 'NO_PREFERENCE',
+  Male: 'MALE',
+  Female: 'FEMALE',
+};
+
 const gradeToApi: Record<GradeLevel, string> = {
   Primary: 'PRIMARY',
   JSS: 'JSS',
@@ -240,7 +279,14 @@ export async function createAdminStudent(input: {
   grade: GradeLevel;
   gradeOther?: string;
   school?: string;
+  intake?: IntakeForm;
 }) {
+  const schedule = Object.entries(input.intake?.preferredSchedule ?? {}).map(
+    ([day, time]) => ({
+      day: dayToApi[day as DayOfWeek],
+      time: timeToApi[time],
+    }),
+  );
   const response = await apiFetch<{ student: ApiStudent }>('/admin/students', {
     method: 'POST',
     body: JSON.stringify({
@@ -250,6 +296,24 @@ export async function createAdminStudent(input: {
       grade: gradeToApi[input.grade],
       gradeOther: input.grade === 'Other' ? input.gradeOther : undefined,
       school: input.school,
+      intake: input.intake
+        ? {
+            subject: input.intake.subject,
+            subjects: input.intake.subjects?.length
+              ? input.intake.subjects
+              : [input.intake.subject],
+            subjectOther: input.intake.subjectOther,
+            learningGoal: learningGoalToApi[input.intake.learningGoal],
+            currentLevel: currentLevelToApi[input.intake.currentLevel],
+            specificTopics: input.intake.specificTopics,
+            teacherGenderPref: genderToApi[input.intake.teacherGenderPref],
+            specialNotes: input.intake.specialNotes,
+            timezone: input.intake.timezone ?? 'UTC',
+            sessionsPerWeek: String(input.intake.sessionsPerWeek),
+            budget: input.intake.budget,
+            schedule,
+          }
+        : undefined,
     }),
   });
   return mapStudent(response.student as never);

@@ -2,15 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Mail, Phone, User } from 'lucide-react';
+import { Mail, User } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 import { displayGrade, displaySubject } from '@/lib/types';
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'hello@dolearnn.com';
-const ADMIN_PHONE =
-  process.env.NEXT_PUBLIC_ADMIN_PHONE ?? '+234 800 000 0000';
 
 export default function ChildrenList() {
   const {
@@ -45,13 +43,6 @@ export default function ChildrenList() {
           >
             <Mail className="w-3.5 h-3.5" />
             {ADMIN_EMAIL}
-          </a>
-          <a
-            href={`tel:${ADMIN_PHONE.replace(/\s/g, '')}`}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent2-50 text-accent2-700 text-xs font-medium hover:bg-accent2-100"
-          >
-            <Phone className="w-3.5 h-3.5" />
-            {ADMIN_PHONE}
           </a>
         </div>
       </div>
@@ -136,32 +127,9 @@ export default function ChildrenList() {
                             - {assignment.subject}
                           </span>
                         </p>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {assignment.teacherEmail && (
-                            <a
-                              href={`mailto:${assignment.teacherEmail}`}
-                              className="inline-flex items-center gap-1 text-accent2-700 hover:underline"
-                            >
-                              <Mail className="w-3 h-3" />
-                              Email
-                            </a>
-                          )}
-                          {assignment.teacherPhone && (
-                            <a
-                              href={`tel:${assignment.teacherPhone.replace(/\s/g, '')}`}
-                              className="inline-flex items-center gap-1 text-accent2-700 hover:underline"
-                            >
-                              <Phone className="w-3 h-3" />
-                              Call
-                            </a>
-                          )}
-                          {!assignment.teacherEmail &&
-                            !assignment.teacherPhone && (
-                              <span className="text-gray-400 dark:text-muted-foreground">
-                                Contact admin for this teacher
-                              </span>
-                            )}
-                        </div>
+                        <p className="text-[11px] text-gray-400 dark:text-muted-foreground mt-1">
+                          Communication stays inside the web app.
+                        </p>
                       </div>
                     ))}
                   </div>

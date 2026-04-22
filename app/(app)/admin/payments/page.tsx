@@ -6,50 +6,31 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   CheckCircle2,
-  Plus,
   TrendingUp,
   Wallet,
 } from 'lucide-react';
+import RecordPaymentDialog from '@/components/admin/RecordPaymentDialog';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
-  createAdminPayment,
   listAdminLessonPackages,
   listAdminPaymentParents,
   listAdminPayments,
   listAdminTeacherPayouts,
   markAdminTeacherPayoutPaid,
   paymentKeys,
-  type TeacherPayoutSummary,
   type PaymentParent,
+  type TeacherPayoutSummary,
 } from '@/lib/api/payments';
 import { adminKeys, listAdminStudents } from '@/lib/api/admin';
 import { cn } from '@/lib/utils';
 import type {
   Child,
   Payment,
-  PaymentGateway,
-  PaymentPlan,
   StudentLessonPackage,
 } from '@/lib/types';
 
@@ -407,214 +388,6 @@ export default function AdminPaymentsPage() {
         </div>
       </section>
     </div>
-  );
-}
-
-function RecordPaymentDialog({
-  parents,
-  students,
-}: {
-  parents: PaymentParent[];
-  students: Child[];
-}) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [parentId, setParentId] = useState(parents[0]?.id ?? '');
-  const parentChildren = students.filter((child) => child.parentId === parentId);
-  const [studentId, setStudentId] = useState('');
-  const selectedStudent = parentChildren.find((child) => child.id === studentId);
-  const subjects = Array.from(
-    new Set(
-      selectedStudent?.subjectAssignments?.map((assignment) => assignment.subject) ??
-        [],
-    ),
-  );
-  const [subject, setSubject] = useState('');
-  const [plan, setPlan] = useState<PaymentPlan>('Starter Bundle');
-  const [gateway, setGateway] = useState<PaymentGateway>('Stripe');
-  const [amount, setAmount] = useState('150');
-  const [sessionsIncluded, setSessionsIncluded] = useState('5');
-  const mutation = useMutation({
-    mutationFn: createAdminPayment,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: paymentKeys.adminPayments });
-      await queryClient.invalidateQueries({
-        queryKey: paymentKeys.adminLessonPackages,
-      });
-      setOpen(false);
-      toast({
-        title: 'Payment recorded',
-        description: 'The family can now see this payment.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Could not record payment',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-brand hover:bg-brand-600 rounded-full">
-          <Plus className="w-4 h-4 mr-2" />
-          Record payment
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Record parent payment</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
-          <div className="grid gap-2">
-            <Label>Parent</Label>
-            <Select
-              value={parentId}
-              onValueChange={(value) => {
-                setParentId(value);
-                setStudentId('');
-                setSubject('');
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select parent" />
-              </SelectTrigger>
-              <SelectContent>
-                {parents.map((parent) => (
-                  <SelectItem key={parent.id} value={parent.id}>
-                    {parent.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Student</Label>
-            <Select
-              value={studentId}
-              onValueChange={(value) => {
-                setStudentId(value);
-                const child = students.find((item) => item.id === value);
-                setSubject(child?.subjectAssignments?.[0]?.subject ?? '');
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select student" />
-              </SelectTrigger>
-              <SelectContent>
-                {parentChildren.map((child) => (
-                  <SelectItem key={child.id} value={child.id}>
-                    {child.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Subject</Label>
-            {subjects.length > 0 ? (
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <p className="text-xs text-amber-600">
-                {studentId
-                  ? 'Assign a teacher to this student before recording a payment.'
-                  : 'Pick a student to see their assigned subjects.'}
-              </p>
-            )}
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label>Plan</Label>
-              <Select
-                value={plan}
-                onValueChange={(value) => setPlan(value as PaymentPlan)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Single Session">Single Session</SelectItem>
-                  <SelectItem value="Starter Bundle">Starter Bundle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Gateway</Label>
-              <Select
-                value={gateway}
-                onValueChange={(value) => setGateway(value as PaymentGateway)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Stripe">Stripe</SelectItem>
-                  <SelectItem value="Flutterwave">Flutterwave</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label>Amount</Label>
-              <Input
-                type="number"
-                min="1"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Sessions included</Label>
-              <Input
-                type="number"
-                min="1"
-                value={sessionsIncluded}
-                onChange={(event) => setSessionsIncluded(event.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-brand hover:bg-brand-600"
-            disabled={!parentId || !studentId || !subject || mutation.isPending}
-            onClick={() =>
-              mutation.mutate({
-                parentId,
-                studentId,
-                subject,
-                plan,
-                gateway,
-                amount: Number(amount),
-                sessionsIncluded: Number(sessionsIncluded),
-              })
-            }
-          >
-            {mutation.isPending ? 'Recording...' : 'Record payment'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 

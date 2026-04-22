@@ -170,6 +170,7 @@ interface ApiStudentSubjectAssignment {
   teacherId: string;
   lessonPackageId?: string | null;
   subject: string;
+  meetLink?: string | null;
   createdAt: string;
   teacher?: ApiTeacherProfile | null;
 }
@@ -375,10 +376,7 @@ export function mapStudent(student: ApiStudent): Child {
       teacherId: assignment.teacherId,
       teacherName: assignment.teacher?.user?.name,
       teacherEmail: assignment.teacher?.user?.email,
-      teacherPhone:
-        assignment.teacher?.phoneCountry && assignment.teacher?.phoneNumber
-          ? `${assignment.teacher.phoneCountry}${assignment.teacher.phoneNumber}`
-          : undefined,
+      meetLink: assignment.meetLink ?? undefined,
       subject: assignment.subject,
       createdAt: assignment.createdAt,
     })),

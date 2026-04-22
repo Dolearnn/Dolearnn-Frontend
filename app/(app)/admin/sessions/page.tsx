@@ -56,6 +56,7 @@ export default function AdminSessionsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [query, setQuery] = useState('');
+  const [savingMeetingSessionId, setSavingMeetingSessionId] = useState<string | null>(null);
 
   const sessionsQuery = useQuery({
     queryKey: adminKeys.sessions,
@@ -112,6 +113,7 @@ export default function AdminSessionsPage() {
         variant: 'destructive',
       });
     },
+    onSettled: () => setSavingMeetingSessionId(null),
   });
 
   const approveMutation = useMutation({
@@ -241,13 +243,14 @@ export default function AdminSessionsPage() {
               ) : (
                 <SessionTable
                   rows={rows}
-                  savingLink={meetingLinkMutation.isPending}
+                  savingLinkId={savingMeetingSessionId}
                   resolvingCancellation={
                     approveMutation.isPending || rejectMutation.isPending
                   }
-                  onUpdateMeetingLink={(sessionId, meetLink) =>
-                    meetingLinkMutation.mutate({ sessionId, meetLink })
-                  }
+                  onUpdateMeetingLink={(sessionId, meetLink) => {
+                    setSavingMeetingSessionId(sessionId);
+                    meetingLinkMutation.mutate({ sessionId, meetLink });
+                  }}
                   onResolveCancellation={(requestId, decision) => {
                     if (decision === 'Approved') {
                       approveMutation.mutate(requestId);
@@ -320,13 +323,13 @@ function BookingRequestsPanel({
 
 function SessionTable({
   rows,
-  savingLink,
+  savingLinkId,
   resolvingCancellation,
   onUpdateMeetingLink,
   onResolveCancellation,
 }: {
   rows: Session[];
-  savingLink: boolean;
+  savingLinkId: string | null;
   resolvingCancellation: boolean;
   onUpdateMeetingLink: (sessionId: string, meetLink: string) => void;
   onResolveCancellation: (
@@ -383,7 +386,7 @@ function SessionTable({
                   <MeetingLinkEditor
                     session={session}
                     value={drafts[session.id] ?? session.meetLink}
-                    saving={savingLink}
+                    saving={savingLinkId === session.id}
                     onChange={(value) =>
                       setDrafts((previous) => ({
                         ...previous,
@@ -443,7 +446,6 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
   const [studentId, setStudentId] = useState('');
   const [subject, setSubject] = useState('');
   const [startsAt, setStartsAt] = useState('');
-  const [duration, setDuration] = useState('60');
   const [meetLink, setMeetLink] = useState('');
 
   const selectedStudent = students.find((child) => child.id === studentId);
@@ -481,7 +483,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
       studentId,
       subject,
       startsAt: new Date(startsAt).toISOString(),
-      durationMins: Number(duration) || 60,
+      durationMins: 60,
       meetLink: meetLink || undefined,
     });
   };
@@ -556,14 +558,10 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
               />
             </div>
             <div className="grid gap-2">
-              <Label>Duration (minutes)</Label>
-              <Input
-                type="number"
-                min={15}
-                max={240}
-                value={duration}
-                onChange={(event) => setDuration(event.target.value)}
-              />
+              <Label>Duration</Label>
+              <div className="h-10 rounded-md border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-3 flex items-center text-sm text-gray-700 dark:text-foreground/90">
+                60 minutes
+              </div>
             </div>
           </div>
 

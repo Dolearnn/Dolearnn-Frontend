@@ -48,6 +48,7 @@ export default function StudentSessionRow({
   >(session.cancellation);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
   const canConfirm =
     session.status === 'Completed' ||
     (session.status === 'Upcoming' &&
@@ -62,11 +63,16 @@ export default function StudentSessionRow({
 
   const confirmHeld = async () => {
     if (!onConfirmHeld) return;
-    await onConfirmHeld(session.id);
-    setAttendance((prev) => ({
-      ...prev,
-      teacherConfirmedAt: new Date().toISOString(),
-    }));
+    setIsConfirming(true);
+    try {
+      await onConfirmHeld(session.id);
+      setAttendance((prev) => ({
+        ...prev,
+        teacherConfirmedAt: new Date().toISOString(),
+      }));
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   const requestCancel = async () => {
@@ -135,11 +141,15 @@ export default function StudentSessionRow({
                 'rounded-full',
                 !teacherConfirmed && 'bg-brand hover:bg-brand-600',
               )}
-              disabled={teacherConfirmed || !onConfirmHeld}
+              disabled={teacherConfirmed || !onConfirmHeld || isConfirming}
               onClick={confirmHeld}
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {teacherConfirmed ? 'Confirmed' : 'Confirm held'}
+              {isConfirming
+                ? 'Confirming...'
+                : teacherConfirmed
+                  ? 'Confirmed'
+                  : 'Confirm held'}
             </Button>
           )}
           {session.status === 'Completed' && !session.noteId && (

@@ -57,7 +57,7 @@ export interface StudentSubjectAssignment {
   teacherId: string;
   teacherName?: string;
   teacherEmail?: string;
-  teacherPhone?: string;
+  meetLink?: string;
   subject: string;
   createdAt: string;
 }

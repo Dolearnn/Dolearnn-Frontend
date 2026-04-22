@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Check,
   Mail,
-  Phone,
   Plus,
   Search,
   Star,
@@ -47,16 +46,6 @@ import {
 import { cn } from '@/lib/utils';
 import type { Child, Teacher } from '@/lib/types';
 
-const COUNTRY_CODES = [
-  { value: '+234', label: 'Nigeria (+234)' },
-  { value: '+44', label: 'United Kingdom (+44)' },
-  { value: '+1', label: 'United States / Canada (+1)' },
-  { value: '+233', label: 'Ghana (+233)' },
-  { value: '+27', label: 'South Africa (+27)' },
-  { value: '+91', label: 'India (+91)' },
-  { value: '+971', label: 'UAE (+971)' },
-];
-
 const SUBJECTS = [
   'Maths',
   'English',
@@ -72,8 +61,6 @@ type AddTeacherForm = {
   firstName: string;
   lastName: string;
   email: string;
-  phoneCountry: string;
-  phoneNumber: string;
   gender: 'Male' | 'Female' | '';
   subjects: string[];
   qualifications: string;
@@ -85,8 +72,6 @@ const emptyTeacherForm: AddTeacherForm = {
   firstName: '',
   lastName: '',
   email: '',
-  phoneCountry: '+234',
-  phoneNumber: '',
   gender: '',
   subjects: [],
   qualifications: '',
@@ -268,7 +253,6 @@ export default function AdminTeachersPage() {
     teacherForm.firstName.trim() &&
     teacherForm.lastName.trim() &&
     teacherForm.email.trim() &&
-    teacherForm.phoneNumber.trim() &&
     teacherForm.gender &&
     teacherForm.subjects.length > 0 &&
     teacherForm.qualifications.trim() &&
@@ -280,8 +264,6 @@ export default function AdminTeachersPage() {
       firstName: teacherForm.firstName.trim(),
       lastName: teacherForm.lastName.trim(),
       email: teacherForm.email.trim(),
-      phoneCountry: teacherForm.phoneCountry,
-      phoneNumber: teacherForm.phoneNumber.trim(),
       gender: teacherForm.gender || 'Female',
       bio: `${teacherForm.subjects.join(', ')} teacher added by admin.`,
       subjects: teacherForm.subjects,
@@ -519,12 +501,6 @@ function TeacherCard({
             <span className="truncate">{teacher.email}</span>
           </p>
         )}
-        {teacher.phoneNumber && (
-          <p className="flex items-center gap-2">
-            <Phone className="w-3.5 h-3.5 shrink-0" />
-            {teacher.phoneCountry} {teacher.phoneNumber}
-          </p>
-        )}
         {teacher.gender && <p>Gender: {teacher.gender}</p>}
       </div>
 
@@ -656,29 +632,6 @@ function AddTeacherDialog({
             placeholder="Email address"
             type="email"
           />
-          <div className="grid sm:grid-cols-[220px_1fr] gap-3">
-            <Select
-              value={form.phoneCountry}
-              onValueChange={(value) => patch({ phoneCountry: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {COUNTRY_CODES.map((country) => (
-                  <SelectItem key={country.value} value={country.value}>
-                    {country.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              value={form.phoneNumber}
-              onChange={(event) => patch({ phoneNumber: event.target.value })}
-              placeholder="Phone number"
-              inputMode="tel"
-            />
-          </div>
           <Select
             value={form.gender}
             onValueChange={(value) =>

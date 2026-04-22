@@ -24,10 +24,6 @@ const schema = z
   .object({
     name: z.string().min(2, 'Enter your full name'),
     email: z.string().email('Enter a valid email'),
-    whatsapp: z
-      .string()
-      .min(7, 'Enter a valid WhatsApp number')
-      .regex(/^[+0-9\s()-]+$/, 'Digits, spaces, +, ( ), - only'),
     password: z.string().min(8, 'At least 8 characters'),
     confirm: z.string(),
   })
@@ -46,7 +42,6 @@ export default function RegisterForm() {
     defaultValues: {
       name: '',
       email: '',
-      whatsapp: '',
       password: '',
       confirm: '',
     },
@@ -76,7 +71,6 @@ export default function RegisterForm() {
     mutation.mutate({
       name: values.name,
       email: values.email,
-      whatsapp: values.whatsapp,
       password: values.password,
     });
   };
@@ -112,19 +106,6 @@ export default function RegisterForm() {
                     placeholder="you@example.com"
                     {...field}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="whatsapp"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>WhatsApp number</FormLabel>
-                <FormControl>
-                  <Input placeholder="+44 7700 900123" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
