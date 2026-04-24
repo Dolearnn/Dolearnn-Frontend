@@ -159,6 +159,8 @@ export interface Teacher {
   hourlyRate: number;
   rating: number;
   totalSessions: number;
+  studentCount?: number;
+  upcomingCount?: number;
   joinedAt: string;
   status?: TeacherStatus;
   terminationReason?: string;
@@ -359,4 +361,59 @@ export interface Notification {
   read: boolean;
   childId?: string;
   teacherId?: string;
+}
+
+export type LeadSource = 'Waitlist' | 'Newsletter';
+export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Archived';
+
+export interface Lead {
+  id: string;
+  source: LeadSource;
+  status: LeadStatus;
+  fullName?: string;
+  email: string;
+  phone?: string;
+  submissionCount: number;
+  lastSubmittedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AuditAction =
+  | 'STUDENT_CREATED'
+  | 'PAYMENT_RECORDED'
+  | 'PAYOUT_MARKED_PAID'
+  | 'MEETING_LINK_UPDATED'
+  | 'CANCELLATION_APPROVED'
+  | 'CANCELLATION_REJECTED'
+  | 'TEACHER_RATE_UPDATED'
+  | 'TEACHER_TERMINATED'
+  | 'FAMILY_ATTENDANCE_CONFIRMED'
+  | 'TEACHER_ATTENDANCE_CONFIRMED';
+
+export type AuditEntityType =
+  | 'STUDENT'
+  | 'PAYMENT'
+  | 'PAYOUT'
+  | 'SESSION'
+  | 'CANCELLATION'
+  | 'TEACHER'
+  | 'ATTENDANCE';
+
+export interface AuditLog {
+  id: string;
+  actorUserId: string;
+  actorRole: Role;
+  actorName?: string;
+  actorEmail?: string;
+  action: AuditAction;
+  entityType: AuditEntityType;
+  entityId: string;
+  summary: string;
+  metadata?: Record<string, unknown> | null;
+  childId?: string;
+  childName?: string;
+  teacherId?: string;
+  teacherName?: string;
+  createdAt: string;
 }

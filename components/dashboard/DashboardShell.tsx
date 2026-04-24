@@ -12,6 +12,8 @@ import {
   ChartNoAxesColumnIncreasing,
   ClipboardList,
   CreditCard,
+  FileSearch,
+  Inbox,
   GraduationCap,
   Home,
   LogOut,
@@ -80,7 +82,9 @@ const adminNav: NavItem[] = [
   { label: 'Teachers', href: '/admin/teachers', icon: GraduationCap },
   { label: 'Sessions', href: '/admin/sessions', icon: Calendar },
   { label: 'Payments', href: '/admin/payments', icon: CreditCard },
+  { label: 'Leads', href: '/admin/leads', icon: Inbox },
   { label: 'Reports', href: '/admin/reports', icon: ChartNoAxesColumnIncreasing },
+  { label: 'Audit', href: '/admin/audit', icon: FileSearch },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell },
 ];
 

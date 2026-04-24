@@ -1,7 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ClipboardCheck, Search, Sparkles } from 'lucide-react';
 import RecordPaymentDialog from '@/components/admin/RecordPaymentDialog';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -18,6 +23,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -31,7 +43,7 @@ import {
   adminKeys,
   assignAdminTeacherToStudent,
   createAdminStudent,
-  listAdminStudents,
+  listAdminStudentsPage,
   listAdminTeachers,
   unassignAdminTeacherFromStudent,
 } from '@/lib/api/admin';
@@ -120,14 +132,28 @@ export default function AdminIntakesPage() {
   const { toast } = useToast();
   const [filter, setFilter] = useState<Filter>('Pending');
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<'10' | '20' | '50'>('20');
   const [addOpen, setAddOpen] = useState(false);
   const [studentForm, setStudentForm] =
     useState<StudentForm>(emptyStudentForm);
   const [paymentStudent, setPaymentStudent] = useState<Child | null>(null);
 
+  const studentParams = useMemo(
+    () => ({
+      page,
+      pageSize: Number(pageSize),
+      search: query,
+      hasIntake: true,
+      assignmentStatus: filter,
+    }),
+    [filter, page, pageSize, query],
+  );
+
   const studentsQuery = useQuery({
-    queryKey: adminKeys.students,
-    queryFn: listAdminStudents,
+    queryKey: adminKeys.studentsPage(studentParams),
+    queryFn: () => listAdminStudentsPage(studentParams),
+    placeholderData: keepPreviousData,
   });
   const teachersQuery = useQuery({
     queryKey: adminKeys.teachers,
@@ -138,18 +164,15 @@ export default function AdminIntakesPage() {
     queryFn: listAdminPaymentParents,
   });
 
-  const children = useMemo(
-    () => (studentsQuery.data ?? []).filter((child) => !!child.intake),
-    [studentsQuery.data],
-  );
+  const children = studentsQuery.data?.students ?? [];
   const allTeachers = teachersQuery.data ?? [];
   const paymentStudents = useMemo(() => {
-    const students = studentsQuery.data ?? [];
+    const students = studentsQuery.data?.students ?? [];
     if (!paymentStudent || students.some((child) => child.id === paymentStudent.id)) {
       return students;
     }
     return [paymentStudent, ...students];
-  }, [paymentStudent, studentsQuery.data]);
+  }, [paymentStudent, studentsQuery.data?.students]);
 
   const invalidateStudents = () => {
     queryClient.invalidateQueries({ queryKey: adminKeys.students });
@@ -223,42 +246,10 @@ export default function AdminIntakesPage() {
     },
   });
 
-  const filtered = useMemo(() => {
-    return children.filter((child) => {
-      const subjects = subjectList(child);
-      const matchedCount = subjects.filter((subject) =>
-        child.subjectAssignments?.some(
-          (assignment) =>
-            assignment.subject.toLowerCase() === subject.toLowerCase(),
-        ),
-      ).length;
-      const fullyMatched = subjects.length > 0 && matchedCount === subjects.length;
-      if (filter === 'Pending' && fullyMatched) return false;
-      if (filter === 'Matched' && !fullyMatched) return false;
-      if (query.trim()) {
-        const q = query.toLowerCase();
-        if (
-          !child.fullName.toLowerCase().includes(q) &&
-          !(child.intake && displaySubject(child.intake).toLowerCase().includes(q))
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [children, filter, query]);
-
-  const pendingCount = children.filter((child) => {
-    const subjects = subjectList(child);
-    return subjects.some(
-      (subject) =>
-        !child.subjectAssignments?.some(
-          (assignment) =>
-            assignment.subject.toLowerCase() === subject.toLowerCase(),
-        ),
-    );
-  }).length;
-  const matchedCount = children.length - pendingCount;
+  const pendingCount = studentsQuery.data?.summary.pending ?? 0;
+  const matchedCount = studentsQuery.data?.summary.matched ?? 0;
+  const totalCount = studentsQuery.data?.summary.total ?? 0;
+  const pagination = studentsQuery.data?.pagination;
   const isLoading = studentsQuery.isLoading || teachersQuery.isLoading;
   const error = studentsQuery.error ?? teachersQuery.error;
 
@@ -294,7 +285,10 @@ export default function AdminIntakesPage() {
           {(['Pending', 'Matched', 'All'] as Filter[]).map((item) => (
             <button
               key={item}
-              onClick={() => setFilter(item)}
+              onClick={() => {
+                setFilter(item);
+                setPage(1);
+              }}
               className={cn(
                 'px-4 py-1.5 rounded-full text-sm transition',
                 filter === item
@@ -308,7 +302,7 @@ export default function AdminIntakesPage() {
                   ? pendingCount
                   : item === 'Matched'
                     ? matchedCount
-                    : children.length}
+                    : totalCount}
               </span>
             </button>
           ))}
@@ -317,14 +311,44 @@ export default function AdminIntakesPage() {
           <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search name or subject"
             className="pl-9 rounded-full"
           />
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-gray-500 dark:text-muted-foreground">
+          {pagination
+            ? `Showing ${(pagination.page - 1) * pagination.pageSize + 1}-${Math.min(
+                pagination.page * pagination.pageSize,
+                pagination.total,
+              )} of ${pagination.total}`
+            : 'Loading students...'}
+        </p>
+        <Select
+          value={pageSize}
+          onValueChange={(value) => {
+            setPageSize(value as '10' | '20' | '50');
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-full rounded-full sm:w-40">
+            <SelectValue placeholder="Rows" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10 per page</SelectItem>
+            <SelectItem value="20">20 per page</SelectItem>
+            <SelectItem value="50">50 per page</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {children.length === 0 ? (
         <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
           <ClipboardCheck className="w-6 h-6 text-accent2-500 mx-auto mb-2" />
           <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
@@ -335,7 +359,7 @@ export default function AdminIntakesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map((child) => (
+          {children.map((child) => (
             <IntakeCard
               key={child.id}
               child={child}
@@ -350,6 +374,46 @@ export default function AdminIntakesPage() {
               }
             />
           ))}
+          {pagination && pagination.totalPages > 1 ? (
+            <div className="flex justify-end">
+              <Pagination className="mx-0 w-auto justify-end">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (pagination.page > 1) setPage((current) => current - 1);
+                      }}
+                      className={cn(
+                        pagination.page <= 1 && 'pointer-events-none opacity-50',
+                      )}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </Button>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (pagination.page < pagination.totalPages) {
+                          setPage((current) => current + 1);
+                        }
+                      }}
+                      className={cn(
+                        pagination.page >= pagination.totalPages &&
+                          'pointer-events-none opacity-50',
+                      )}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          ) : null}
         </div>
       )}
 

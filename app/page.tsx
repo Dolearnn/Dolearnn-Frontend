@@ -2,6 +2,8 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import {
   Accordion,
   AccordionContent,
@@ -10,17 +12,26 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { useToast } from '@/hooks/use-toast';
+import { joinWaitlist, subscribeNewsletter } from '@/lib/api/public';
 import {
   Award,
   Check,
   ChevronUp,
   ClipboardList,
   Compass,
+  Facebook,
   Flame,
   GraduationCap,
   HeartHandshake,
+  Instagram,
+  Linkedin,
   LineChart,
+  MessageCircle,
+  Music2,
+  PhoneCall,
   Radar,
   ShieldCheck,
   Sparkles,
@@ -121,9 +132,77 @@ const plans = [
   },
 ];
 
+const INSTAGRAM_URL =
+  process.env.NEXT_PUBLIC_INSTAGRAM_URL ?? 'https://instagram.com/dolearnn';
+const LINKEDIN_URL =
+  process.env.NEXT_PUBLIC_LINKEDIN_URL ?? 'https://linkedin.com/company/dolearnn';
+const TIKTOK_URL =
+  process.env.NEXT_PUBLIC_TIKTOK_URL ?? 'https://tiktok.com/@dolearnn';
+const FACEBOOK_URL =
+  process.env.NEXT_PUBLIC_FACEBOOK_URL ?? 'https://facebook.com/dolearnn';
+const PHONE_NUMBER =
+  process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '+234 704 098 9710';
+
+const socialLinks = [
+  { label: 'Instagram', href: INSTAGRAM_URL, icon: Instagram },
+  { label: 'LinkedIn', href: LINKEDIN_URL, icon: Linkedin },
+  { label: 'TikTok', href: TIKTOK_URL, icon: Music2 },
+  { label: 'Facebook', href: FACEBOOK_URL, icon: Facebook },
+  {
+    label: 'Call us',
+    href: `tel:${PHONE_NUMBER.replace(/\s/g, '')}`,
+    icon: PhoneCall,
+  },
+];
+
 export default function Home() {
+  const { toast } = useToast();
+  const [waitlistForm, setWaitlistForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+  });
+  const [newsletterEmail, setNewsletterEmail] = useState('');
   const scrollToTop = () =>
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const waitlistMutation = useMutation({
+    mutationFn: joinWaitlist,
+    onSuccess: () => {
+      setWaitlistForm({ fullName: '', email: '', phone: '' });
+      toast({
+        title: 'You are on the waitlist',
+        description: 'We will reach out as soon as spots open up.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not join waitlist',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const newsletterMutation = useMutation({
+    mutationFn: subscribeNewsletter,
+    onSuccess: () => {
+      setNewsletterEmail('');
+      toast({
+        title: 'Subscribed',
+        description: 'You will now get DoLearn updates in your inbox.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not subscribe',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   return (
     <main className="min-h-screen bg-white dark:bg-background">
@@ -148,6 +227,9 @@ export default function Home() {
               </Link>
               <Link href="#pricing" className="hover:text-brand dark:hover:text-accent2-400 transition">
                 Pricing
+              </Link>
+              <Link href="#waitlist" className="hover:text-brand dark:hover:text-accent2-400 transition">
+                Waitlist
               </Link>
               <Link href="#faq" className="hover:text-brand dark:hover:text-accent2-400 transition">
                 FAQ
@@ -194,6 +276,11 @@ export default function Home() {
                 team owns the match.
               </p>
               <div className="flex flex-wrap gap-3 mb-10">
+                <Link href="#waitlist">
+                  <Button className="bg-brand hover:bg-brand-600 rounded-full px-6">
+                    Join waitlist
+                  </Button>
+                </Link>
                 {/* <Link href="/register">
                   <Button className="bg-brand hover:bg-brand-600 rounded-full px-6">
                     Start free intake
@@ -245,8 +332,8 @@ export default function Home() {
                     </p>
                   </div>
                   <p className="text-[11px] text-gray-500 dark:text-muted-foreground mt-2 leading-relaxed">
-                    We matched Alex with a Maths teacher based on her goals,
-                    schedule, and how she learns best.
+                    We matched Alex with a Maths teacher based on his goals,
+                    schedule, and how his learns best.
                   </p>
                 </div>
               </div>
@@ -460,6 +547,127 @@ export default function Home() {
                 })}
               </ul>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section id="waitlist" className="py-20 bg-white dark:bg-card">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-start">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
+                Waitlist
+              </p>
+              <h2 className="text-3xl font-bold text-brand mb-3">
+                Join the list and hear from us first.
+              </h2>
+              <p className="text-gray-600 dark:text-muted-foreground max-w-xl">
+                Leave your full name, email, and WhatsApp number. We&apos;ll use it
+                for launch updates, new slot openings, and early family onboarding.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-3 mt-8">
+                <div className="rounded-2xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-4 py-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                    Early access
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+                    Be first in line when we open new spots.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-4 py-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                    Fast follow-up
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+                    WhatsApp makes it easy for our team to reach you.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-4 py-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                    Launch news
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+                    Product updates without needing to check back.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.form
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              onSubmit={(event) => {
+                event.preventDefault();
+                waitlistMutation.mutate({
+                  fullName: waitlistForm.fullName.trim(),
+                  email: waitlistForm.email.trim(),
+                  phone: waitlistForm.phone.trim(),
+                });
+              }}
+              className="rounded-3xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background p-6 space-y-4"
+            >
+              <div>
+                <p className="text-lg font-semibold text-gray-900 dark:text-foreground">
+                  Save my spot
+                </p>
+                <p className="text-sm text-gray-500 dark:text-muted-foreground mt-1">
+                  We&apos;ll only use these details for DoLearn updates and onboarding.
+                </p>
+              </div>
+              <Input
+                value={waitlistForm.fullName}
+                onChange={(event) =>
+                  setWaitlistForm((current) => ({
+                    ...current,
+                    fullName: event.target.value,
+                  }))
+                }
+                placeholder="Full name"
+                className="h-11 rounded-2xl bg-white dark:bg-card"
+              />
+              <Input
+                type="email"
+                value={waitlistForm.email}
+                onChange={(event) =>
+                  setWaitlistForm((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+                placeholder="Email address"
+                className="h-11 rounded-2xl bg-white dark:bg-card"
+              />
+              <Input
+                value={waitlistForm.phone}
+                onChange={(event) =>
+                  setWaitlistForm((current) => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
+                }
+                placeholder="WhatsApp number"
+                className="h-11 rounded-2xl bg-white dark:bg-card"
+              />
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-2xl bg-brand hover:bg-brand-600"
+                disabled={
+                  waitlistMutation.isPending ||
+                  !waitlistForm.fullName.trim() ||
+                  !waitlistForm.email.trim() ||
+                  !waitlistForm.phone.trim()
+                }
+              >
+                {waitlistMutation.isPending ? 'Joining...' : 'Join the waitlist'}
+              </Button>
+            </motion.form>
           </div>
         </div>
       </section>
@@ -717,19 +925,19 @@ export default function Home() {
               Start the intake. We&apos;ll take it from there.
             </p>
             <div className="flex gap-3">
-              {/* <Link href="/register">
+              <Link href="#waitlist">
                 <Button className="bg-brand hover:bg-brand-600 rounded-full px-6">
-                  Start free intake
+                  Join waitlist
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="#pricing">
                 <Button
                   variant="outline"
                   className="rounded-full px-6 border-brand text-brand"
                 >
-                  Log in
+                  See pricing
                 </Button>
-              </Link> */}
+              </Link>
             </div>
           </motion.div>
           <motion.div
@@ -751,32 +959,41 @@ export default function Home() {
       {/* Newsletter */}
       <section className="bg-gray-100 dark:bg-secondary">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="grid lg:grid-cols-[auto_1fr_auto] gap-6 items-center">
             <Image
               src={logo}
               alt="DoLearn"
               className="w-[150px] h-[28px]"
             />
-            <div className="text-center md:text-left">
-              <h3 className="font-semibold text-gray-800 dark:text-foreground">
+            <div className="text-center lg:text-left">
+              <h3 className="font-semibold text-gray-800 dark:text-foreground text-lg">
                 DoLearn updates, once a week
               </h3>
               <p className="text-sm text-gray-500 dark:text-muted-foreground">
-                New teacher stories, learning tips, product updates. No spam.
+                New teacher stories, learning tips, and product updates. No spam.
               </p>
             </div>
-            <form className="flex flex-col sm:flex-row items-center bg-white dark:bg-card rounded-full p-1 shadow-sm">
-              <input
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                newsletterMutation.mutate({ email: newsletterEmail.trim() });
+              }}
+              className="flex flex-col sm:flex-row items-center bg-white dark:bg-card rounded-3xl p-2 shadow-sm border border-gray-200 dark:border-border"
+            >
+              <Input
                 type="email"
+                value={newsletterEmail}
+                onChange={(event) => setNewsletterEmail(event.target.value)}
                 placeholder="your@email.com"
-                className="flex-1 w-full px-4 py-2 text-sm outline-none rounded-full bg-transparent dark:text-foreground dark:placeholder:text-muted-foreground"
+                className="flex-1 w-full bg-transparent border-none shadow-none h-10 rounded-2xl"
               />
-              <button
+              <Button
                 type="submit"
-                className="mt-2 sm:mt-0 sm:ml-2 px-6 py-2 text-sm font-medium bg-brand text-white rounded-full hover:bg-brand-600 transition"
+                className="mt-2 sm:mt-0 sm:ml-2 px-6 py-2 text-sm font-medium bg-brand text-white rounded-2xl hover:bg-brand-600 transition"
+                disabled={newsletterMutation.isPending || !newsletterEmail.trim()}
               >
-                Subscribe
-              </button>
+                {newsletterMutation.isPending ? 'Subscribing...' : 'Subscribe'}
+              </Button>
             </form>
           </div>
         </div>
@@ -826,6 +1043,32 @@ export default function Home() {
                 <li className="hover:text-white cursor-pointer">Privacy</li>
               </ul>
             </div>
+          </div>
+          <div className="border-t border-gray-800 mt-10 pt-6 flex flex-wrap items-center gap-3">
+            {socialLinks.map((item) => {
+              const Icon = item.icon;
+              return (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target={item.href.startsWith('http') ? '_blank' : undefined}
+                  rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
+                  className="inline-flex items-center gap-2 rounded-full border border-gray-800 px-3 py-2 text-sm text-gray-400 hover:text-white hover:border-gray-600 transition"
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </a>
+              );
+            })}
+            <a
+              href={`https://wa.me/${PHONE_NUMBER.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-gray-800 px-3 py-2 text-sm text-gray-400 hover:text-white hover:border-gray-600 transition"
+            >
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
+            </a>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-6 text-center text-xs text-gray-600 dark:text-muted-foreground">
             DoLearn © {new Date().getFullYear()} · All rights reserved

@@ -35,6 +35,8 @@ interface ApiTeacher {
   hourlyRate: string | number;
   rating: string | number;
   totalSessions: number;
+  studentCount?: number;
+  upcomingCount?: number;
   status: string;
   terminationReason?: string | null;
   terminatedAt?: string | null;
@@ -108,8 +110,14 @@ interface ApiBookingRequest {
 
 export const adminKeys = {
   teachers: ['admin', 'teachers'] as const,
+  teachersPage: (params: ListAdminTeachersParams = {}) =>
+    ['admin', 'teachers', params] as const,
   students: ['admin', 'students'] as const,
+  studentsPage: (params: ListAdminStudentsParams = {}) =>
+    ['admin', 'students', params] as const,
   sessions: ['admin', 'sessions'] as const,
+  sessionsPage: (params: ListAdminSessionsParams = {}) =>
+    ['admin', 'sessions', params] as const,
   bookingRequests: ['admin', 'sessions', 'booking-requests'] as const,
   cancellations: ['admin', 'sessions', 'cancellations'] as const,
 };
@@ -202,6 +210,8 @@ function mapTeacher(teacher: ApiTeacher): Teacher {
     hourlyRate: asNumber(teacher.hourlyRate),
     rating: asNumber(teacher.rating),
     totalSessions: teacher.totalSessions,
+    studentCount: teacher.studentCount ?? 0,
+    upcomingCount: teacher.upcomingCount ?? 0,
     joinedAt: teacher.joinedAt,
     status: teacher.status === 'TERMINATED' ? 'Terminated' : 'Active',
     terminationReason: teacher.terminationReason ?? undefined,
@@ -224,8 +234,69 @@ export interface CreateTeacherInput {
 }
 
 export async function listAdminTeachers() {
-  const response = await apiFetch<{ teachers: ApiTeacher[] }>('/admin/teachers');
+  const response = await apiFetch<{
+    teachers: ApiTeacher[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      active: number;
+      terminated: number;
+    };
+  }>('/admin/teachers?page=1&pageSize=100');
   return response.teachers.map(mapTeacher);
+}
+
+export interface ListAdminTeachersParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: 'All' | Teacher['status'];
+}
+
+function teacherStatusToApi(status?: ListAdminTeachersParams['status']) {
+  if (!status || status === 'All') return undefined;
+  return status === 'Terminated' ? 'TERMINATED' : 'ACTIVE';
+}
+
+function buildTeachersQuery(params: ListAdminTeachersParams) {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.pageSize) searchParams.set('pageSize', String(params.pageSize));
+  if (params.search?.trim()) searchParams.set('search', params.search.trim());
+  const status = teacherStatusToApi(params.status);
+  if (status) searchParams.set('status', status);
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function listAdminTeachersPage(
+  params: ListAdminTeachersParams = {},
+) {
+  const response = await apiFetch<{
+    teachers: ApiTeacher[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      active: number;
+      terminated: number;
+    };
+  }>(`/admin/teachers${buildTeachersQuery(params)}`);
+
+  return {
+    teachers: response.teachers.map(mapTeacher),
+    pagination: response.pagination,
+    summary: response.summary,
+  };
 }
 
 export async function createAdminTeacher(input: CreateTeacherInput) {
@@ -268,8 +339,69 @@ export async function terminateAdminTeacher(
 }
 
 export async function listAdminStudents() {
-  const response = await apiFetch<{ students: ApiStudent[] }>('/admin/students');
+  const response = await apiFetch<{
+    students: ApiStudent[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      pending: number;
+      matched: number;
+    };
+  }>('/admin/students?page=1&pageSize=100&assignmentStatus=ALL');
   return response.students.map((student) => mapStudent(student as never));
+}
+
+export interface ListAdminStudentsParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  hasIntake?: boolean;
+  assignmentStatus?: 'All' | 'Pending' | 'Matched';
+}
+
+function buildStudentsQuery(params: ListAdminStudentsParams) {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.pageSize) searchParams.set('pageSize', String(params.pageSize));
+  if (params.search?.trim()) searchParams.set('search', params.search.trim());
+  if (params.hasIntake !== undefined) {
+    searchParams.set('hasIntake', String(params.hasIntake));
+  }
+  if (params.assignmentStatus && params.assignmentStatus !== 'All') {
+    searchParams.set('assignmentStatus', params.assignmentStatus.toUpperCase());
+  }
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function listAdminStudentsPage(
+  params: ListAdminStudentsParams = {},
+) {
+  const response = await apiFetch<{
+    students: ApiStudent[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      pending: number;
+      matched: number;
+    };
+  }>(`/admin/students${buildStudentsQuery(params)}`);
+
+  return {
+    students: response.students.map((student) => mapStudent(student as never)),
+    pagination: response.pagination,
+    summary: response.summary,
+  };
 }
 
 export async function createAdminStudent(input: {
@@ -350,8 +482,66 @@ export async function unassignAdminTeacherFromStudent(
 }
 
 export async function listAdminSessions() {
-  const response = await apiFetch<{ sessions: ApiSession[] }>('/admin/sessions');
+  const response = await apiFetch<{ sessions: ApiSession[] }>(
+    '/admin/sessions?page=1&pageSize=100',
+  );
   return response.sessions.map((session) => mapSession(session as never));
+}
+
+export interface ListAdminSessionsParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: 'All' | Session['status'];
+}
+
+function sessionStatusToApi(status?: ListAdminSessionsParams['status']) {
+  if (!status || status === 'All') return undefined;
+  switch (status) {
+    case 'Completed':
+      return 'COMPLETED';
+    case 'Cancelled':
+      return 'CANCELLED';
+    default:
+      return 'UPCOMING';
+  }
+}
+
+function buildSessionsQuery(params: ListAdminSessionsParams) {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.pageSize) searchParams.set('pageSize', String(params.pageSize));
+  if (params.search?.trim()) searchParams.set('search', params.search.trim());
+  const status = sessionStatusToApi(params.status);
+  if (status) searchParams.set('status', status);
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function listAdminSessionsPage(
+  params: ListAdminSessionsParams = {},
+) {
+  const response = await apiFetch<{
+    sessions: ApiSession[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      upcoming: number;
+      completed: number;
+      cancelled: number;
+    };
+  }>(`/admin/sessions${buildSessionsQuery(params)}`);
+
+  return {
+    sessions: response.sessions.map((session) => mapSession(session as never)),
+    pagination: response.pagination,
+    summary: response.summary,
+  };
 }
 
 export interface CreateAdminSessionInput {

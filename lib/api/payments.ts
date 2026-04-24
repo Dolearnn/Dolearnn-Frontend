@@ -110,7 +110,11 @@ interface ApiTeacherPayout {
 
 export const paymentKeys = {
   adminPayments: ['admin', 'payments'] as const,
+  adminPaymentsPage: (params: ListAdminPaymentsParams = {}) =>
+    ['admin', 'payments', params] as const,
   adminLessonPackages: ['admin', 'payments', 'lesson-packages'] as const,
+  adminLessonPackagesPage: (params: ListAdminLessonPackagesParams = {}) =>
+    ['admin', 'payments', 'lesson-packages', params] as const,
   adminParents: ['admin', 'payments', 'parents'] as const,
   adminPayouts: (month: string) => ['admin', 'payments', 'payouts', month] as const,
   familyPayments: ['family', 'payments'] as const,
@@ -206,15 +210,129 @@ export function mapTeacherPayout(payout: ApiTeacherPayout): TeacherPayoutRecord 
 }
 
 export async function listAdminPayments() {
-  const response = await apiFetch<{ payments: ApiPayment[] }>('/admin/payments');
+  const response = await apiFetch<{
+    payments: ApiPayment[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      amount: number;
+      sessionsIncluded: number;
+      sessionsUsed: number;
+    };
+  }>('/admin/payments');
   return response.payments.map(mapPayment);
 }
 
 export async function listAdminLessonPackages() {
-  const response = await apiFetch<{ packages: ApiLessonPackage[] }>(
+  const response = await apiFetch<{
+    packages: ApiLessonPackage[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      active: number;
+      exhausted: number;
+      cancelled: number;
+    };
+  }>(
     '/admin/payments/lesson-packages',
   );
   return response.packages.map(mapLessonPackage);
+}
+
+export interface ListAdminPaymentsParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+export interface ListAdminLessonPackagesParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: 'All' | 'Active' | 'Exhausted' | 'Cancelled';
+}
+
+function buildPaymentsQuery(params: ListAdminPaymentsParams) {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.pageSize) searchParams.set('pageSize', String(params.pageSize));
+  if (params.search?.trim()) searchParams.set('search', params.search.trim());
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+function buildLessonPackagesQuery(params: ListAdminLessonPackagesParams) {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.pageSize) searchParams.set('pageSize', String(params.pageSize));
+  if (params.search?.trim()) searchParams.set('search', params.search.trim());
+  if (params.status && params.status !== 'All') {
+    searchParams.set('status', params.status.toUpperCase());
+  }
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function listAdminPaymentsPage(
+  params: ListAdminPaymentsParams = {},
+) {
+  const response = await apiFetch<{
+    payments: ApiPayment[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      amount: number;
+      sessionsIncluded: number;
+      sessionsUsed: number;
+    };
+  }>(`/admin/payments${buildPaymentsQuery(params)}`);
+
+  return {
+    payments: response.payments.map(mapPayment),
+    pagination: response.pagination,
+    summary: response.summary,
+  };
+}
+
+export async function listAdminLessonPackagesPage(
+  params: ListAdminLessonPackagesParams = {},
+) {
+  const response = await apiFetch<{
+    packages: ApiLessonPackage[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: {
+      total: number;
+      active: number;
+      exhausted: number;
+      cancelled: number;
+    };
+  }>(`/admin/payments/lesson-packages${buildLessonPackagesQuery(params)}`);
+
+  return {
+    packages: response.packages.map(mapLessonPackage),
+    pagination: response.pagination,
+    summary: response.summary,
+  };
 }
 
 export async function listAdminPaymentParents() {

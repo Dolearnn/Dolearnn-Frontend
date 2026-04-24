@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -21,27 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  adminKeys,
-  listAdminSessions,
-  listAdminStudents,
-} from '@/lib/api/admin';
-import {
-  listAdminPayments,
-  listAdminTeacherPayouts,
-  paymentKeys,
-  type TeacherPayoutSummary,
-} from '@/lib/api/payments';
+import { getAdminReport, reportKeys } from '@/lib/api/reports';
 import { cn } from '@/lib/utils';
-import { isSessionPayoutEligible, type Child, type Payment, type Session } from '@/lib/types';
 
-const EMPTY_PAYMENTS: Payment[] = [];
-const EMPTY_SESSIONS: Session[] = [];
-const EMPTY_STUDENTS: Child[] = [];
-const EMPTY_PAYOUTS: TeacherPayoutSummary[] = [];
-
-function monthKey(date: string) {
-  return date.slice(0, 7);
+function currentMonth() {
+  return new Date().toISOString().slice(0, 7);
 }
 
 function monthLabel(key: string) {
@@ -51,110 +35,26 @@ function monthLabel(key: string) {
   });
 }
 
-function currentMonth() {
-  return new Date().toISOString().slice(0, 7);
-}
-
 export default function AdminReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const paymentsQuery = useQuery({
-    queryKey: paymentKeys.adminPayments,
-    queryFn: listAdminPayments,
-  });
-  const sessionsQuery = useQuery({
-    queryKey: adminKeys.sessions,
-    queryFn: listAdminSessions,
-  });
-  const studentsQuery = useQuery({
-    queryKey: adminKeys.students,
-    queryFn: listAdminStudents,
-  });
-  const payoutsQuery = useQuery({
-    queryKey: paymentKeys.adminPayouts(selectedMonth),
-    queryFn: () => listAdminTeacherPayouts(selectedMonth),
+
+  const reportQuery = useQuery({
+    queryKey: reportKeys.admin(selectedMonth),
+    queryFn: () => getAdminReport(selectedMonth),
   });
 
-  const payments = paymentsQuery.data ?? EMPTY_PAYMENTS;
-  const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
-  const children = studentsQuery.data ?? EMPTY_STUDENTS;
-  const teacherRows = payoutsQuery.data ?? EMPTY_PAYOUTS;
-  const isLoading =
-    paymentsQuery.isLoading ||
-    sessionsQuery.isLoading ||
-    studentsQuery.isLoading ||
-    payoutsQuery.isLoading;
-  const isError =
-    paymentsQuery.isError ||
-    sessionsQuery.isError ||
-    studentsQuery.isError ||
-    payoutsQuery.isError;
+  useEffect(() => {
+    if (!reportQuery.data) return;
+    if (!reportQuery.data.monthOptions.includes(selectedMonth)) {
+      setSelectedMonth(reportQuery.data.month);
+    }
+  }, [reportQuery.data, selectedMonth]);
 
-  const monthOptions = useMemo(() => {
-    const keys = new Set<string>([currentMonth()]);
-    payments.forEach((payment) => keys.add(monthKey(payment.createdAt)));
-    sessions.forEach((session) => keys.add(monthKey(session.startsAt)));
-    return Array.from(keys).sort((a, b) => b.localeCompare(a));
-  }, [payments, sessions]);
-
-  const report = useMemo(() => {
-    const monthlyPayments = payments.filter(
-      (payment) => monthKey(payment.createdAt) === selectedMonth,
-    );
-    const monthlySessions = sessions.filter(
-      (session) => monthKey(session.startsAt) === selectedMonth,
-    );
-    const completed = monthlySessions.filter((s) => s.status === 'Completed');
-    const verified = completed.filter((session) =>
-      isSessionPayoutEligible(session.attendance),
-    );
-    const cancellationRequests = monthlySessions.filter((s) => s.cancellation);
-    const approvedCancellations = cancellationRequests.filter(
-      (s) => s.cancellation?.status === 'Approved',
-    );
-    const revenue = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
-    const verifiedHours = teacherRows.reduce(
-      (sum, row) => sum + row.verifiedHours,
-      0,
-    );
-    const teacherPayoutDue = teacherRows.reduce(
-      (sum, row) => sum + row.amount,
-      0,
-    );
-    const paidTeacherPayout = teacherRows.reduce(
-      (sum, row) => sum + (row.status === 'Paid' ? row.amount : 0),
-      0,
-    );
-    const confirmationRate =
-      completed.length > 0
-        ? Math.round((verified.length / completed.length) * 100)
-        : 0;
-    const deactivatedStudents = children.filter(
-      (child) => child.status === 'Deactivated',
-    ).length;
-
-    return {
-      monthlyPayments,
-      monthlySessions,
-      completed,
-      verified,
-      cancellationRequests,
-      approvedCancellations,
-      revenue,
-      verifiedHours,
-      teacherRows,
-      teacherPayoutDue,
-      paidTeacherPayout,
-      margin: revenue - teacherPayoutDue,
-      confirmationRate,
-      deactivatedStudents,
-    };
-  }, [children, payments, selectedMonth, sessions, teacherRows]);
-
-  if (isLoading) {
+  if (reportQuery.isLoading) {
     return <PageShellSkeleton />;
   }
 
-  if (isError) {
+  if (reportQuery.isError || !reportQuery.data) {
     return (
       <div className="space-y-6">
         <PageHeader title="Monthly report" description="" />
@@ -164,6 +64,8 @@ export default function AdminReportsPage() {
       </div>
     );
   }
+
+  const report = reportQuery.data;
 
   return (
     <div className="space-y-6">
@@ -177,7 +79,7 @@ export default function AdminReportsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {monthOptions.map((key) => (
+                {report.monthOptions.map((key) => (
                   <SelectItem key={key} value={key}>
                     {monthLabel(key)}
                   </SelectItem>
@@ -188,81 +90,81 @@ export default function AdminReportsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile
           icon={DollarSign}
           label="Revenue"
-          value={`$${report.revenue.toFixed(0)}`}
-          sub={`${report.monthlyPayments.length} parent payment${report.monthlyPayments.length === 1 ? '' : 's'}`}
+          value={`$${report.summary.revenue.toFixed(0)}`}
+          sub={`${report.summary.paymentCount} parent payment${report.summary.paymentCount === 1 ? '' : 's'}`}
           accent
         />
         <StatTile
           icon={Clock}
           label="Verified hours"
-          value={report.verifiedHours.toFixed(1)}
-          sub={`${report.verified.length} verified session${report.verified.length === 1 ? '' : 's'}`}
+          value={report.summary.verifiedHours.toFixed(1)}
+          sub={`${report.summary.verifiedSessions} verified session${report.summary.verifiedSessions === 1 ? '' : 's'}`}
         />
         <StatTile
           icon={GraduationCap}
           label="Teacher payout due"
-          value={`$${report.teacherPayoutDue.toFixed(0)}`}
-          sub={`$${report.paidTeacherPayout.toFixed(0)} paid`}
+          value={`$${report.summary.teacherPayoutDue.toFixed(0)}`}
+          sub={`$${report.summary.paidTeacherPayout.toFixed(0)} paid`}
         />
         <StatTile
           icon={TrendingUp}
           label="Gross margin"
-          value={`$${report.margin.toFixed(0)}`}
+          value={`$${report.summary.margin.toFixed(0)}`}
           sub="revenue minus teacher due"
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile
           icon={CheckCircle2}
           label="Attendance verified"
-          value={`${report.confirmationRate}%`}
-          sub={`${report.verified.length}/${report.completed.length} completed`}
+          value={`${report.summary.confirmationRate}%`}
+          sub={`${report.summary.verifiedSessions}/${report.summary.completedSessions} completed`}
         />
         <StatTile
           icon={AlertTriangle}
           label="Cancellation requests"
-          value={report.cancellationRequests.length}
-          sub={`${report.approvedCancellations.length} approved`}
+          value={report.summary.cancellationRequests}
+          sub={`${report.summary.approvedCancellations} approved`}
         />
         <StatTile
           icon={Users}
           label="Active students"
-          value={children.length - report.deactivatedStudents}
-          sub={`${report.deactivatedStudents} deactivated`}
+          value={report.summary.activeStudents}
+          sub={`${report.summary.deactivatedStudents} deactivated`}
         />
         <StatTile
           icon={Clock}
           label="Total sessions"
-          value={report.monthlySessions.length}
-          sub={`${report.completed.length} completed`}
+          value={report.summary.totalSessions}
+          sub={`${report.summary.completedSessions} completed`}
         />
       </div>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-foreground/90">
           Teacher payout breakdown
         </h2>
-        <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[760px]">
-              <thead className="bg-gray-50 dark:bg-background text-xs text-gray-500 dark:text-muted-foreground uppercase tracking-wide">
+            <table className="min-w-[760px] w-full text-sm">
+              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium">Teacher</th>
-                  <th className="text-right px-4 py-3 font-medium">
+                  <th className="px-4 py-3 text-left font-medium">Teacher</th>
+                  <th className="px-4 py-3 text-right font-medium">
                     Verified sessions
                   </th>
-                  <th className="text-right px-4 py-3 font-medium">Hours</th>
-                  <th className="text-right px-4 py-3 font-medium">Rate</th>
-                  <th className="text-right px-4 py-3 font-medium">Amount due</th>
-                  <th className="text-right px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 text-right font-medium">Hours</th>
+                  <th className="px-4 py-3 text-right font-medium">Rate</th>
+                  <th className="px-4 py-3 text-right font-medium">Amount due</th>
+                  <th className="px-4 py-3 text-right font-medium">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-border">
                 {report.teacherRows.map((row) => (
                   <tr
                     key={row.teacherId}
@@ -291,7 +193,7 @@ export default function AdminReportsPage() {
                     <td className="px-4 py-3 text-right">
                       <span
                         className={cn(
-                          'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                          'rounded-full px-2 py-0.5 text-[11px] font-medium',
                           row.status === 'Paid'
                             ? 'bg-accent2-50 text-accent2-700'
                             : row.amount > 0
@@ -320,33 +222,19 @@ export default function AdminReportsPage() {
         </div>
       </section>
 
-      <section className="grid lg:grid-cols-2 gap-4">
+      <section className="grid gap-4 lg:grid-cols-2">
         <ReportList
           title="Sessions needing attendance"
           empty="Every completed session is verified."
-          rows={report.completed
-            .filter((session) => !isSessionPayoutEligible(session.attendance))
-            .map((session) => ({
-              id: session.id,
-              label: `${session.subject} - ${session.childName ?? 'Student'}`,
-              sub: `${new Date(session.startsAt).toLocaleDateString()} - ${session.durationMins} min`,
-              tone: 'warning',
-            }))}
+          rows={report.sessionsNeedingAttendance.map((row) => ({
+            ...row,
+            tone: 'warning' as const,
+          }))}
         />
         <ReportList
           title="Cancellation activity"
           empty="No cancellation requests this month."
-          rows={report.cancellationRequests.map((session) => ({
-            id: session.id,
-            label: `${session.cancellation?.requestedBy ?? 'Someone'} requested cancellation`,
-            sub: session.cancellation?.reason ?? '',
-            tone:
-              session.cancellation?.status === 'Approved'
-                ? 'danger'
-                : session.cancellation?.status === 'Rejected'
-                  ? 'muted'
-                  : 'warning',
-          }))}
+          rows={report.cancellationActivity}
         />
       </section>
     </div>
@@ -360,11 +248,16 @@ function ReportList({
 }: {
   title: string;
   empty: string;
-  rows: Array<{ id: string; label: string; sub: string; tone: string }>;
+  rows: Array<{
+    id: string;
+    label: string;
+    sub: string;
+    tone?: 'danger' | 'warning' | 'muted';
+  }>;
 }) {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-foreground/90">
         {title}
       </h2>
       {rows.length === 0 ? (
@@ -376,25 +269,25 @@ function ReportList({
           {rows.map((row) => (
             <div
               key={row.id}
-              className="flex items-start justify-between gap-3 rounded-xl bg-gray-50 dark:bg-background p-3"
+              className="flex items-start justify-between gap-3 rounded-xl bg-gray-50 p-3 dark:bg-background"
             >
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
+                <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">
                   {row.label}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-muted-foreground line-clamp-2">
+                <p className="line-clamp-2 text-xs text-gray-500 dark:text-muted-foreground">
                   {row.sub}
                 </p>
               </div>
               <span
                 className={cn(
-                  'text-[11px] font-medium px-2 py-0.5 rounded-full capitalize',
+                  'rounded-full px-2 py-0.5 text-[11px] font-medium capitalize',
                   row.tone === 'danger' && 'bg-red-50 text-red-600',
                   row.tone === 'warning' && 'bg-amber-50 text-amber-700',
                   row.tone === 'muted' && 'bg-gray-100 text-gray-500',
                 )}
               >
-                {row.tone}
+                {row.tone ?? 'info'}
               </span>
             </div>
           ))}

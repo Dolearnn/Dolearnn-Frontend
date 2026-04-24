@@ -1,7 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   AlertTriangle,
   Check,
@@ -25,6 +30,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -37,9 +49,8 @@ import {
   adminKeys,
   assignAdminTeacherToStudent,
   createAdminTeacher,
-  listAdminSessions,
   listAdminStudents,
-  listAdminTeachers,
+  listAdminTeachersPage,
   terminateAdminTeacher,
   updateAdminTeacherRate,
 } from '@/lib/api/admin';
@@ -83,40 +94,52 @@ export default function AdminTeachersPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [query, setQuery] = useState('');
+  const [status, setStatus] = useState<'All' | 'Active' | 'Terminated'>('All');
+  const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
-  const [teacherForm, setTeacherForm] =
-    useState<AddTeacherForm>(emptyTeacherForm);
+  const [teacherForm, setTeacherForm] = useState<AddTeacherForm>(emptyTeacherForm);
   const [terminateTarget, setTerminateTarget] = useState<Teacher | null>(null);
   const [terminationReason, setTerminationReason] = useState('');
   const [rematchIds, setRematchIds] = useState<string[]>([]);
 
   const teachersQuery = useQuery({
-    queryKey: adminKeys.teachers,
-    queryFn: listAdminTeachers,
+    queryKey: adminKeys.teachersPage({
+      page,
+      pageSize: 12,
+      search: query,
+      status,
+    }),
+    queryFn: () =>
+      listAdminTeachersPage({
+        page,
+        pageSize: 12,
+        search: query,
+        status,
+      }),
+    placeholderData: keepPreviousData,
   });
   const studentsQuery = useQuery({
     queryKey: adminKeys.students,
     queryFn: listAdminStudents,
   });
-  const sessionsQuery = useQuery({
-    queryKey: adminKeys.sessions,
-    queryFn: listAdminSessions,
-  });
 
-  const teachers = useMemo(() => teachersQuery.data ?? [], [teachersQuery.data]);
+  const teachers = useMemo(
+    () => teachersQuery.data?.teachers ?? [],
+    [teachersQuery.data],
+  );
+  const summary = teachersQuery.data?.summary;
+  const pagination = teachersQuery.data?.pagination;
   const children = useMemo(() => studentsQuery.data ?? [], [studentsQuery.data]);
-  const sessions = useMemo(() => sessionsQuery.data ?? [], [sessionsQuery.data]);
 
-  const invalidateAdmin = () => {
-    queryClient.invalidateQueries({ queryKey: adminKeys.teachers });
-    queryClient.invalidateQueries({ queryKey: adminKeys.students });
-    queryClient.invalidateQueries({ queryKey: adminKeys.sessions });
+  const invalidateAdmin = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['admin', 'teachers'] });
+    await queryClient.invalidateQueries({ queryKey: adminKeys.students });
   };
 
   const createMutation = useMutation({
     mutationFn: createAdminTeacher,
-    onSuccess: () => {
-      invalidateAdmin();
+    onSuccess: async () => {
+      await invalidateAdmin();
       setTeacherForm(emptyTeacherForm);
       setAddOpen(false);
       toast({ title: 'Teacher added' });
@@ -134,14 +157,14 @@ export default function AdminTeachersPage() {
   const terminateMutation = useMutation({
     mutationFn: ({ teacherId, reason }: { teacherId: string; reason: string }) =>
       terminateAdminTeacher(teacherId, reason),
-    onSuccess: (_teacher, variables) => {
+    onSuccess: async (_teacher, variables) => {
       const affectedChildIds = children
         .filter((child) => child.assignedTeacherId === variables.teacherId)
         .map((child) => child.id);
       setRematchIds((previous) =>
         Array.from(new Set([...previous, ...affectedChildIds])),
       );
-      invalidateAdmin();
+      await invalidateAdmin();
       setTerminateTarget(null);
       setTerminationReason('');
       toast({ title: 'Teacher terminated' });
@@ -164,8 +187,8 @@ export default function AdminTeachersPage() {
       teacherId: string;
       hourlyRate: number;
     }) => updateAdminTeacherRate(teacherId, hourlyRate),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.teachers });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'teachers'] });
       toast({ title: 'Rate updated' });
     },
     onError: (error) => {
@@ -181,8 +204,8 @@ export default function AdminTeachersPage() {
   const assignMutation = useMutation({
     mutationFn: ({ childId, teacherId }: { childId: string; teacherId: string }) =>
       assignAdminTeacherToStudent(childId, teacherId),
-    onSuccess: (_student, variables) => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.students });
+    onSuccess: async (_student, variables) => {
+      await queryClient.invalidateQueries({ queryKey: adminKeys.students });
       setRematchIds((previous) =>
         previous.filter((id) => id !== variables.childId),
       );
@@ -197,17 +220,6 @@ export default function AdminTeachersPage() {
       });
     },
   });
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return teachers;
-    return teachers.filter(
-      (teacher) =>
-        teacher.name.toLowerCase().includes(q) ||
-        teacher.email?.toLowerCase().includes(q) ||
-        teacher.subjects.some((subject) => subject.toLowerCase().includes(q)),
-    );
-  }, [teachers, query]);
 
   const activeTeachers = useMemo(
     () =>
@@ -225,29 +237,6 @@ export default function AdminTeachersPage() {
       ),
     [children, rematchIds],
   );
-
-  const assignedByTeacher = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const child of children) {
-      if (!child.assignedTeacherId) continue;
-      map.set(
-        child.assignedTeacherId,
-        (map.get(child.assignedTeacherId) ?? 0) + 1,
-      );
-    }
-    return map;
-  }, [children]);
-
-  const upcomingByTeacher = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const session of sessions) {
-      if (session.status !== 'Upcoming') continue;
-      const teacher = teachers.find((item) => item.id === session.teacherId);
-      if (teacher?.status === 'Terminated') continue;
-      map.set(session.teacherId, (map.get(session.teacherId) ?? 0) + 1);
-    }
-    return map;
-  }, [sessions, teachers]);
 
   const canAddTeacher =
     teacherForm.firstName.trim() &&
@@ -284,11 +273,10 @@ export default function AdminTeachersPage() {
     });
   };
 
-  const isLoading =
-    teachersQuery.isLoading || studentsQuery.isLoading || sessionsQuery.isLoading;
-  const error = teachersQuery.error ?? studentsQuery.error ?? sessionsQuery.error;
+  const isLoading = teachersQuery.isLoading || studentsQuery.isLoading;
+  const error = teachersQuery.error ?? studentsQuery.error;
 
-  if (isLoading) {
+  if (isLoading && !teachersQuery.data) {
     return <PageShellSkeleton />;
   }
 
@@ -304,13 +292,13 @@ export default function AdminTeachersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Teachers"
-        description={`Managing ${teachers.length} teachers across the DoLearn roster.`}
+        description={`Managing ${summary?.total ?? 0} teachers across the DoLearn roster.`}
         action={
           <Button
-            className="bg-brand hover:bg-brand-600 rounded-full"
+            className="rounded-full bg-brand hover:bg-brand-600"
             onClick={() => setAddOpen(true)}
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add teacher
           </Button>
         }
@@ -327,41 +315,114 @@ export default function AdminTeachersPage() {
         />
       )}
 
-      <div className="relative w-full sm:w-80">
-        <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by name, email, or subject"
-          className="pl-9 rounded-full"
-        />
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="grid gap-4 md:grid-cols-3 lg:w-[520px]">
+          <MiniMetric label="Total" value={String(summary?.total ?? 0)} />
+          <MiniMetric label="Active" value={String(summary?.active ?? 0)} />
+          <MiniMetric
+            label="Terminated"
+            value={String(summary?.terminated ?? 0)}
+          />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px] lg:w-[520px]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Search by name, email, or subject"
+              className="rounded-full pl-9"
+            />
+          </div>
+
+          <Select
+            value={status}
+            onValueChange={(value) => {
+              setStatus(value as typeof status);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="rounded-full">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All statuses</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Terminated">Terminated</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
+      {teachers.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
           <p className="text-sm text-gray-500 dark:text-muted-foreground">
             No teachers match that search.
           </p>
         </div>
       ) : (
-        <div className="grid lg:grid-cols-2 gap-4">
-          {filtered.map((teacher) => (
-            <TeacherCard
-              key={teacher.id}
-              teacher={teacher}
-              studentCount={assignedByTeacher.get(teacher.id) ?? 0}
-              upcomingCount={upcomingByTeacher.get(teacher.id) ?? 0}
-              savingRate={rateMutation.isPending}
-              onTerminate={() => setTerminateTarget(teacher)}
-              onRateSave={(rate) =>
-                rateMutation.mutate({
-                  teacherId: teacher.id,
-                  hourlyRate: rate,
-                })
-              }
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {teachers.map((teacher) => (
+              <TeacherCard
+                key={teacher.id}
+                teacher={teacher}
+                savingRate={rateMutation.isPending}
+                onTerminate={() => setTerminateTarget(teacher)}
+                onRateSave={(rate) =>
+                  rateMutation.mutate({
+                    teacherId: teacher.id,
+                    hourlyRate: rate,
+                  })
+                }
+              />
+            ))}
+          </div>
+          {pagination && pagination.totalPages > 1 ? (
+            <div className="flex justify-end">
+              <Pagination className="mx-0 w-auto justify-end">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (pagination.page > 1) setPage((current) => current - 1);
+                      }}
+                      className={cn(
+                        pagination.page <= 1 && 'pointer-events-none opacity-50',
+                      )}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </Button>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (pagination.page < pagination.totalPages) {
+                          setPage((current) => current + 1);
+                        }
+                      }}
+                      className={cn(
+                        pagination.page >= pagination.totalPages &&
+                          'pointer-events-none opacity-50',
+                      )}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          ) : null}
+        </>
       )}
 
       <AddTeacherDialog
@@ -392,13 +453,10 @@ export default function AdminTeachersPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="rounded-xl bg-amber-50 border border-amber-100 p-3 text-sm text-amber-800 flex gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="flex gap-2 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               {terminateTarget?.name} currently has{' '}
-              {terminateTarget
-                ? assignedByTeacher.get(terminateTarget.id) ?? 0
-                : 0}{' '}
-              assigned student(s).
+              {terminateTarget?.studentCount ?? 0} assigned student(s).
             </div>
             <Textarea
               value={terminationReason}
@@ -426,15 +484,11 @@ export default function AdminTeachersPage() {
 
 function TeacherCard({
   teacher,
-  studentCount,
-  upcomingCount,
   savingRate,
   onTerminate,
   onRateSave,
 }: {
   teacher: Teacher;
-  studentCount: number;
-  upcomingCount: number;
   savingRate: boolean;
   onTerminate: () => void;
   onRateSave: (hourlyRate: number) => void;
@@ -447,26 +501,26 @@ function TeacherCard({
   return (
     <div
       className={cn(
-        'bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4',
+        'space-y-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-border dark:bg-card',
         isTerminated && 'opacity-75',
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-semibold shrink-0">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand font-semibold text-white">
           {teacher.name
             .split(' ')
             .map((part) => part[0])
             .join('')
             .slice(0, 2)}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold text-gray-900 dark:text-foreground">
               {teacher.name}
             </p>
             <span
               className={cn(
-                'text-[10px] font-medium px-2 py-0.5 rounded-full',
+                'rounded-full px-2 py-0.5 text-[10px] font-medium',
                 status === 'Active' && 'bg-accent2-50 text-accent2-700',
                 status === 'Terminated' && 'bg-red-50 text-red-700',
               )}
@@ -474,18 +528,18 @@ function TeacherCard({
               {status}
             </span>
           </div>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground leading-snug">
+          <p className="text-xs leading-snug text-gray-500 dark:text-muted-foreground">
             {teacher.bio}
           </p>
         </div>
-        <div className="text-right shrink-0">
+        <div className="shrink-0 text-right">
           <p
             className={cn(
-              'text-sm font-semibold flex items-center gap-1',
+              'flex items-center gap-1 text-sm font-semibold',
               teacher.rating >= 4.8 ? 'text-accent2-600' : 'text-gray-700',
             )}
           >
-            <Star className="w-3 h-3 fill-current" />
+            <Star className="h-3 w-3 fill-current" />
             {teacher.rating ? teacher.rating.toFixed(1) : 'New'}
           </p>
           <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
@@ -494,10 +548,10 @@ function TeacherCard({
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-2 text-xs text-gray-600 dark:text-muted-foreground">
+      <div className="grid gap-2 text-xs text-gray-600 dark:text-muted-foreground sm:grid-cols-2">
         {teacher.email && (
-          <p className="flex items-center gap-2 min-w-0">
-            <Mail className="w-3.5 h-3.5 shrink-0" />
+          <p className="flex min-w-0 items-center gap-2">
+            <Mail className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{teacher.email}</span>
           </p>
         )}
@@ -508,7 +562,7 @@ function TeacherCard({
         {teacher.subjects.map((subject) => (
           <span
             key={subject}
-            className="text-[11px] bg-accent2-50 text-accent2-700 px-2 py-0.5 rounded-full"
+            className="rounded-full bg-accent2-50 px-2 py-0.5 text-[11px] text-accent2-700"
           >
             {subject}
           </span>
@@ -516,9 +570,9 @@ function TeacherCard({
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center">
-        <Stat label="Students" value={studentCount} />
-        <Stat label="Upcoming" value={upcomingCount} />
-        <div className="bg-gray-50 dark:bg-background rounded-xl p-2">
+        <Stat label="Students" value={teacher.studentCount ?? 0} />
+        <Stat label="Upcoming" value={teacher.upcomingCount ?? 0} />
+        <div className="rounded-xl bg-gray-50 p-2 dark:bg-background">
           <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
             Rate
           </p>
@@ -529,7 +583,7 @@ function TeacherCard({
               min={0}
               value={rate}
               onChange={(event) => setRate(event.target.value)}
-              className="h-7 w-16 text-center px-1"
+              className="h-7 w-16 px-1 text-center"
             />
             <Button
               size="sm"
@@ -541,13 +595,13 @@ function TeacherCard({
               disabled={!rateChanged || savingRate || isTerminated}
               onClick={() => onRateSave(Number(rate) || 0)}
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="pt-3 border-t border-gray-100 dark:border-border space-y-1">
+      <div className="space-y-1 border-t border-gray-100 pt-3 dark:border-border">
         <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
           Qualifications
         </p>
@@ -555,7 +609,7 @@ function TeacherCard({
           {teacher.qualifications.join(' / ')}
         </p>
         {teacher.terminationReason && (
-          <p className="text-xs text-red-600 pt-1">
+          <p className="pt-1 text-xs text-red-600">
             Termination reason: {teacher.terminationReason}
           </p>
         )}
@@ -576,7 +630,7 @@ function TeacherCard({
             className="rounded-full text-red-600 hover:text-red-700"
             onClick={onTerminate}
           >
-            <UserX className="w-3.5 h-3.5 mr-1" />
+            <UserX className="mr-1 h-3.5 w-3.5" />
             Terminate
           </Button>
         )}
@@ -614,7 +668,7 @@ function AddTeacherDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Input
               value={form.firstName}
               onChange={(event) => patch({ firstName: event.target.value })}
@@ -650,14 +704,14 @@ function AddTeacherDialog({
             <p className="text-sm font-medium text-gray-700 dark:text-foreground">
               Subjects
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {SUBJECTS.map((subject) => {
                 const checked = form.subjects.includes(subject);
                 return (
                   <label
                     key={subject}
                     className={cn(
-                      'flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer text-sm',
+                      'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm',
                       checked
                         ? 'border-brand bg-accent2-50 text-brand'
                         : 'border-gray-200',
@@ -684,7 +738,7 @@ function AddTeacherDialog({
             placeholder="Qualifications, one per line"
             rows={4}
           />
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Input
               value={form.hourlyRate}
               onChange={(event) => patch({ hourlyRate: event.target.value })}
@@ -731,7 +785,7 @@ function RematchPanel({
   onAssign: (childId: string, teacherId: string) => void;
 }) {
   return (
-    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 space-y-3">
+    <div className="space-y-3 rounded-2xl border border-amber-100 bg-amber-50 p-4">
       <div>
         <p className="font-semibold text-amber-900">
           Students needing a new teacher
@@ -741,17 +795,17 @@ function RematchPanel({
           student with another active teacher.
         </p>
       </div>
-      <div className="grid md:grid-cols-2 gap-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {students.map((child) => (
           <div
             key={child.id}
-            className="bg-white rounded-xl border border-amber-100 p-3 flex items-center justify-between gap-3"
+            className="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-white p-3"
           >
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
+              <p className="truncate text-sm font-semibold text-gray-900">
                 {child.fullName}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="truncate text-xs text-gray-500">
                 {child.intake?.subject ?? 'No subject listed'}
               </p>
             </div>
@@ -779,13 +833,26 @@ function RematchPanel({
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="bg-gray-50 dark:bg-background rounded-xl p-2">
+    <div className="rounded-xl bg-gray-50 p-2 dark:bg-background">
       <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
         {label}
       </p>
-      <p className="text-sm font-semibold text-gray-900 dark:text-foreground mt-0.5">
+      <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-foreground">
         {value}
       </p>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
+      <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-semibold text-gray-900 dark:text-foreground">
+        {value}
+      </div>
     </div>
   );
 }

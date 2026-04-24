@@ -1,7 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { CalendarPlus, Check, LinkIcon, Search, X } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
@@ -17,20 +22,26 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import {
   adminKeys,
   approveAdminCancellation,
   createAdminSession,
   listAdminBookingRequests,
-  listAdminSessions,
+  listAdminSessionsPage,
   listAdminStudents,
   rejectAdminCancellation,
   scheduleAdminBookingRequest,
@@ -45,7 +56,7 @@ import {
   type SessionStatus,
 } from '@/lib/types';
 
-const TAB_ORDER: ('All' | SessionStatus)[] = [
+const TAB_ORDER: Array<'All' | SessionStatus> = [
   'All',
   'Upcoming',
   'Completed',
@@ -56,11 +67,27 @@ export default function AdminSessionsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [query, setQuery] = useState('');
-  const [savingMeetingSessionId, setSavingMeetingSessionId] = useState<string | null>(null);
+  const [status, setStatus] = useState<'All' | SessionStatus>('All');
+  const [page, setPage] = useState(1);
+  const [savingMeetingSessionId, setSavingMeetingSessionId] = useState<string | null>(
+    null,
+  );
 
   const sessionsQuery = useQuery({
-    queryKey: adminKeys.sessions,
-    queryFn: listAdminSessions,
+    queryKey: adminKeys.sessionsPage({
+      page,
+      pageSize: 20,
+      search: query,
+      status,
+    }),
+    queryFn: () =>
+      listAdminSessionsPage({
+        page,
+        pageSize: 20,
+        search: query,
+        status,
+      }),
+    placeholderData: keepPreviousData,
   });
   const bookingRequestsQuery = useQuery({
     queryKey: adminKeys.bookingRequests,
@@ -71,21 +98,20 @@ export default function AdminSessionsPage() {
     queryFn: listAdminStudents,
   });
 
-  const sessions = useMemo(
-    () => sessionsQuery.data ?? [],
-    [sessionsQuery.data],
-  );
+  const sessions = sessionsQuery.data?.sessions ?? [];
+  const summary = sessionsQuery.data?.summary;
+  const pagination = sessionsQuery.data?.pagination;
 
-  const invalidateSessions = () => {
-    queryClient.invalidateQueries({ queryKey: adminKeys.sessions });
-    queryClient.invalidateQueries({ queryKey: adminKeys.bookingRequests });
-    queryClient.invalidateQueries({ queryKey: adminKeys.cancellations });
+  const invalidateSessions = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['admin', 'sessions'] });
+    await queryClient.invalidateQueries({ queryKey: adminKeys.bookingRequests });
+    await queryClient.invalidateQueries({ queryKey: adminKeys.cancellations });
   };
 
   const scheduleRequestMutation = useMutation({
     mutationFn: scheduleAdminBookingRequest,
-    onSuccess: () => {
-      invalidateSessions();
+    onSuccess: async () => {
+      await invalidateSessions();
       toast({ title: 'Calendar sessions created' });
     },
     onError: (error) => {
@@ -101,8 +127,8 @@ export default function AdminSessionsPage() {
   const meetingLinkMutation = useMutation({
     mutationFn: ({ sessionId, meetLink }: { sessionId: string; meetLink: string }) =>
       updateAdminSessionMeetingLink(sessionId, meetLink),
-    onSuccess: () => {
-      invalidateSessions();
+    onSuccess: async () => {
+      await invalidateSessions();
       toast({ title: 'Meeting link saved' });
     },
     onError: (error) => {
@@ -118,8 +144,8 @@ export default function AdminSessionsPage() {
 
   const approveMutation = useMutation({
     mutationFn: approveAdminCancellation,
-    onSuccess: () => {
-      invalidateSessions();
+    onSuccess: async () => {
+      await invalidateSessions();
       toast({ title: 'Cancellation approved' });
     },
     onError: (error) => {
@@ -134,8 +160,8 @@ export default function AdminSessionsPage() {
 
   const rejectMutation = useMutation({
     mutationFn: rejectAdminCancellation,
-    onSuccess: () => {
-      invalidateSessions();
+    onSuccess: async () => {
+      await invalidateSessions();
       toast({ title: 'Cancellation rejected' });
     },
     onError: (error) => {
@@ -148,35 +174,14 @@ export default function AdminSessionsPage() {
     },
   });
 
-  const sorted = useMemo(
-    () => [...sessions].sort((a, b) => b.startsAt.localeCompare(a.startsAt)),
-    [sessions],
-  );
-
-  const filter = (status: (typeof TAB_ORDER)[number]) => {
-    const q = query.trim().toLowerCase();
-    return sorted.filter((session) => {
-      if (status !== 'All' && session.status !== status) return false;
-      if (!q) return true;
-      return (
-        session.subject.toLowerCase().includes(q) ||
-        (session.childName ?? '').toLowerCase().includes(q) ||
-        (session.teacherName ?? '').toLowerCase().includes(q)
-      );
-    });
+  const counts = {
+    All: summary?.total ?? 0,
+    Upcoming: summary?.upcoming ?? 0,
+    Completed: summary?.completed ?? 0,
+    Cancelled: summary?.cancelled ?? 0,
   };
 
-  const counts = useMemo(
-    () => ({
-      All: sessions.length,
-      Upcoming: sessions.filter((session) => session.status === 'Upcoming').length,
-      Completed: sessions.filter((session) => session.status === 'Completed').length,
-      Cancelled: sessions.filter((session) => session.status === 'Cancelled').length,
-    }),
-    [sessions],
-  );
-
-  if (sessionsQuery.isLoading) {
+  if (sessionsQuery.isLoading && !sessionsQuery.data) {
     return <PageShellSkeleton />;
   }
 
@@ -199,12 +204,15 @@ export default function AdminSessionsPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-gray-400 dark:text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-muted-foreground" />
           <Input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search subject, student or teacher"
-            className="pl-9 rounded-full"
+            className="rounded-full pl-9"
           />
         </div>
         <ScheduleSessionDialog students={studentsQuery.data ?? []} />
@@ -216,54 +224,96 @@ export default function AdminSessionsPage() {
         onSchedule={(requestId) => scheduleRequestMutation.mutate(requestId)}
       />
 
-      <Tabs defaultValue="All" className="space-y-4">
-        <TabsList className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-full p-1 w-fit">
-          {TAB_ORDER.map((tab) => (
-            <TabsTrigger
-              key={tab}
-              value={tab}
-              className="rounded-full px-4 text-sm data-[state=active]:bg-brand data-[state=active]:text-white"
-            >
-              {tab}
-              <span className="ml-2 text-xs opacity-70">{counts[tab]}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <div className="flex flex-wrap items-center gap-2 rounded-full border border-gray-200 bg-white p-1 dark:border-border dark:bg-card w-fit">
+        {TAB_ORDER.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => {
+              setStatus(tab);
+              setPage(1);
+            }}
+            className={cn(
+              'rounded-full px-4 py-1.5 text-sm transition',
+              status === tab
+                ? 'bg-brand text-white'
+                : 'text-gray-600 hover:text-gray-900 dark:text-muted-foreground dark:hover:text-foreground',
+            )}
+          >
+            {tab}
+            <span className="ml-2 text-xs opacity-70">{counts[tab]}</span>
+          </button>
+        ))}
+      </div>
 
-        {TAB_ORDER.map((tab) => {
-          const rows = filter(tab);
-          return (
-            <TabsContent key={tab} value={tab}>
-              {rows.length === 0 ? (
-                <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
-                  <p className="text-sm text-gray-500 dark:text-muted-foreground">
-                    No sessions match this filter.
-                  </p>
-                </div>
-              ) : (
-                <SessionTable
-                  rows={rows}
-                  savingLinkId={savingMeetingSessionId}
-                  resolvingCancellation={
-                    approveMutation.isPending || rejectMutation.isPending
-                  }
-                  onUpdateMeetingLink={(sessionId, meetLink) => {
-                    setSavingMeetingSessionId(sessionId);
-                    meetingLinkMutation.mutate({ sessionId, meetLink });
-                  }}
-                  onResolveCancellation={(requestId, decision) => {
-                    if (decision === 'Approved') {
-                      approveMutation.mutate(requestId);
-                    } else {
-                      rejectMutation.mutate(requestId);
-                    }
-                  }}
-                />
-              )}
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+      {sessions.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+          <p className="text-sm text-gray-500 dark:text-muted-foreground">
+            No sessions match this filter.
+          </p>
+        </div>
+      ) : (
+        <>
+          <SessionTable
+            rows={sessions}
+            savingLinkId={savingMeetingSessionId}
+            resolvingCancellation={
+              approveMutation.isPending || rejectMutation.isPending
+            }
+            onUpdateMeetingLink={(sessionId, meetLink) => {
+              setSavingMeetingSessionId(sessionId);
+              meetingLinkMutation.mutate({ sessionId, meetLink });
+            }}
+            onResolveCancellation={(requestId, decision) => {
+              if (decision === 'Approved') {
+                approveMutation.mutate(requestId);
+              } else {
+                rejectMutation.mutate(requestId);
+              }
+            }}
+          />
+
+          {pagination && pagination.totalPages > 1 ? (
+            <div className="flex justify-end">
+              <Pagination className="mx-0 w-auto justify-end">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (pagination.page > 1) setPage((current) => current - 1);
+                      }}
+                      className={cn(
+                        pagination.page <= 1 && 'pointer-events-none opacity-50',
+                      )}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button variant="ghost" size="sm" className="rounded-full px-4">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </Button>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (pagination.page < pagination.totalPages) {
+                          setPage((current) => current + 1);
+                        }
+                      }}
+                      className={cn(
+                        pagination.page >= pagination.totalPages &&
+                          'pointer-events-none opacity-50',
+                      )}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
@@ -282,24 +332,24 @@ function BookingRequestsPanel({
   if (pending.length === 0) return null;
 
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-amber-200 dark:border-amber-500/30 p-4 space-y-3">
+    <div className="rounded-2xl border border-amber-200 p-4 space-y-3 bg-white dark:bg-card dark:border-amber-500/30">
       <div>
         <p className="font-semibold text-gray-900 dark:text-foreground">
           Calendar requests
         </p>
-        <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+        <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
           Families picked consistent paid slots. Review and create the 60-minute
           sessions.
         </p>
       </div>
-      <div className="grid md:grid-cols-2 gap-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {pending.map((request) => (
           <div
             key={request.id}
-            className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-3 flex items-center justify-between gap-3"
+            className="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10"
           >
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
+              <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">
                 {request.childName ?? 'Student'} - {request.subject}
               </p>
               <p className="text-xs text-gray-600 dark:text-muted-foreground">
@@ -340,32 +390,29 @@ function SessionTable({
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[720px]">
-          <thead className="bg-gray-50 dark:bg-background text-xs text-gray-500 dark:text-muted-foreground uppercase tracking-wide">
+        <table className="min-w-[720px] w-full text-sm">
+          <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
             <tr>
-              <th className="text-left px-4 py-3 font-medium">When</th>
-              <th className="text-left px-4 py-3 font-medium">Student</th>
-              <th className="text-left px-4 py-3 font-medium">Teacher</th>
-              <th className="text-left px-4 py-3 font-medium">Subject</th>
-              <th className="text-left px-4 py-3 font-medium">Meeting link</th>
-              <th className="text-left px-4 py-3 font-medium">Request</th>
-              <th className="text-left px-4 py-3 font-medium">Teacher confirm</th>
-              <th className="text-left px-4 py-3 font-medium">Family</th>
-              <th className="text-left px-4 py-3 font-medium">Payout</th>
-              <th className="text-right px-4 py-3 font-medium">Duration</th>
-              <th className="text-right px-4 py-3 font-medium">Amount</th>
-              <th className="text-right px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 text-left font-medium">When</th>
+              <th className="px-4 py-3 text-left font-medium">Student</th>
+              <th className="px-4 py-3 text-left font-medium">Teacher</th>
+              <th className="px-4 py-3 text-left font-medium">Subject</th>
+              <th className="px-4 py-3 text-left font-medium">Meeting link</th>
+              <th className="px-4 py-3 text-left font-medium">Request</th>
+              <th className="px-4 py-3 text-left font-medium">Teacher confirm</th>
+              <th className="px-4 py-3 text-left font-medium">Family</th>
+              <th className="px-4 py-3 text-left font-medium">Payout</th>
+              <th className="px-4 py-3 text-right font-medium">Duration</th>
+              <th className="px-4 py-3 text-right font-medium">Amount</th>
+              <th className="px-4 py-3 text-right font-medium">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-border">
             {rows.map((session) => (
-              <tr
-                key={session.id}
-                className="hover:bg-gray-50 dark:hover:bg-white/5"
-              >
-                <td className="px-4 py-3 text-gray-700 dark:text-foreground/90 whitespace-nowrap">
+              <tr key={session.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-foreground/90">
                   {new Date(session.startsAt).toLocaleString(undefined, {
                     day: 'numeric',
                     month: 'short',
@@ -459,7 +506,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
   const mutation = useMutation({
     mutationFn: createAdminSession,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminKeys.sessions });
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'sessions'] });
       toast({ title: 'Session scheduled' });
       setOpen(false);
       setStudentId('');
@@ -492,7 +539,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="rounded-full bg-brand hover:bg-brand-600">
-          <CalendarPlus className="w-4 h-4 mr-2" />
+          <CalendarPlus className="mr-2 h-4 w-4" />
           Schedule session
         </Button>
       </DialogTrigger>
@@ -548,7 +595,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
             )}
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Start</Label>
               <Input
@@ -559,7 +606,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
             </div>
             <div className="grid gap-2">
               <Label>Duration</Label>
-              <div className="h-10 rounded-md border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-3 flex items-center text-sm text-gray-700 dark:text-foreground/90">
+              <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
                 60 minutes
               </div>
             </div>
@@ -601,7 +648,7 @@ function ConfirmationBadge({ confirmed }: { confirmed: boolean }) {
   return (
     <span
       className={cn(
-        'text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap',
+        'rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap',
         confirmed
           ? 'bg-accent2-50 text-accent2-700'
           : 'bg-amber-50 text-amber-700',
@@ -616,7 +663,7 @@ function PayoutBadge({ eligible }: { eligible: boolean }) {
   return (
     <span
       className={cn(
-        'text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap',
+        'rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap',
         eligible
           ? 'bg-brand/10 text-brand'
           : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-muted-foreground',
@@ -639,9 +686,7 @@ function CancellationReview({
   const cancellation = session.cancellation;
   if (!cancellation) {
     return (
-      <span className="text-[11px] text-gray-400 whitespace-nowrap">
-        No request
-      </span>
+      <span className="text-[11px] whitespace-nowrap text-gray-400">No request</span>
     );
   }
 
@@ -650,13 +695,11 @@ function CancellationReview({
       <div>
         {(() => {
           const requestLabel =
-            cancellation.requestedBy === 'teacher'
-              ? 'Reschedule'
-              : 'Cancellation';
+            cancellation.requestedBy === 'teacher' ? 'Reschedule' : 'Cancellation';
           return (
             <span
               className={cn(
-                'text-[11px] font-medium px-2 py-0.5 rounded-full capitalize',
+                'rounded-full px-2 py-0.5 text-[11px] font-medium capitalize',
                 cancellation.status === 'Pending' && 'bg-amber-50 text-amber-700',
                 cancellation.status === 'Approved' && 'bg-red-50 text-red-600',
                 cancellation.status === 'Rejected' &&
@@ -668,7 +711,7 @@ function CancellationReview({
             </span>
           );
         })()}
-        <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1 line-clamp-2">
+        <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-muted-foreground">
           {cancellation.reason}
         </p>
       </div>
@@ -680,7 +723,7 @@ function CancellationReview({
             disabled={resolving}
             onClick={() => onResolve(cancellation.id!, 'Approved')}
           >
-            <Check className="w-3.5 h-3.5 mr-1" />
+            <Check className="mr-1 h-3.5 w-3.5" />
             Approve
           </Button>
           <Button
@@ -690,7 +733,7 @@ function CancellationReview({
             disabled={resolving}
             onClick={() => onResolve(cancellation.id!, 'Rejected')}
           >
-            <X className="w-3.5 h-3.5 mr-1" />
+            <X className="mr-1 h-3.5 w-3.5" />
             Reject
           </Button>
         </div>
@@ -714,9 +757,9 @@ function MeetingLinkEditor({
 }) {
   const changed = value.trim() !== session.meetLink;
   return (
-    <div className="flex items-center gap-2 min-w-[260px]">
+    <div className="flex min-w-[260px] items-center gap-2">
       <div className="relative flex-1">
-        <LinkIcon className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
         <Input
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -731,7 +774,7 @@ function MeetingLinkEditor({
         disabled={!changed || saving}
         onClick={onSave}
       >
-        <Check className="w-3.5 h-3.5 mr-1" />
+        <Check className="mr-1 h-3.5 w-3.5" />
         {saving ? 'Saving' : 'Save'}
       </Button>
     </div>
@@ -746,10 +789,7 @@ function StatusBadge({ status }: { status: SessionStatus }) {
   };
   return (
     <span
-      className={cn(
-        'text-[11px] font-medium px-2 py-0.5 rounded-full',
-        styles[status],
-      )}
+      className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', styles[status])}
     >
       {status}
     </span>
