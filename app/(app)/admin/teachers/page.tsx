@@ -54,6 +54,7 @@ import {
   terminateAdminTeacher,
   updateAdminTeacherRate,
 } from '@/lib/api/admin';
+import { TIMEZONES } from '@/lib/timezones';
 import { cn } from '@/lib/utils';
 import type { Child, Teacher } from '@/lib/types';
 
@@ -72,6 +73,7 @@ type AddTeacherForm = {
   firstName: string;
   lastName: string;
   email: string;
+  timezone: string;
   gender: 'Male' | 'Female' | '';
   subjects: string[];
   qualifications: string;
@@ -83,6 +85,7 @@ const emptyTeacherForm: AddTeacherForm = {
   firstName: '',
   lastName: '',
   email: '',
+  timezone: 'Africa/Lagos',
   gender: '',
   subjects: [],
   qualifications: '',
@@ -253,6 +256,7 @@ export default function AdminTeachersPage() {
       firstName: teacherForm.firstName.trim(),
       lastName: teacherForm.lastName.trim(),
       email: teacherForm.email.trim(),
+      timezone: teacherForm.timezone,
       gender: teacherForm.gender || 'Female',
       bio: `${teacherForm.subjects.join(', ')} teacher added by admin.`,
       subjects: teacherForm.subjects,
@@ -556,6 +560,7 @@ function TeacherCard({
           </p>
         )}
         {teacher.gender && <p>Gender: {teacher.gender}</p>}
+        {teacher.timezone && <p>Timezone: {teacher.timezone}</p>}
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -686,6 +691,21 @@ function AddTeacherDialog({
             placeholder="Email address"
             type="email"
           />
+          <Select
+            value={form.timezone}
+            onValueChange={(value) => patch({ timezone: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Teacher timezone" />
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEZONES.map((timezone) => (
+                <SelectItem key={timezone} value={timezone}>
+                  {timezone}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select
             value={form.gender}
             onValueChange={(value) =>

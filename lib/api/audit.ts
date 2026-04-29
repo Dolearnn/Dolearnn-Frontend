@@ -13,11 +13,11 @@ interface ApiAuditLog {
   studentId?: string | null;
   teacherId?: string | null;
   createdAt: string;
-  actor: {
+  actor?: {
     id: string;
     name: string;
     email: string;
-  };
+  } | null;
   student?: {
     id: string;
     fullName: string;
@@ -95,8 +95,8 @@ function mapAuditLog(log: ApiAuditLog): AuditLog {
     id: log.id,
     actorUserId: log.actorUserId,
     actorRole: mapRole(log.actorRole),
-    actorName: log.actor.name,
-    actorEmail: log.actor.email,
+    actorName: log.actor?.name ?? undefined,
+    actorEmail: log.actor?.email ?? undefined,
     action: log.action,
     entityType: log.entityType,
     entityId: log.entityId,

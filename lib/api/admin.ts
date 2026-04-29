@@ -23,6 +23,7 @@ interface ApiTeacher {
   id: string;
   userId: string;
   name: string;
+  timezone?: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -103,8 +104,19 @@ interface ApiBookingRequest {
   sessionsRequested: number;
   status: string;
   createdAt: string;
+  timezone?: string | null;
+  teacherTimezone?: string | null;
   student?: {
     fullName?: string;
+    intake?: {
+      timezone?: string | null;
+    } | null;
+    subjectAssignments?: Array<{
+      subject: string;
+      teacher?: {
+        timezone?: string | null;
+      } | null;
+    }>;
   } | null;
 }
 
@@ -196,6 +208,7 @@ function mapTeacher(teacher: ApiTeacher): Teacher {
     firstName: teacher.firstName,
     lastName: teacher.lastName,
     email: teacher.email,
+    timezone: teacher.timezone ?? undefined,
     phoneCountry: teacher.phoneCountry ?? undefined,
     phoneNumber: teacher.phoneNumber ?? undefined,
     gender:
@@ -223,6 +236,7 @@ export interface CreateTeacherInput {
   firstName: string;
   lastName: string;
   email: string;
+  timezone: string;
   phoneCountry?: string;
   phoneNumber?: string;
   gender: 'Male' | 'Female';
@@ -304,6 +318,7 @@ export async function createAdminTeacher(input: CreateTeacherInput) {
     method: 'POST',
     body: JSON.stringify({
       ...input,
+      timezone: input.timezone,
       gender: input.gender === 'Male' ? 'MALE' : 'FEMALE',
     }),
   });
@@ -567,10 +582,18 @@ export async function createAdminSession(input: CreateAdminSessionInput) {
 }
 
 function mapBookingRequest(request: ApiBookingRequest): SessionBookingRequest {
+  const matchedAssignment = request.student?.subjectAssignments?.find(
+    (assignment) => assignment.subject.toLowerCase() === request.subject.toLowerCase(),
+  );
+
   return {
     id: request.id,
     childId: request.studentId,
     childName: request.student?.fullName,
+    studentTimezone:
+      request.timezone ?? request.student?.intake?.timezone ?? undefined,
+    teacherTimezone:
+      request.teacherTimezone ?? matchedAssignment?.teacher?.timezone ?? undefined,
     subject: request.subject,
     day: dayFromApi[request.day] ?? 'Mon',
     timeBlock: timeFromApi[request.timeBlock] ?? 'Evening',

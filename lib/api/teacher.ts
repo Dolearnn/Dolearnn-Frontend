@@ -17,6 +17,7 @@ interface ApiTeacherProfile {
   email: string;
   firstName: string;
   lastName: string;
+  timezone?: string | null;
   phoneCountry?: string | null;
   phoneNumber?: string | null;
   gender?: string | null;
@@ -118,6 +119,7 @@ function mapProfile(profile: ApiTeacherProfile): Teacher {
     name: profile.name,
     firstName: profile.firstName,
     lastName: profile.lastName,
+    timezone: profile.timezone ?? undefined,
     gender:
       profile.gender === 'MALE'
         ? 'Male'
@@ -202,6 +204,7 @@ export async function updateTeacherPayoutAccount(
 export interface UpdateTeacherProfileInput {
   firstName?: string;
   lastName?: string;
+  timezone?: string;
   bio?: string;
   phoneCountry?: string;
   phoneNumber?: string;

@@ -57,6 +57,7 @@ export interface StudentSubjectAssignment {
   teacherId: string;
   teacherName?: string;
   teacherEmail?: string;
+  teacherTimezone?: string;
   meetLink?: string;
   subject: string;
   createdAt: string;
@@ -146,6 +147,7 @@ export interface Teacher {
   firstName?: string;
   lastName?: string;
   email?: string;
+  timezone?: string;
   phoneCountry?: string;
   phoneNumber?: string;
   gender?: 'Male' | 'Female';
@@ -176,6 +178,8 @@ export interface Session {
   lessonPackageId?: string;
   childName?: string;
   teacherName?: string;
+  studentTimezone?: string;
+  teacherTimezone?: string;
   subject: string;
   startsAt: string;
   durationMins: number;
@@ -235,6 +239,8 @@ export interface SessionBookingRequest {
   id: string;
   childId: string;
   childName?: string;
+  studentTimezone?: string;
+  teacherTimezone?: string;
   subject: string;
   day: DayOfWeek;
   timeBlock: TimeBlock;

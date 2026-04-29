@@ -60,8 +60,8 @@ const howItWorks = [
   },
   {
     icon: Video,
-    title: 'Meet live on Google Meet',
-    body: 'Join 1-on-1 sessions from your dashboard. No extra apps, no setup.',
+    title: 'Join live in Classroom',
+    body: 'Access 1-on-1 sessions from your dashboard in Classroom. No extra apps, no setup.',
   },
   {
     icon: LineChart,
@@ -272,7 +272,7 @@ export default function Home() {
               </h1>
               <p className="text-base lg:text-lg text-gray-600 dark:text-muted-foreground mb-8 max-w-lg">
                 We hand-pick a teacher for your child and run live 1-on-1
-                sessions on Google Meet. You skip the profile-scrolling. Our
+                sessions in Classroom. You skip the profile-scrolling. Our
                 team owns the match.
               </p>
               <div className="flex flex-wrap gap-3 mb-10">
@@ -788,7 +788,7 @@ export default function Home() {
             <span className="hidden sm:inline text-gray-300 dark:text-border">·</span>
             <span className="flex items-center gap-2">
               <Video className="w-4 h-4 text-brand" />
-              Sessions on Google Meet
+              Sessions in Classroom
             </span>
             <span className="hidden sm:inline text-gray-300 dark:text-border">·</span>
             <span className="flex items-center gap-2">
@@ -882,7 +882,7 @@ export default function Home() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 dark:text-muted-foreground px-6 pb-4">
-                  Every session is live and 1-on-1 on Google Meet. A join button
+                  Every session is live and 1-on-1 in Classroom. A join button
                   appears in your dashboard before the session starts — no extra
                   apps needed.
                 </AccordionContent>

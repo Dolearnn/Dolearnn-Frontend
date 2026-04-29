@@ -30,9 +30,16 @@ import type { AuditAction, AuditEntityType, AuditLog } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE_OPTIONS = ['20', '50', '100'] as const;
+const ITEM_SEPARATOR = ' / ';
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString(undefined, {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '--';
+  }
+
+  return date.toLocaleString(undefined, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -66,7 +73,7 @@ function entitySummary(log: AuditLog) {
   const parts = [labelize(log.entityType)];
   if (log.childName) parts.push(log.childName);
   if (log.teacherName) parts.push(log.teacherName);
-  return parts.join(' · ');
+  return parts.join(ITEM_SEPARATOR);
 }
 
 export default function AdminAuditPage() {
@@ -236,7 +243,9 @@ export default function AdminAuditPage() {
                         {log.actorName ?? '--'}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                        {(log.actorRole ?? '').toUpperCase()} · {log.actorEmail ?? '--'}
+                        {(log.actorRole ?? '').toUpperCase()}
+                        {ITEM_SEPARATOR}
+                        {log.actorEmail ?? '--'}
                       </p>
                     </td>
                     <td className="px-4 py-3">

@@ -156,6 +156,7 @@ interface ApiGoal {
 
 interface ApiTeacherProfile {
   id: string;
+  timezone?: string | null;
   phoneCountry?: string | null;
   phoneNumber?: string | null;
   user?: {
@@ -271,13 +272,22 @@ interface ApiBookingRequest {
   status: string;
   createdAt: string;
   student?: ApiStudent | null;
+  teacherTimezone?: string | null;
+  timezone?: string | null;
 }
 
 function mapBookingRequest(request: ApiBookingRequest): SessionBookingRequest {
+  const matchedAssignment = request.student?.subjectAssignments?.find(
+    (assignment) => assignment.subject.toLowerCase() === request.subject.toLowerCase(),
+  );
+
   return {
     id: request.id,
     childId: request.studentId,
     childName: request.student?.fullName,
+    studentTimezone: request.timezone ?? request.student?.intake?.timezone ?? undefined,
+    teacherTimezone:
+      request.teacherTimezone ?? matchedAssignment?.teacher?.timezone ?? undefined,
     subject: request.subject,
     day: dayFromApi[request.day] ?? 'Mon',
     timeBlock: timeFromApi[request.timeBlock] ?? 'Evening',
@@ -376,6 +386,7 @@ export function mapStudent(student: ApiStudent): Child {
       teacherId: assignment.teacherId,
       teacherName: assignment.teacher?.user?.name,
       teacherEmail: assignment.teacher?.user?.email,
+      teacherTimezone: assignment.teacher?.timezone ?? undefined,
       meetLink: assignment.meetLink ?? undefined,
       subject: assignment.subject,
       createdAt: assignment.createdAt,
@@ -440,6 +451,8 @@ export function mapSession(session: ApiSession): Session {
     lessonPackageId: session.lessonPackageId ?? undefined,
     childName: session.student?.fullName,
     teacherName: session.teacher?.user?.name,
+    studentTimezone: session.student?.intake?.timezone ?? undefined,
+    teacherTimezone: session.teacher?.timezone ?? undefined,
     subject: session.subject,
     startsAt: session.startsAt,
     durationMins: session.durationMins,

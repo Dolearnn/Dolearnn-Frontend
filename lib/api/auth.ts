@@ -21,6 +21,15 @@ interface ChangePasswordInput {
   newPassword: string;
 }
 
+interface ForgotPasswordInput {
+  email: string;
+}
+
+interface ResetPasswordInput {
+  token: string;
+  newPassword: string;
+}
+
 interface AuthResponse {
   token: string;
   user: AuthUser;
@@ -53,6 +62,14 @@ export async function register(input: RegisterInput) {
   return storeSession(response);
 }
 
+export async function loginWithGoogle(input: { idToken: string }) {
+  const response = await apiFetch<AuthResponse>('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return storeSession(response);
+}
+
 export async function getCurrentUser() {
   const response = await apiFetch<{ user: AuthUser }>('/auth/me');
   return response.user;
@@ -60,6 +77,21 @@ export async function getCurrentUser() {
 
 export async function changePassword(input: ChangePasswordInput) {
   const response = await apiFetch<AuthResponse>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return storeSession(response);
+}
+
+export async function forgotPassword(input: ForgotPasswordInput) {
+  await apiFetch<null>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function resetPassword(input: ResetPasswordInput) {
+  const response = await apiFetch<AuthResponse>('/auth/reset-password', {
     method: 'POST',
     body: JSON.stringify(input),
   });

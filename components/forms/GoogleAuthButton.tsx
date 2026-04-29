@@ -1,35 +1,192 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { dashboardPathForRole, loginWithGoogle } from '@/lib/api/auth';
 
 interface GoogleAuthButtonProps {
   mode: 'login' | 'register';
 }
 
-export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
-  const { toast } = useToast();
+interface GoogleCredentialResponse {
+  credential: string;
+}
 
-  const continueWithGoogle = () => {
-    toast({
-      title: 'Google sign-in is not connected yet',
-      description:
-        mode === 'register'
-          ? 'Create an account with email for now. Google will be enabled once the client ID is added.'
-          : 'Use email login for now. Google will be enabled once the client ID is added.',
-    });
-  };
+interface GoogleIdConfig {
+  client_id: string;
+  callback: (response: GoogleCredentialResponse) => void;
+  auto_select?: boolean;
+  ux_mode?: 'popup' | 'redirect';
+}
+
+interface GoogleButtonOptions {
+  type?: 'standard' | 'icon';
+  theme?: 'outline' | 'filled_blue' | 'filled_black';
+  size?: 'large' | 'medium' | 'small';
+  text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+  shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+  width?: number;
+  logo_alignment?: 'left' | 'center';
+}
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: GoogleIdConfig) => void;
+          renderButton: (parent: HTMLElement, options: GoogleButtonOptions) => void;
+        };
+      };
+    };
+  }
+}
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const GSI_SRC = 'https://accounts.google.com/gsi/client';
+
+export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  const mutation = useMutation({
+    mutationFn: loginWithGoogle,
+    onSuccess: ({ user }) => {
+      toast({
+        title: mode === 'register' ? 'Account created' : 'Welcome back',
+        description: `Signed in as ${user.name}.`,
+      });
+      if (user.mustChangePassword) {
+        router.push('/change-password');
+        router.refresh();
+        return;
+      }
+      router.push(dashboardPathForRole(user.role));
+      router.refresh();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Google sign-in failed',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const mutateRef = useRef(mutation.mutate);
+  useEffect(() => {
+    mutateRef.current = mutation.mutate;
+  }, [mutation.mutate]);
+
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    const update = () => {
+      const next = wrapperRef.current?.offsetWidth ?? 0;
+      setWidth(next);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(wrapperRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !overlayRef.current || width === 0) return;
+
+    const render = () => {
+      const target = overlayRef.current;
+      if (!window.google?.accounts?.id || !target) return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        ux_mode: 'popup',
+        callback: (response) => {
+          if (response?.credential) {
+            mutateRef.current({ idToken: response.credential });
+          }
+        },
+      });
+      target.innerHTML = '';
+      window.google.accounts.id.renderButton(target, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: mode === 'register' ? 'signup_with' : 'continue_with',
+        logo_alignment: 'center',
+        width,
+      });
+    };
+
+    if (window.google?.accounts?.id) {
+      render();
+      return;
+    }
+
+    let script = document.querySelector<HTMLScriptElement>(
+      `script[src="${GSI_SRC}"]`,
+    );
+    if (!script) {
+      script = document.createElement('script');
+      script.src = GSI_SRC;
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+    script.addEventListener('load', render);
+    return () => {
+      script?.removeEventListener('load', render);
+    };
+  }, [mode, width]);
+
+  if (!GOOGLE_CLIENT_ID) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full rounded-full border-gray-300 dark:border-border bg-white dark:bg-card text-gray-800 dark:text-foreground hover:bg-gray-50 dark:hover:bg-white/5"
+        onClick={() =>
+          toast({
+            title: 'Google sign-in is not configured',
+            description: 'Use email to continue.',
+          })
+        }
+      >
+        <GoogleMark />
+        Continue with Google
+      </Button>
+    );
+  }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full rounded-full border-gray-300 dark:border-border bg-white dark:bg-card text-gray-800 dark:text-foreground hover:bg-gray-50 dark:hover:bg-white/5"
-      onClick={continueWithGoogle}
-    >
-      <GoogleMark />
-      Continue with Google
-    </Button>
+    <div ref={wrapperRef} className="relative w-full">
+      <Button
+        type="button"
+        variant="outline"
+        disabled={mutation.isPending}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="w-full rounded-full border-gray-300 dark:border-border bg-white dark:bg-card text-gray-800 dark:text-foreground hover:bg-gray-50 dark:hover:bg-white/5"
+      >
+        <GoogleMark />
+        {mutation.isPending
+          ? 'Signing you in...'
+          : mode === 'register'
+            ? 'Sign up with Google'
+            : 'Continue with Google'}
+      </Button>
+      <div
+        ref={overlayRef}
+        className="absolute inset-0 flex items-center justify-center opacity-0 [&>*]:!w-full"
+        aria-label={mode === 'register' ? 'Sign up with Google' : 'Continue with Google'}
+      />
+    </div>
   );
 }
 

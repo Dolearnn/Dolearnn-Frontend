@@ -47,6 +47,7 @@ import {
   scheduleAdminBookingRequest,
   updateAdminSessionMeetingLink,
 } from '@/lib/api/admin';
+import { formatInTimeZone, TIMEZONES, zonedDateTimeToUtcIso } from '@/lib/timezones';
 import { cn } from '@/lib/utils';
 import {
   isSessionPayoutEligible,
@@ -62,6 +63,15 @@ const TAB_ORDER: Array<'All' | SessionStatus> = [
   'Completed',
   'Cancelled',
 ];
+
+function formatSchedulePreview(value: string, timeZone?: string) {
+  return formatInTimeZone(value, timeZone ?? 'UTC', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function AdminSessionsPage() {
   const queryClient = useQueryClient();
@@ -354,7 +364,13 @@ function BookingRequestsPanel({
               </p>
               <p className="text-xs text-gray-600 dark:text-muted-foreground">
                 {request.sessionsRequested}x {request.day}s at {request.startTime}
+                {request.studentTimezone ? ` (${request.studentTimezone})` : ''}
               </p>
+              {request.teacherTimezone ? (
+                <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
+                  Teacher timezone: {request.teacherTimezone}
+                </p>
+              ) : null}
             </div>
             <Button
               size="sm"
@@ -412,13 +428,15 @@ function SessionTable({
           <tbody className="divide-y divide-gray-100 dark:divide-border">
             {rows.map((session) => (
               <tr key={session.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-foreground/90">
-                  {new Date(session.startsAt).toLocaleString(undefined, {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
+                  <div className="space-y-1">
+                    <p className="whitespace-nowrap font-medium">
+                      Student: {formatSchedulePreview(session.startsAt, session.studentTimezone)}
+                    </p>
+                    <p className="whitespace-nowrap text-xs text-gray-500 dark:text-muted-foreground">
+                      Teacher: {formatSchedulePreview(session.startsAt, session.teacherTimezone)}
+                    </p>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
                   {session.childName ?? 'Student'}
@@ -494,6 +512,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
   const [subject, setSubject] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [meetLink, setMeetLink] = useState('');
+  const [scheduleTimezone, setScheduleTimezone] = useState('UTC');
 
   const selectedStudent = students.find((child) => child.id === studentId);
   const subjects = Array.from(
@@ -502,6 +521,22 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
         [],
     ),
   );
+  const selectedAssignment = selectedStudent?.subjectAssignments?.find(
+    (assignment) => assignment.subject === subject,
+  );
+  const studentTimezone = selectedStudent?.intake?.timezone ?? 'UTC';
+  const teacherTimezone = selectedAssignment?.teacherTimezone ?? 'UTC';
+  const sameTimezone = teacherTimezone === studentTimezone;
+  const effectiveTimezone = scheduleTimezone || studentTimezone;
+  let previewIso: string | null = null;
+
+  if (startsAt) {
+    try {
+      previewIso = zonedDateTimeToUtcIso(startsAt, effectiveTimezone);
+    } catch {
+      previewIso = null;
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: createAdminSession,
@@ -513,6 +548,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
       setSubject('');
       setStartsAt('');
       setMeetLink('');
+      setScheduleTimezone('UTC');
     },
     onError: (error) => {
       toast({
@@ -529,7 +565,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
     mutation.mutate({
       studentId,
       subject,
-      startsAt: new Date(startsAt).toISOString(),
+      startsAt: zonedDateTimeToUtcIso(startsAt, effectiveTimezone),
       durationMins: 60,
       meetLink: meetLink || undefined,
     });
@@ -556,6 +592,7 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
                 setStudentId(value);
                 const child = students.find((item) => item.id === value);
                 setSubject(child?.subjectAssignments?.[0]?.subject ?? '');
+                setScheduleTimezone(child?.intake?.timezone ?? 'UTC');
               }}
             >
               <SelectTrigger>
@@ -605,10 +642,66 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
               />
             </div>
             <div className="grid gap-2">
-              <Label>Duration</Label>
+              <Label>Scheduling timezone</Label>
+              <Select value={effectiveTimezone} onValueChange={setScheduleTimezone}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={studentTimezone}>
+                    {sameTimezone
+                      ? `Student and teacher timezone (${studentTimezone})`
+                      : `Student timezone (${studentTimezone})`}
+                  </SelectItem>
+                  {!sameTimezone ? (
+                    <SelectItem value={teacherTimezone}>
+                      Teacher timezone ({teacherTimezone})
+                    </SelectItem>
+                  ) : null}
+                  {TIMEZONES.filter(
+                    (timezone) =>
+                      timezone !== studentTimezone && timezone !== teacherTimezone,
+                  ).map((timezone) => (
+                    <SelectItem key={timezone} value={timezone}>
+                      {timezone}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label>Student timezone</Label>
               <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
-                60 minutes
+                {studentTimezone}
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Teacher timezone</Label>
+              <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
+                {teacherTimezone}
+              </div>
+            </div>
+          </div>
+
+          {previewIso ? (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600 dark:border-border dark:bg-background dark:text-muted-foreground">
+              <p>Scheduling in {effectiveTimezone}</p>
+              <p className="mt-1">
+                Student: {formatInTimeZone(previewIso, studentTimezone)}
+              </p>
+              <p>
+                Teacher: {formatInTimeZone(previewIso, teacherTimezone)}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="grid gap-2">
+            <Label>Duration</Label>
+            <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
+              60 minutes
             </div>
           </div>
 
