@@ -54,6 +54,8 @@ import type {
 } from '@/lib/types';
 
 const TAB_ORDER: SessionStatus[] = ['Upcoming', 'Completed', 'Cancelled'];
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'dolearnnn@gmail.com';
 
 const TIME_BLOCK_RANGES: Record<TimeBlock, { start: number; end: number }> = {
   Morning: { start: 6 * 60, end: 12 * 60 },
@@ -283,9 +285,12 @@ export default function FamilySessionsPage() {
           description="Every lesson for your family - past, present and upcoming."
         />
         <EmptyState
-          title="No students yet"
-          hint="Add a student before sessions can be proposed."
+          title="No student profile yet"
+          hint="Admin creates student profiles after payment confirmation, then sessions can be planned here."
         />
+        <a href={`mailto:${ADMIN_EMAIL}`} className="text-sm font-medium text-brand">
+          Contact admin to activate the family profile
+        </a>
       </div>
     );
   }
@@ -552,6 +557,7 @@ function CalendarRequestPanel({
             value={sessionsRequested}
             onChange={(event) => setSessionsRequested(event.target.value)}
             placeholder="Hours"
+            disabled={true}
           />
           <div className="lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
             <p className="text-xs text-gray-500 dark:text-muted-foreground">

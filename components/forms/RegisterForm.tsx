@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
 import { register } from '@/lib/api/auth';
 
@@ -24,6 +25,7 @@ const schema = z
   .object({
     name: z.string().min(2, 'Enter your full name'),
     email: z.string().email('Enter a valid email'),
+    whatsapp: z.string().min(7, 'Enter a valid phone number'),
     password: z.string().min(8, 'At least 8 characters'),
     confirm: z.string(),
   })
@@ -42,6 +44,7 @@ export default function RegisterForm() {
     defaultValues: {
       name: '',
       email: '',
+      whatsapp: '',
       password: '',
       confirm: '',
     },
@@ -71,6 +74,7 @@ export default function RegisterForm() {
     mutation.mutate({
       name: values.name,
       email: values.email,
+      whatsapp: values.whatsapp,
       password: values.password,
     });
   };
@@ -113,12 +117,29 @@ export default function RegisterForm() {
           />
           <FormField
             control={form.control}
+            name="whatsapp"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone number</FormLabel>
+                <FormControl>
+                  <Input
+                    type="tel"
+                    placeholder="+234 800 000 0000"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="password"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} />
+                  <PasswordInput {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -131,7 +152,7 @@ export default function RegisterForm() {
               <FormItem>
                 <FormLabel>Confirm password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} />
+                  <PasswordInput {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

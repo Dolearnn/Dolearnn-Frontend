@@ -33,6 +33,8 @@ import type { Child, Session } from '@/lib/types';
 
 const EMPTY_CHILDREN: Child[] = [];
 const EMPTY_SESSIONS: Session[] = [];
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'dolearnnn@gmail.com';
 
 export default function FamilyHome() {
   const queryClient = useQueryClient();
@@ -141,21 +143,20 @@ export default function FamilyHome() {
           title={`Hi, ${parent.name.split(' ')[0]}`}
           description="Your family's learning at a glance."
           action={
-            <Link href="/family/children/new">
+            <a href={`mailto:${ADMIN_EMAIL}`}>
               <Button variant="outline" className="rounded-full">
-                <Plus className="w-4 h-4 mr-2" />
-                Add child
+                Contact admin
               </Button>
-            </Link>
+            </a>
           }
         />
         <section className="bg-accent2-50 border border-accent2-100 rounded-3xl p-6 lg:p-8 text-center">
           <p className="text-sm text-brand font-semibold">
-            Add your first child
+            Waiting for your first student profile
           </p>
           <p className="text-xs text-gray-600 dark:text-muted-foreground mt-1">
-            Once their profile and intake are complete, admin can match them
-            with a teacher.
+            Admin creates student profiles after payment confirmation, then you
+            can review and update the details here.
           </p>
         </section>
       </div>
@@ -176,12 +177,11 @@ export default function FamilyHome() {
         title={`Hi, ${parent.name.split(' ')[0]}`}
         description="Your family's learning at a glance."
         action={
-          <Link href="/family/children/new">
+          <a href={`mailto:${ADMIN_EMAIL}`}>
             <Button variant="outline" className="rounded-full">
-              <Plus className="w-4 h-4 mr-2" />
-              Add child
+              Contact admin
             </Button>
-          </Link>
+          </a>
         }
       />
 

@@ -62,7 +62,7 @@ export default function FamilyPaymentsPage() {
         action={
           <Button className="bg-brand hover:bg-brand-600 rounded-full" disabled>
             <Plus className="w-4 h-4 mr-2" />
-            Top up via admin
+            Recorded by admin
           </Button>
         }
       />
@@ -96,7 +96,7 @@ export default function FamilyPaymentsPage() {
         />
         <SummaryTile
           icon={CreditCard}
-          label="Default method"
+          label="Payment method"
           value={payments[0]?.gateway ?? '-'}
         />
       </div>
@@ -154,7 +154,7 @@ function PlanCard({ plan }: { plan: Payment }) {
         <div className="flex items-baseline gap-3 flex-wrap">
           <h2 className="text-2xl lg:text-3xl font-bold">{plan.plan}</h2>
           <span className="text-sm text-white/70">
-            via {plan.gateway} - ${plan.amount}
+            {plan.gateway} - ${plan.amount}
           </span>
         </div>
         <p className="text-white/80 text-sm">

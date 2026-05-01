@@ -114,7 +114,11 @@ interface ApiBookingRequest {
     subjectAssignments?: Array<{
       subject: string;
       teacher?: {
+        id: string;
         timezone?: string | null;
+        user?: {
+          name?: string;
+        } | null;
       } | null;
     }>;
   } | null;
@@ -590,6 +594,8 @@ function mapBookingRequest(request: ApiBookingRequest): SessionBookingRequest {
     id: request.id,
     childId: request.studentId,
     childName: request.student?.fullName,
+    teacherId: matchedAssignment?.teacher?.id ?? undefined,
+    teacherName: matchedAssignment?.teacher?.user?.name ?? undefined,
     studentTimezone:
       request.timezone ?? request.student?.intake?.timezone ?? undefined,
     teacherTimezone:
@@ -617,9 +623,13 @@ export async function listAdminBookingRequests() {
   return response.requests.map(mapBookingRequest);
 }
 
-export async function scheduleAdminBookingRequest(requestId: string) {
+export async function scheduleAdminBookingRequest(
+  requestId: string,
+  meetLink?: string,
+) {
   await apiFetch(`/admin/sessions/booking-requests/${requestId}/schedule`, {
     method: 'POST',
+    body: JSON.stringify({ meetLink: meetLink || undefined }),
   });
 }
 

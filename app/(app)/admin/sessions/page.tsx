@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { CalendarPlus, Check, LinkIcon, Search, X } from 'lucide-react';
+import { AlertTriangle, CalendarPlus, Check, LinkIcon, Search, X } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
@@ -73,6 +73,67 @@ function formatSchedulePreview(value: string, timeZone?: string) {
   });
 }
 
+function addMinutes(value: string, minutes: number) {
+  return new Date(new Date(value).getTime() + minutes * 60 * 1000);
+}
+
+function overlaps(
+  firstStartsAt: string,
+  firstDurationMins: number,
+  secondStartsAt: string,
+  secondDurationMins: number,
+) {
+  const firstStart = new Date(firstStartsAt).getTime();
+  const firstEnd = addMinutes(firstStartsAt, firstDurationMins).getTime();
+  const secondStart = new Date(secondStartsAt).getTime();
+  const secondEnd = addMinutes(secondStartsAt, secondDurationMins).getTime();
+  return firstStart < secondEnd && secondStart < firstEnd;
+}
+
+function clashSummary({
+  startsAt,
+  durationMins,
+  teacherId,
+  childId,
+  subject,
+  sessions,
+}: {
+  startsAt?: string | null;
+  durationMins: number;
+  teacherId?: string;
+  childId?: string;
+  subject?: string;
+  sessions: Session[];
+}) {
+  if (!startsAt || (!teacherId && !childId)) return [];
+
+  const conflicts = sessions.filter((session) => {
+    if (session.status === 'Cancelled') return false;
+    const sameTeacher = teacherId && session.teacherId === teacherId;
+    const sameStudent = childId && session.childId === childId;
+    if (!sameTeacher && !sameStudent) return false;
+    return overlaps(startsAt, durationMins, session.startsAt, session.durationMins);
+  });
+
+  return conflicts.map((session) => {
+    if (teacherId && session.teacherId === teacherId) {
+      return `Teacher clash: ${session.teacherName ?? 'Teacher'} already has ${session.subject} with ${session.childName ?? 'another student'} at ${formatSchedulePreview(session.startsAt, session.teacherTimezone)}`;
+    }
+
+    return `Student clash: ${session.childName ?? 'Student'} already has ${session.subject} at ${formatSchedulePreview(session.startsAt, session.studentTimezone)}`;
+  });
+}
+
+function requestSessionStartsAt(request: SessionBookingRequest, index: number) {
+  const date = new Date(request.startDate);
+  date.setUTCDate(date.getUTCDate() + index * 7);
+  const datePart = date.toISOString().slice(0, 10);
+  return zonedDateTimeToUtcIso(
+    `${datePart}T${request.startTime}`,
+    request.studentTimezone ?? 'UTC',
+  );
+}
+
 export default function AdminSessionsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -103,6 +164,21 @@ export default function AdminSessionsPage() {
     queryKey: adminKeys.bookingRequests,
     queryFn: listAdminBookingRequests,
   });
+  const upcomingSessionsQuery = useQuery({
+    queryKey: adminKeys.sessionsPage({
+      page: 1,
+      pageSize: 100,
+      search: '',
+      status: 'Upcoming',
+    }),
+    queryFn: () =>
+      listAdminSessionsPage({
+        page: 1,
+        pageSize: 100,
+        search: '',
+        status: 'Upcoming',
+      }),
+  });
   const studentsQuery = useQuery({
     queryKey: adminKeys.students,
     queryFn: listAdminStudents,
@@ -119,7 +195,13 @@ export default function AdminSessionsPage() {
   };
 
   const scheduleRequestMutation = useMutation({
-    mutationFn: scheduleAdminBookingRequest,
+    mutationFn: ({
+      requestId,
+      meetLink,
+    }: {
+      requestId: string;
+      meetLink?: string;
+    }) => scheduleAdminBookingRequest(requestId, meetLink),
     onSuccess: async () => {
       await invalidateSessions();
       toast({ title: 'Calendar sessions created' });
@@ -225,13 +307,19 @@ export default function AdminSessionsPage() {
             className="rounded-full pl-9"
           />
         </div>
-        <ScheduleSessionDialog students={studentsQuery.data ?? []} />
+        <ScheduleSessionDialog
+          students={studentsQuery.data ?? []}
+          existingSessions={upcomingSessionsQuery.data?.sessions ?? []}
+        />
       </div>
 
       <BookingRequestsPanel
         requests={bookingRequestsQuery.data ?? []}
+        existingSessions={upcomingSessionsQuery.data?.sessions ?? []}
         scheduling={scheduleRequestMutation.isPending}
-        onSchedule={(requestId) => scheduleRequestMutation.mutate(requestId)}
+        onSchedule={(requestId, meetLink) =>
+          scheduleRequestMutation.mutate({ requestId, meetLink })
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2 rounded-full border border-gray-200 bg-white p-1 dark:border-border dark:bg-card w-fit">
@@ -330,14 +418,17 @@ export default function AdminSessionsPage() {
 
 function BookingRequestsPanel({
   requests,
+  existingSessions,
   scheduling,
   onSchedule,
 }: {
   requests: SessionBookingRequest[];
+  existingSessions: Session[];
   scheduling: boolean;
-  onSchedule: (requestId: string) => void;
+  onSchedule: (requestId: string, meetLink?: string) => void;
 }) {
   const pending = requests.filter((request) => request.status === 'Pending');
+  const [meetingLinks, setMeetingLinks] = useState<Record<string, string>>({});
 
   if (pending.length === 0) return null;
 
@@ -354,33 +445,88 @@ function BookingRequestsPanel({
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {pending.map((request) => (
-          <div
-            key={request.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">
-                {request.childName ?? 'Student'} - {request.subject}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-muted-foreground">
-                {request.sessionsRequested}x {request.day}s at {request.startTime}
-                {request.studentTimezone ? ` (${request.studentTimezone})` : ''}
-              </p>
-              {request.teacherTimezone ? (
-                <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                  Teacher timezone: {request.teacherTimezone}
-                </p>
-              ) : null}
-            </div>
-            <Button
-              size="sm"
-              className="rounded-full bg-brand hover:bg-brand-600 shrink-0"
-              disabled={scheduling}
-              onClick={() => onSchedule(request.id)}
+          (() => {
+            const warnings = Array.from(
+              new Set(
+                Array.from({ length: request.sessionsRequested }, (_, index) =>
+                  clashSummary({
+                    startsAt: requestSessionStartsAt(request, index),
+                    durationMins: 60,
+                    teacherId: request.teacherId,
+                    childId: request.childId,
+                    subject: request.subject,
+                    sessions: existingSessions,
+                  }),
+                ).flat(),
+              ),
+            );
+
+            return (
+            <div
+              key={request.id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10"
             >
-              {scheduling ? 'Creating...' : 'Create sessions'}
-            </Button>
-          </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div>
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">
+                    {request.childName ?? 'Student'} - {request.subject}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-muted-foreground">
+                    {request.sessionsRequested}x {request.day}s at {request.startTime}
+                    {request.studentTimezone ? ` (${request.studentTimezone})` : ''}
+                  </p>
+                  {request.teacherTimezone ? (
+                    <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
+                      Teacher timezone: {request.teacherTimezone}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="space-y-1">
+                  <Label
+                    htmlFor={`booking-link-${request.id}`}
+                    className="text-[11px] text-gray-600 dark:text-muted-foreground"
+                  >
+                    Meeting link for all sessions
+                  </Label>
+                  <Input
+                    id={`booking-link-${request.id}`}
+                    value={meetingLinks[request.id] ?? ''}
+                    onChange={(event) =>
+                      setMeetingLinks((current) => ({
+                        ...current,
+                        [request.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="https://meet.google.com/..."
+                    className="h-9 bg-white dark:bg-card"
+                  />
+                </div>
+                {warnings.length > 0 ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <div className="space-y-1">
+                        {warnings.map((warning) => (
+                          <p key={warning}>{warning}</p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <Button
+                size="sm"
+                className="rounded-full bg-brand hover:bg-brand-600 shrink-0"
+                disabled={scheduling}
+                onClick={() =>
+                  onSchedule(request.id, meetingLinks[request.id]?.trim() || undefined)
+                }
+              >
+                {scheduling ? 'Creating...' : 'Create sessions'}
+              </Button>
+            </div>
+            );
+          })()
         ))}
       </div>
     </div>
@@ -504,7 +650,13 @@ function SessionTable({
   );
 }
 
-function ScheduleSessionDialog({ students }: { students: Child[] }) {
+function ScheduleSessionDialog({
+  students,
+  existingSessions,
+}: {
+  students: Child[];
+  existingSessions: Session[];
+}) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -537,6 +689,15 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
       previewIso = null;
     }
   }
+
+  const warnings = clashSummary({
+    startsAt: previewIso,
+    durationMins: 60,
+    teacherId: selectedAssignment?.teacherId,
+    childId: studentId || undefined,
+    subject,
+    sessions: existingSessions,
+  });
 
   const mutation = useMutation({
     mutationFn: createAdminSession,
@@ -591,7 +752,12 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
               onValueChange={(value) => {
                 setStudentId(value);
                 const child = students.find((item) => item.id === value);
-                setSubject(child?.subjectAssignments?.[0]?.subject ?? '');
+                const nextSubject = child?.subjectAssignments?.[0]?.subject ?? '';
+                setSubject(nextSubject);
+                const nextAssignment = child?.subjectAssignments?.find(
+                  (assignment) => assignment.subject === nextSubject,
+                );
+                setMeetLink(nextAssignment?.meetLink ?? '');
                 setScheduleTimezone(child?.intake?.timezone ?? 'UTC');
               }}
             >
@@ -611,7 +777,16 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
           <div className="grid gap-2">
             <Label>Subject</Label>
             {subjects.length > 0 ? (
-              <Select value={subject} onValueChange={setSubject}>
+              <Select
+                value={subject}
+                onValueChange={(value) => {
+                  setSubject(value);
+                  const nextAssignment = selectedStudent?.subjectAssignments?.find(
+                    (assignment) => assignment.subject === value,
+                  );
+                  setMeetLink(nextAssignment?.meetLink ?? '');
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
@@ -698,6 +873,19 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
             </div>
           ) : null}
 
+          {warnings.length > 0 ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  {warnings.map((warning) => (
+                    <p key={warning}>{warning}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-2">
             <Label>Duration</Label>
             <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
@@ -706,14 +894,15 @@ function ScheduleSessionDialog({ students }: { students: Child[] }) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Meeting link (optional)</Label>
+            <Label>Meeting link</Label>
             <Input
               value={meetLink}
               onChange={(event) => setMeetLink(event.target.value)}
               placeholder="https://meet.google.com/..."
             />
             <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-              Leave empty to reuse the teacher-student assignment link.
+              Add it now to save it with the session. If this subject already has
+              a saved link, it will appear here automatically.
             </p>
           </div>
         </div>

@@ -8,7 +8,7 @@ import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 import { displayGrade, displaySubject } from '@/lib/types';
 
 const ADMIN_EMAIL =
-  process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'hello@dolearnn.com';
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'dolearnnn@gmail.com';
 
 export default function ChildrenList() {
   const {

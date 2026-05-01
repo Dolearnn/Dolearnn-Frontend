@@ -73,7 +73,7 @@ export default function RecordPaymentDialog({
   const subjectKey = subjects.join('|');
   const [subject, setSubject] = useState('');
   const [plan, setPlan] = useState<PaymentPlan>('Starter Bundle');
-  const [gateway, setGateway] = useState<PaymentGateway>('Stripe');
+  const [gateway, setGateway] = useState<PaymentGateway>('Offline transfer');
   const [amount, setAmount] = useState('150');
   const [sessionsIncluded, setSessionsIncluded] = useState('5');
 
@@ -198,7 +198,7 @@ export default function RecordPaymentDialog({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Gateway</Label>
+              <Label>Payment method</Label>
               <Select
                 value={gateway}
                 onValueChange={(value) => setGateway(value as PaymentGateway)}
@@ -207,8 +207,9 @@ export default function RecordPaymentDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Stripe">Stripe</SelectItem>
-                  <SelectItem value="Flutterwave">Flutterwave</SelectItem>
+                  <SelectItem value="Offline transfer">
+                    Offline transfer
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

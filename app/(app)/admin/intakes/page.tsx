@@ -47,7 +47,11 @@ import {
   listAdminTeachers,
   unassignAdminTeacherFromStudent,
 } from '@/lib/api/admin';
-import { listAdminPaymentParents, paymentKeys } from '@/lib/api/payments';
+import {
+  listAdminLessonPackages,
+  listAdminPaymentParents,
+  paymentKeys,
+} from '@/lib/api/payments';
 import {
   displayGrade,
   displaySchedule,
@@ -60,6 +64,7 @@ import {
   type GradeLevel,
   type IntakeForm,
   type LearningGoal,
+  type StudentLessonPackage,
   type Teacher,
   type TimeBlock,
 } from '@/lib/types';
@@ -163,9 +168,14 @@ export default function AdminIntakesPage() {
     queryKey: paymentKeys.adminParents,
     queryFn: listAdminPaymentParents,
   });
+  const lessonPackagesQuery = useQuery({
+    queryKey: paymentKeys.adminLessonPackages,
+    queryFn: listAdminLessonPackages,
+  });
 
   const children = studentsQuery.data?.students ?? [];
   const allTeachers = teachersQuery.data ?? [];
+  const lessonPackages = lessonPackagesQuery.data ?? [];
   const paymentStudents = useMemo(() => {
     const students = studentsQuery.data?.students ?? [];
     if (!paymentStudent || students.some((child) => child.id === paymentStudent.id)) {
@@ -250,8 +260,12 @@ export default function AdminIntakesPage() {
   const matchedCount = studentsQuery.data?.summary.matched ?? 0;
   const totalCount = studentsQuery.data?.summary.total ?? 0;
   const pagination = studentsQuery.data?.pagination;
-  const isLoading = studentsQuery.isLoading || teachersQuery.isLoading;
-  const error = studentsQuery.error ?? teachersQuery.error;
+  const isLoading =
+    studentsQuery.isLoading ||
+    teachersQuery.isLoading ||
+    lessonPackagesQuery.isLoading;
+  const error =
+    studentsQuery.error ?? teachersQuery.error ?? lessonPackagesQuery.error;
 
   if (isLoading) {
     return <PageShellSkeleton />;
@@ -364,6 +378,7 @@ export default function AdminIntakesPage() {
               key={child.id}
               child={child}
               allTeachers={allTeachers}
+              lessonPackages={lessonPackages}
               assigning={assignMutation.isPending}
               unassigning={unassignMutation.isPending}
               onAssign={(subject, teacherId) =>
@@ -829,6 +844,7 @@ function buildIntake(form: StudentForm): IntakeForm {
 function IntakeCard({
   child,
   allTeachers,
+  lessonPackages,
   assigning,
   unassigning,
   onAssign,
@@ -836,6 +852,7 @@ function IntakeCard({
 }: {
   child: Child;
   allTeachers: Teacher[];
+  lessonPackages: StudentLessonPackage[];
   assigning: boolean;
   unassigning: boolean;
   onAssign: (subject: string, teacherId: string) => void;
@@ -906,6 +923,11 @@ function IntakeCard({
         </div>
         {selectedSubjects.map((subject) => {
           const assignment = assignmentForSubject(child, subject);
+          const paymentSummary = paymentSummaryForSubject(
+            lessonPackages,
+            child.id,
+            subject,
+          );
           const assignedTeacher = assignment
             ? allTeachers.find((teacher) => teacher.id === assignment.teacherId)
             : null;
@@ -924,19 +946,33 @@ function IntakeCard({
               className="rounded-xl border border-gray-200 dark:border-border p-3 space-y-3"
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-                  {subject}
-                </p>
-                <span
-                  className={cn(
-                    'text-[11px] font-medium px-2 py-0.5 rounded-full',
-                    assignment
-                      ? 'bg-accent2-50 text-accent2-700'
-                      : 'bg-amber-50 text-amber-700',
-                  )}
-                >
-                  {assignment ? 'Assigned' : 'Needs match'}
-                </span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                    {subject}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={cn(
+                        'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                        assignment
+                          ? 'bg-accent2-50 text-accent2-700'
+                          : 'bg-amber-50 text-amber-700',
+                      )}
+                    >
+                      {assignment ? 'Assigned' : 'Needs match'}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                        paymentSummary.isPaid
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-rose-50 text-rose-700',
+                      )}
+                    >
+                      {paymentSummary.label}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {assignment ? (
@@ -1004,6 +1040,40 @@ function assignmentForSubject(child: Child, subject: string) {
     (assignment) =>
       assignment.subject.toLowerCase() === subject.toLowerCase(),
   );
+}
+
+function paymentSummaryForSubject(
+  lessonPackages: StudentLessonPackage[],
+  childId: string,
+  subject: string,
+) {
+  const matchingPackages = lessonPackages.filter(
+    (lessonPackage) =>
+      lessonPackage.childId === childId &&
+      lessonPackage.subject.toLowerCase() === subject.toLowerCase() &&
+      lessonPackage.status !== 'Cancelled',
+  );
+
+  if (matchingPackages.length === 0) {
+    return {
+      isPaid: false,
+      label: 'Payment pending',
+    };
+  }
+
+  const paidSessions = matchingPackages.reduce(
+    (sum, lessonPackage) => sum + lessonPackage.paidSessions,
+    0,
+  );
+  const availableSessions = matchingPackages.reduce(
+    (sum, lessonPackage) => sum + lessonPackage.availableSessions,
+    0,
+  );
+
+  return {
+    isPaid: true,
+    label: `Paid: ${availableSessions}/${paidSessions} left`,
+  };
 }
 
 function teachersForSubject(

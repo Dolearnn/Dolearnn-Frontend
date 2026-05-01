@@ -239,6 +239,8 @@ export interface SessionBookingRequest {
   id: string;
   childId: string;
   childName?: string;
+  teacherId?: string;
+  teacherName?: string;
   studentTimezone?: string;
   teacherTimezone?: string;
   subject: string;
@@ -340,11 +342,11 @@ export interface Payout {
   id: string;
   date: string;
   amount: number;
-  method: 'Bank' | 'Wise' | 'Flutterwave';
+  method: 'Bank' | 'Wise' | 'Offline transfer';
 }
 
 export type PaymentPlan = 'Single Session' | 'Starter Bundle';
-export type PaymentGateway = 'Stripe' | 'Flutterwave';
+export type PaymentGateway = 'Offline transfer';
 
 export interface Payment {
   id: string;

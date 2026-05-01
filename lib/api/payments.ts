@@ -132,13 +132,13 @@ const planToApi: Record<PaymentPlan, string> = {
 };
 
 const gatewayFromApi: Record<string, PaymentGateway> = {
-  STRIPE: 'Stripe',
-  FLUTTERWAVE: 'Flutterwave',
+  OFFLINE: 'Offline transfer',
+  STRIPE: 'Offline transfer',
+  FLUTTERWAVE: 'Offline transfer',
 };
 
 const gatewayToApi: Record<PaymentGateway, string> = {
-  Stripe: 'STRIPE',
-  Flutterwave: 'FLUTTERWAVE',
+  'Offline transfer': 'STRIPE',
 };
 
 function asNumber(value: string | number | null | undefined) {
@@ -159,7 +159,7 @@ function mapLessonPackage(item: ApiLessonPackage): StudentLessonPackage {
     completedSessions: item.hoursCompleted,
     availableSessions: Math.max(0, item.hoursPurchased - item.hoursScheduled),
     amountPaid: asNumber(item.amountPaid),
-    gateway: gatewayFromApi[item.gateway] ?? 'Stripe',
+    gateway: gatewayFromApi[item.gateway] ?? 'Offline transfer',
     status:
       item.status === 'EXHAUSTED'
         ? 'Exhausted'
@@ -176,7 +176,7 @@ export function mapPayment(payment: ApiPayment): Payment {
     parentId: payment.parentId,
     plan: planFromApi[payment.plan] ?? 'Starter Bundle',
     amount: asNumber(payment.amount),
-    gateway: gatewayFromApi[payment.gateway] ?? 'Stripe',
+    gateway: gatewayFromApi[payment.gateway] ?? 'Offline transfer',
     createdAt: payment.createdAt,
     sessionsIncluded: payment.sessionsIncluded,
     sessionsUsed: payment.sessionsUsed,
