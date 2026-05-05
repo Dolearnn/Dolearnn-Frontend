@@ -150,7 +150,7 @@ const TIKTOK_URL =
 const FACEBOOK_URL =
   process.env.NEXT_PUBLIC_FACEBOOK_URL ?? 'https://facebook.com/dolearnn';
 const PHONE_NUMBER =
-  process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '+234 704 098 9710';
+  process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '0905 763 8887';
 
 const socialLinks = [
   { label: 'Instagram', href: INSTAGRAM_URL, icon: Instagram },
@@ -1413,20 +1413,20 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Teachers</h4>
-              <ul className="space-y-2 text-sm text-gray-500 dark:text-muted-foreground">
-                <li className="hover:text-white cursor-pointer">
+            {/* <div> */}
+              {/* <h4 className="text-white font-semibold mb-4">Teachers</h4> */}
+              {/* <ul className="space-y-2 text-sm text-gray-500 dark:text-muted-foreground"> */}
+                {/* <li className="hover:text-white cursor-pointer">
                   <a href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'dolearnnn@gmail.com'}`}>
                     Apply to teach
                   </a>
-                </li>
+                </li> */}
                 {/* WAITLIST_SWAP: was <Link href="/login">Teacher login</Link> */}
-                <li className="hover:text-white cursor-pointer">
+                {/* <li className="hover:text-white cursor-pointer">
                   <Link href={WAITLIST_HREF}>{WAITLIST_LABEL}</Link>
-                </li>
-              </ul>
-            </div>
+                </li> */}
+              {/* </ul> */}
+            {/* </div> */}
             <div>
               <h4 className="text-white font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-sm text-gray-500 dark:text-muted-foreground">

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { isSafeMeetingLink } from '@/lib/urls';
 import { cn } from '@/lib/utils';
 import type { Session, SessionAttendance, SessionCancellation } from '@/lib/types';
 
@@ -55,6 +56,9 @@ export default function SessionRow({
       new Date(session.startsAt).getTime() < Date.now());
   const familyConfirmed = !!attendance?.familyConfirmedAt;
   const cancellationPending = cancellation?.status === 'Pending';
+  const safeMeetingLink = isSafeMeetingLink(session.meetLink)
+    ? session.meetLink
+    : null;
 
   useEffect(() => {
     setAttendance(session.attendance);
@@ -117,8 +121,8 @@ export default function SessionRow({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
-          {session.status === 'Upcoming' && session.meetLink && (
-            <Link href={session.meetLink} target="_blank" rel="noreferrer">
+          {session.status === 'Upcoming' && safeMeetingLink && (
+            <Link href={safeMeetingLink} target="_blank" rel="noopener noreferrer">
               <Button
                 size="sm"
                 className="bg-brand hover:bg-brand-600 dark:bg-accent2-500 dark:hover:bg-accent2-400 dark:text-brand rounded-full"
@@ -128,7 +132,7 @@ export default function SessionRow({
               </Button>
             </Link>
           )}
-          {session.status === 'Upcoming' && !session.meetLink && (
+          {session.status === 'Upcoming' && !safeMeetingLink && (
             <Button size="sm" variant="outline" className="rounded-full" disabled>
               Awaiting link
             </Button>

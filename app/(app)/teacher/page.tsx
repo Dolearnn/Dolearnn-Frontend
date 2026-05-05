@@ -16,6 +16,7 @@ import StatTile from '@/components/dashboard/StatTile';
 import StudentSessionRow from '@/components/dashboard/StudentSessionRow';
 import { DashboardHomeSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
+import { isSafeMeetingLink } from '@/lib/urls';
 import { useToast } from '@/hooks/use-toast';
 import {
   confirmTeacherSessionAttendance,
@@ -177,11 +178,11 @@ export default function TeacherHome() {
               {nextSession.childName ?? 'Student'}
             </p>
             <div className="flex flex-wrap gap-3">
-              {nextSession.meetLink ? (
+              {isSafeMeetingLink(nextSession.meetLink) ? (
                 <Link
                   href={nextSession.meetLink}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   <Button className="bg-accent2-500 text-brand hover:bg-accent2-400 rounded-full">
                     <Video className="w-4 h-4 mr-2" />

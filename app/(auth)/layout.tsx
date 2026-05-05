@@ -35,7 +35,7 @@ export default function AuthLayout({
         </header>
         <div className="flex-1 flex items-center justify-center px-6 pb-12">
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="w-full max-w-md"
