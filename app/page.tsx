@@ -114,7 +114,7 @@ const studentFeatures = [
 const plans = [
   {
     name: 'Single Session',
-    price: '$15',
+    price: '$10',
     per: 'per session',
     description: 'Try it with no commitment.',
     features: [
@@ -127,11 +127,11 @@ const plans = [
   },
   {
     name: 'Starter Bundle',
-    price: '$100',
-    per: '7 sessions',
+    price: '$90',
+    per: '10 sessions',
     description: 'Enough sessions to see real change.',
     features: [
-      '5 sessions with the same teacher',
+      '10 sessions with the same teacher',
       'Save vs. single session price',
       'Progress tracked across every session',
       'Monthly PDF report',
