@@ -373,6 +373,7 @@ export interface Notification {
 
 export type LeadSource = 'Waitlist' | 'Newsletter';
 export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Archived';
+export type LeadUserType = 'family/student' | 'teacher';
 
 export interface Lead {
   id: string;
@@ -381,6 +382,7 @@ export interface Lead {
   fullName?: string;
   email: string;
   phone?: string;
+  userType?: LeadUserType;
   submissionCount: number;
   lastSubmittedAt: string;
   createdAt: string;

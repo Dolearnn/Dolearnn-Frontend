@@ -45,6 +45,13 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import { joinWaitlist, subscribeNewsletter } from '@/lib/api/public';
@@ -198,6 +205,7 @@ export default function Home() {
     fullName: '',
     email: '',
     phone: '',
+    userType: '' as '' | 'family/student' | 'teacher',
   });
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const scrollToTop = () =>
@@ -221,7 +229,12 @@ export default function Home() {
   const waitlistMutation = useMutation({
     mutationFn: joinWaitlist,
     onSuccess: () => {
-      setWaitlistForm({ fullName: '', email: '', phone: '' });
+      setWaitlistForm({
+        fullName: '',
+        email: '',
+        phone: '',
+        userType: '',
+      });
       toast({
         title: 'You are on the waitlist',
         description: 'We will reach out as soon as spots open up.',
@@ -329,7 +342,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="inline-flex items-center gap-2 bg-white dark:bg-card border border-accent2-200 text-brand text-xs font-medium px-3 py-1 rounded-full mb-4 shadow-sm"
+                className="hidden items-center gap-2 bg-white dark:bg-card border border-accent2-200 text-brand text-xs font-medium px-3 py-1 rounded-full mb-4 shadow-sm"
               >
                 <span className="relative flex w-2 h-2">
                   <span className="absolute inline-flex w-full h-full rounded-full bg-accent2-400 opacity-75 animate-ping" />
@@ -880,8 +893,9 @@ export default function Home() {
                 Join the list and hear from us first.
               </h2>
               <p className="text-gray-600 dark:text-muted-foreground max-w-xl">
-                Leave your full name, email, and WhatsApp number. We&apos;ll use it
-                for launch updates, new slot openings, and early family onboarding.
+                Leave your full name, email, WhatsApp number, and user type. We&apos;ll
+                use it for launch updates, new slot openings, and the right onboarding
+                follow-up.
               </p>
               <div className="grid sm:grid-cols-3 gap-3 mt-8">
                 <div className="rounded-2xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-4 py-4">
@@ -918,10 +932,14 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.1 }}
               onSubmit={(event) => {
                 event.preventDefault();
+                if (!waitlistForm.userType) {
+                  return;
+                }
                 waitlistMutation.mutate({
                   fullName: waitlistForm.fullName.trim(),
                   email: waitlistForm.email.trim(),
                   phone: waitlistForm.phone.trim(),
+                  userType: waitlistForm.userType,
                 });
               }}
               className="rounded-3xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background p-6 space-y-4"
@@ -968,6 +986,23 @@ export default function Home() {
                 placeholder="WhatsApp number"
                 className="h-11 rounded-2xl bg-white dark:bg-card"
               />
+              <Select
+                value={waitlistForm.userType}
+                onValueChange={(value) =>
+                  setWaitlistForm((current) => ({
+                    ...current,
+                    userType: value as 'family/student' | 'teacher',
+                  }))
+                }
+              >
+                <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-card">
+                  <SelectValue placeholder="User type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="family/student">family/student</SelectItem>
+                  <SelectItem value="teacher">teacher</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 type="submit"
                 className="w-full h-11 rounded-2xl bg-brand hover:bg-brand-600"
@@ -975,7 +1010,8 @@ export default function Home() {
                   waitlistMutation.isPending ||
                   !waitlistForm.fullName.trim() ||
                   !waitlistForm.email.trim() ||
-                  !waitlistForm.phone.trim()
+                  !waitlistForm.phone.trim() ||
+                  !waitlistForm.userType
                 }
               >
                 {waitlistMutation.isPending ? 'Joining...' : 'Join the waitlist'}

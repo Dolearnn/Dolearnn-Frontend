@@ -4,6 +4,7 @@ export async function joinWaitlist(input: {
   fullName: string;
   email: string;
   phone: string;
+  userType: 'family/student' | 'teacher';
 }) {
   return apiFetch<{ ok: boolean }>('/public/waitlist', {
     method: 'POST',

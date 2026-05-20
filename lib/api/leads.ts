@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api/client';
-import type { Lead, LeadSource, LeadStatus } from '@/lib/types';
+import type { Lead, LeadSource, LeadStatus, LeadUserType } from '@/lib/types';
 
 type ApiLeadSource = 'WAITLIST' | 'NEWSLETTER';
 type ApiLeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'ARCHIVED';
@@ -11,6 +11,7 @@ interface ApiLead {
   fullName?: string | null;
   email: string;
   phone?: string | null;
+  userType?: LeadUserType | null;
   submissionCount: number;
   lastSubmittedAt: string;
   createdAt: string;
@@ -91,6 +92,7 @@ function mapLead(lead: ApiLead): Lead {
     fullName: lead.fullName ?? undefined,
     email: lead.email,
     phone: lead.phone ?? undefined,
+    userType: lead.userType ?? undefined,
     submissionCount: lead.submissionCount,
     lastSubmittedAt: lead.lastSubmittedAt,
     createdAt: lead.createdAt,

@@ -174,7 +174,7 @@ export default function AdminLeadsPage() {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Search name, email or phone"
+              placeholder="Search name, email, phone or user type"
               className="rounded-full pl-9"
             />
           </div>
@@ -261,6 +261,7 @@ export default function AdminLeadsPage() {
                   <th className="px-4 py-3 text-left font-medium">Full name</th>
                   <th className="px-4 py-3 text-left font-medium">Email</th>
                   <th className="px-4 py-3 text-left font-medium">Phone</th>
+                  <th className="px-4 py-3 text-left font-medium">User type</th>
                   <th className="px-4 py-3 text-left font-medium">Status</th>
                   <th className="px-4 py-3 text-left font-medium">Submissions</th>
                   <th className="px-4 py-3 text-left font-medium">First captured</th>
@@ -298,6 +299,9 @@ export default function AdminLeadsPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
                         {lead.phone ?? '--'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-foreground/90 capitalize">
+                        {lead.userType ?? '--'}
                       </td>
                       <td className="px-4 py-3">
                         <Select
