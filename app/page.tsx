@@ -171,12 +171,6 @@ const socialLinks = [
   },
 ];
 
-// TEMP: dashboard not live yet — auth CTAs route to the waitlist.
-// To restore: search for `WAITLIST_*` and replace each occurrence with the
-// original /register or /login Link + label (Create family account / Log in).
-const WAITLIST_HREF = '#waitlist';
-const WAITLIST_LABEL = 'Join the waitlist';
-
 const subjectStrip = [
   'Maths',
   'English',
@@ -309,12 +303,13 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-3">
               <ThemeToggle />
-              {/* WAITLIST_SWAP: was <Link href="/login"> Log in (md+ only) */}
-              {/* WAITLIST_SWAP: was <Link href="/register"> Create family account / Sign up */}
-              <Link href={WAITLIST_HREF}>
+              <Link href="/login" className="hidden md:inline-block text-sm text-gray-700 dark:text-foreground/90 hover:text-brand dark:hover:text-accent2-400 transition">
+                Log in
+              </Link>
+              <Link href="/register">
                 <Button className="bg-brand hover:bg-brand-600 px-3 sm:px-6 rounded-full text-xs sm:text-sm">
-                  <span className="sm:hidden">Join waitlist</span>
-                  <span className="hidden sm:inline">{WAITLIST_LABEL}</span>
+                  <span className="sm:hidden">Sign up</span>
+                  <span className="hidden sm:inline">Create family account</span>
                 </Button>
               </Link>
             </div>
@@ -395,23 +390,22 @@ export default function Home() {
                 transition={{ delay: 0.85, duration: 0.6 }}
                 className="flex flex-wrap gap-3 mb-10"
               >
-                {/* WAITLIST_SWAP: was Create family account → /register and Log in → /login */}
                 <ConfettiBurst>
                   <Magnetic>
-                    <Link href={WAITLIST_HREF}>
+                    <Link href="/register">
                       <Button className="shine-sweep relative overflow-hidden bg-brand hover:bg-brand-600 rounded-full px-6 shadow-lg shadow-brand/25">
-                        {WAITLIST_LABEL}
+                        Create family account
                       </Button>
                     </Link>
                   </Magnetic>
                 </ConfettiBurst>
                 <Magnetic>
-                  <Link href="#how-it-works">
+                  <Link href="/login">
                     <Button
                       variant="outline"
                       className="rounded-full px-6 border-brand text-brand hover:bg-accent2-50"
                     >
-                      How we match
+                      Log in
                     </Button>
                   </Link>
                 </Magnetic>
@@ -1118,9 +1112,8 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                {/* WAITLIST_SWAP: was Link href="/register" with plan.cta label */}
                 <Magnetic strength={0.25} className="block w-full">
-                  <Link href={WAITLIST_HREF} className="block">
+                  <Link href="/register" className="block">
                     <Button
                       className={`shine-sweep relative overflow-hidden w-full rounded-full ${
                         plan.highlight
@@ -1128,7 +1121,7 @@ export default function Home() {
                           : 'bg-brand text-white hover:bg-brand-600'
                       }`}
                     >
-                      {WAITLIST_LABEL}
+                      {plan.cta}
                     </Button>
                   </Link>
                 </Magnetic>
@@ -1340,12 +1333,11 @@ export default function Home() {
             <p className="text-gray-700 dark:text-foreground/90 mb-6 max-w-md">
               Start the intake. We&apos;ll take it from there.
             </p>
-            {/* WAITLIST_SWAP: was Create family account → /register */}
             <div className="flex flex-wrap gap-3">
               <Magnetic>
-                <Link href={WAITLIST_HREF}>
+                <Link href="/register">
                   <Button className="shine-sweep relative overflow-hidden bg-brand hover:bg-brand-600 rounded-full px-6 shadow-lg shadow-brand/25">
-                    {WAITLIST_LABEL}
+                    Create family account
                   </Button>
                 </Link>
               </Magnetic>
