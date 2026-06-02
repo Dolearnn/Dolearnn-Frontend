@@ -121,7 +121,7 @@ const studentFeatures = [
 const plans = [
   {
     name: 'Single Session',
-    price: '$10',
+    price: '₦10,000',
     per: 'per session',
     description: 'Try it with no commitment.',
     features: [
@@ -134,7 +134,7 @@ const plans = [
   },
   {
     name: 'Starter Bundle',
-    price: '$90',
+    price: 'N90,000',
     per: '10 sessions',
     description: 'Enough sessions to see real change.',
     features: [
