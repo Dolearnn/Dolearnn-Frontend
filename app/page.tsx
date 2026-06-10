@@ -184,6 +184,7 @@ const subjectStrip = [
   'Biology',
   'Physics',
   'Writing',
+  'Languages',
 ];
 
 const stats = [
