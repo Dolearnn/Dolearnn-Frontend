@@ -194,6 +194,203 @@ const stats = [
   { value: 98, suffix: '%', label: 'Parents who re-book' },
 ];
 
+type CurriculumGroup = { level: string; subjects: string[] };
+type Region = {
+  id: string;
+  label: string;
+  flag: string;
+  blurb: string;
+  groups: CurriculumGroup[];
+};
+
+const regions: Region[] = [
+  {
+    id: 'ng',
+    label: 'Nigeria',
+    flag: '🇳🇬',
+    blurb:
+      'Aligned to the Nigerian curriculum, with focused prep for WAEC, NECO and JAMB.',
+    groups: [
+      {
+        level: 'Primary (Primary 1–6)',
+        subjects: [
+          'Mathematics',
+          'English',
+          'Basic Science',
+          'Quantitative Reasoning',
+          'Verbal Reasoning',
+          'Social Studies',
+          'Common Entrance Prep',
+        ],
+      },
+      {
+        level: 'Junior Secondary (JSS 1–3)',
+        subjects: [
+          'Mathematics',
+          'English',
+          'Basic Science & Technology',
+          'Business Studies',
+          'Computer Studies',
+          'Social Studies',
+          'BECE Prep',
+        ],
+      },
+      {
+        level: 'Senior Secondary (SSS 1–3)',
+        subjects: [
+          'Mathematics',
+          'Further Mathematics',
+          'English',
+          'Physics',
+          'Chemistry',
+          'Biology',
+          'Economics',
+          'Government',
+          'Literature-in-English',
+          'Geography',
+          'Agricultural Science',
+        ],
+      },
+      {
+        level: 'Exam Prep',
+        subjects: ['WAEC', 'NECO', 'JAMB (UTME)', 'Post-UTME'],
+      },
+    ],
+  },
+  {
+    id: 'uk',
+    label: 'United Kingdom',
+    flag: '🇬🇧',
+    blurb:
+      'Shown with exam levels (GCSE & A-Level) — exactly what British parents search for.',
+    groups: [
+      {
+        level: 'Primary & Lower Secondary (Key Stages 1–3)',
+        subjects: [
+          'Maths',
+          'English (Reading & Writing)',
+          'Science (General)',
+          'Geography',
+          'History',
+          'French / Spanish',
+        ],
+      },
+      {
+        level: 'GCSE (Ages 14–16)',
+        subjects: [
+          'Maths (Foundation / Higher)',
+          'English Language',
+          'English Literature',
+          'Biology',
+          'Chemistry',
+          'Physics',
+          'Combined Science (Double Award)',
+          'Computer Science',
+          'Geography / History',
+          'French / Spanish / German',
+        ],
+      },
+      {
+        level: 'A-Level (Ages 16–18)',
+        subjects: [
+          'Mathematics',
+          'Further Mathematics',
+          'English Literature',
+          'Biology',
+          'Chemistry',
+          'Physics',
+          'Computer Science',
+          'Psychology',
+          'Economics / Business Studies',
+          'History / Geography',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'us',
+    label: 'United States',
+    flag: '🇺🇸',
+    blurb:
+      'Split by track for High School — students take specific courses, not general "Math".',
+    groups: [
+      {
+        level: 'Elementary & Middle School (Grades K–8)',
+        subjects: [
+          'Math',
+          'English Language Arts (ELA)',
+          'Science (General / Earth Science)',
+          'Social Studies',
+          'Reading & Writing Foundations',
+        ],
+      },
+      {
+        level: 'High School Math (Grades 9–12)',
+        subjects: [
+          'Pre-Algebra',
+          'Algebra 1',
+          'Geometry',
+          'Algebra 2',
+          'Trigonometry',
+          'Pre-Calculus',
+          'Calculus (AB/BC)',
+          'Statistics',
+        ],
+      },
+      {
+        level: 'High School Science & Humanities (Grades 9–12)',
+        subjects: [
+          'Earth Science',
+          'Biology',
+          'Chemistry',
+          'Physics',
+          'U.S. History / World History',
+          'U.S. Government / Civics',
+          'English Literature & Composition',
+        ],
+      },
+      {
+        level: 'Advanced Test Prep',
+        subjects: ['AP Subjects (Calculus, Biology, US History…)', 'SAT / ACT Prep'],
+      },
+    ],
+  },
+  {
+    id: 'ca',
+    label: 'Canada',
+    flag: '🇨🇦',
+    blurb:
+      'US-style naming, grouped a little more broadly. French is crucial for Canadian markets.',
+    groups: [
+      {
+        level: 'Elementary & Middle School (Grades 1–8)',
+        subjects: [
+          'Math',
+          'English Language Arts (ELA)',
+          'Science & Technology',
+          'Social Studies',
+          'French (Core / Immersion)',
+        ],
+      },
+      {
+        level: 'High School (Grades 9–12)',
+        subjects: [
+          'Principles of Mathematics',
+          'Foundations of Mathematics',
+          'Pre-Calculus',
+          'Calculus & Vectors',
+          'English (Academic / Applied)',
+          'Biology',
+          'Chemistry',
+          'Physics',
+          'Canadian & World Studies',
+          'Computer Studies',
+        ],
+      },
+    ],
+  },
+];
+
 export default function Home() {
   const { toast } = useToast();
   const [waitlistForm, setWaitlistForm] = useState({
@@ -203,6 +400,9 @@ export default function Home() {
     userType: '' as '' | 'family/student' | 'teacher',
   });
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [activeRegion, setActiveRegion] = useState(regions[0].id);
+  const selectedRegion =
+    regions.find((r) => r.id === activeRegion) ?? regions[0];
   const scrollToTop = () =>
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -285,6 +485,9 @@ export default function Home() {
             <div className="hidden md:flex items-center space-x-6 text-sm text-gray-700 dark:text-foreground/90">
               <Link href="#how-it-works" className="hover:text-brand dark:hover:text-accent2-400 transition">
                 How it works
+              </Link>
+              <Link href="#curriculum" className="hover:text-brand dark:hover:text-accent2-400 transition">
+                Curriculum
               </Link>
               <Link href="#parents" className="hover:text-brand dark:hover:text-accent2-400 transition">
                 For parents
@@ -549,65 +752,129 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Subjects orbit */}
+      {/* Subjects covered — regional curriculum + teacher orbit */}
       <section
-        id="subjects"
+        id="curriculum"
         className="relative py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-accent2-50 to-white dark:from-background dark:to-card overflow-hidden"
       >
         <AuroraBackdrop className="opacity-60" />
-        <div className="relative max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-6">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="text-center mb-8 max-w-2xl mx-auto"
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
               Subjects covered
             </p>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand mb-3 leading-tight">
-              One roster. Every core subject your child needs.
+              One roster. Subjects in your language.
             </h2>
-            <p className="text-gray-600 dark:text-muted-foreground max-w-md mb-6">
-              Maths, English, Sciences, Coding, Music, French, SAT prep — and
-              when we don&apos;t cover something, we say so on the spot.
+            <p className="text-gray-600 dark:text-muted-foreground">
+              Pick your region and we&apos;ll show the subjects the way your
+              school does — from GCSE and A-Levels to AP tracks and WAEC prep.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {subjectStrip.map((s) => (
-                <motion.span
-                  key={s}
-                  whileHover={{ scale: 1.08, rotate: -2 }}
-                  className="px-3 py-1 rounded-full bg-white dark:bg-card border border-accent2-200 dark:border-accent2-500/30 text-sm text-brand dark:text-accent2-300 shadow-sm cursor-default"
-                >
-                  {s}
-                </motion.span>
-              ))}
-            </div>
           </motion.div>
-          <div className="relative mx-auto flex items-center justify-center w-full aspect-square max-w-[400px] sm:max-w-[460px] lg:max-w-[480px]">
-            <div className="absolute inset-0">
-              <OrbitAvatars
-                items={orbitTeachers}
-                radiusPct={0.45}
-                maxRadius={220}
-                speed={28}
-              />
-            </div>
-            <div className="absolute inset-[18%]">
-              <OrbitAvatars
-                items={orbitTeachers.slice().reverse()}
-                radiusPct={0.5}
-                maxRadius={140}
-                speed={20}
-                reverse
-              />
-            </div>
-            <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full bg-brand text-white flex items-center justify-center shadow-2xl shadow-brand/40 animate-pulse-ring">
-              <div className="text-center px-2">
-                <p className="text-xl sm:text-2xl font-extrabold">DoLearn</p>
-                <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-accent2-300">
-                  Curated
-                </p>
+
+          {/* Region tabs */}
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10">
+            {regions.map((region) => {
+              const isActive = region.id === activeRegion;
+              return (
+                <button
+                  key={region.id}
+                  type="button"
+                  onClick={() => setActiveRegion(region.id)}
+                  aria-pressed={isActive}
+                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-brand text-white border-brand shadow-md shadow-brand/25'
+                      : 'bg-white dark:bg-card text-gray-700 dark:text-foreground/90 border-gray-200 dark:border-border hover:border-brand hover:text-brand'
+                  }`}
+                >
+                  <span className="text-base leading-none">{region.flag}</span>
+                  {region.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 lg:gap-12 items-center">
+            {/* Region panel */}
+            <motion.div
+              key={selectedRegion.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="rounded-3xl border border-gray-200 dark:border-border bg-white/70 dark:bg-card backdrop-blur-sm p-6 sm:p-8"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-2xl leading-none">{selectedRegion.flag}</span>
+                <div>
+                  <h3 className="text-lg font-bold text-brand">
+                    {selectedRegion.label} curriculum
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-muted-foreground">
+                    {selectedRegion.blurb}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-5">
+                {selectedRegion.groups.map((group, i) => (
+                  <motion.div
+                    key={group.level}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, delay: i * 0.06 }}
+                    className="rounded-2xl bg-gray-50 dark:bg-background border border-gray-100 dark:border-border p-4 sm:p-5"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-3">
+                      {group.level}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.subjects.map((subject) => (
+                        <span
+                          key={subject}
+                          className="px-3 py-1 rounded-full bg-accent2-50 dark:bg-accent2-500/10 border border-accent2-200 dark:border-accent2-500/30 text-xs text-brand dark:text-accent2-300"
+                        >
+                          {subject}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Teacher orbit visual */}
+            <div className="relative mx-auto hidden lg:flex items-center justify-center w-full aspect-square max-w-[400px] sm:max-w-[460px] lg:max-w-[460px]">
+              <div className="absolute inset-0">
+                <OrbitAvatars
+                  items={orbitTeachers}
+                  radiusPct={0.45}
+                  maxRadius={220}
+                  speed={28}
+                />
+              </div>
+              <div className="absolute inset-[18%]">
+                <OrbitAvatars
+                  items={orbitTeachers.slice().reverse()}
+                  radiusPct={0.5}
+                  maxRadius={140}
+                  speed={20}
+                  reverse
+                />
+              </div>
+              <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full bg-brand text-white flex items-center justify-center shadow-2xl shadow-brand/40 animate-pulse-ring">
+                <div className="text-center px-2">
+                  <p className="text-xl sm:text-2xl font-extrabold">DoLearn</p>
+                  <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-accent2-300">
+                    Curated
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1263,9 +1530,13 @@ export default function Home() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 dark:text-muted-foreground px-6 pb-4">
-                  Maths, English, Sciences, Coding, Music, French, SAT prep, and
-                  more. If we don&apos;t have a teacher for your subject, we&apos;ll tell
-                  you on the spot.
+                  Whatever your school calls them. Pick your region in the{' '}
+                  <Link href="#curriculum" className="text-brand underline underline-offset-2">
+                    Subjects covered
+                  </Link>{' '}
+                  section to see the full list — from GCSE and A-Levels to AP
+                  tracks and WAEC/JAMB prep. If we don&apos;t have a teacher for
+                  your subject, we&apos;ll tell you on the spot.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem
