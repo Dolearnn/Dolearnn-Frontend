@@ -47,7 +47,7 @@ export function SplashLoader() {
             className="draw-on-view"
             style={{ '--draw-len': '900' } as CSSProperties}
           >
-            DoLearn
+            DoLearnn
           </text>
         </svg>
         <div className="mt-3 flex items-center justify-center gap-1 text-accent2-300">

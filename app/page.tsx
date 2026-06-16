@@ -209,7 +209,7 @@ const regions: Region[] = [
     label: 'Nigeria',
     flag: '🇳🇬',
     blurb:
-      'Aligned to the Nigerian curriculum, with focused prep for WAEC, NECO and JAMB.',
+      '',
     groups: [
       {
         level: 'Primary (Primary 1–6)',
@@ -262,7 +262,7 @@ const regions: Region[] = [
     label: 'United Kingdom',
     flag: '🇬🇧',
     blurb:
-      'Shown with exam levels (GCSE & A-Level) — exactly what British parents search for.',
+      '',
     groups: [
       {
         level: 'Primary & Lower Secondary (Key Stages 1–3)',
@@ -312,7 +312,7 @@ const regions: Region[] = [
     label: 'United States',
     flag: '🇺🇸',
     blurb:
-      'Split by track for High School — students take specific courses, not general "Math".',
+      '',
     groups: [
       {
         level: 'Elementary & Middle School (Grades K–8)',
@@ -360,7 +360,7 @@ const regions: Region[] = [
     label: 'Canada',
     flag: '🇨🇦',
     blurb:
-      'US-style naming, grouped a little more broadly. French is crucial for Canadian markets.',
+      '',
     groups: [
       {
         level: 'Elementary & Middle School (Grades 1–8)',
