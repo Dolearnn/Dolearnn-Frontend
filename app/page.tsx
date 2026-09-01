@@ -45,16 +45,9 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
-import { joinWaitlist, subscribeNewsletter } from '@/lib/api/public';
+import { subscribeNewsletter } from '@/lib/api/public';
 import {
   Award,
   Check,
@@ -80,11 +73,11 @@ import {
 } from 'lucide-react';
 import logo from '../assests/home/logo.svg';
 import fullLogo from '../assests/home/full-logo.png';
-import graduateImg from '../assests/home/hero-profile-img.png';
+import graduateImg from '../assests/home/hero-profile-img.webp';
 import profileSmallImg from '../assests/home/small-profile-img.jpg';
 import slantArrow from '../assests/home/slant-arrow.svg';
-import onlineImg1 from '../assests/home/online-img1.png';
-import productImg from '../assests/home/productive-img.png';
+import onlineImg1 from '../assests/home/online-img1.jpg';
+import productImg from '../assests/home/productive-img.webp';
 
 const pairingReasons = [
   {
@@ -158,6 +151,15 @@ const FACEBOOK_URL =
   process.env.NEXT_PUBLIC_FACEBOOK_URL ?? 'https://facebook.com/dolearnn';
 const PHONE_NUMBER =
   process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '0905 763 8887';
+
+// Book a trial class without creating an account
+const TRIAL_FORM_URL =
+  process.env.NEXT_PUBLIC_TRIAL_FORM_URL ?? 'https://forms.gle/SYjkRgS1Y5JoD43v7';
+const WHATSAPP_NUMBER =
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '2349057638887';
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent(
+  "Hi DoLearn! I'd like to book a trial class for my child.",
+)}`;
 
 const socialLinks = [
   { label: 'Instagram', href: INSTAGRAM_URL, icon: Instagram },
@@ -393,12 +395,6 @@ const regions: Region[] = [
 
 export default function Home() {
   const { toast } = useToast();
-  const [waitlistForm, setWaitlistForm] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    userType: '' as '' | 'family/student' | 'teacher',
-  });
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [activeRegion, setActiveRegion] = useState(regions[0].id);
   const selectedRegion =
@@ -420,30 +416,6 @@ export default function Home() {
     offset: ['start end', 'end start'],
   });
   const pairingImageY = useTransform(pairingProgress, [0, 1], [80, -80]);
-
-  const waitlistMutation = useMutation({
-    mutationFn: joinWaitlist,
-    onSuccess: () => {
-      setWaitlistForm({
-        fullName: '',
-        email: '',
-        phone: '',
-        userType: '',
-      });
-      toast({
-        title: 'You are on the waitlist',
-        description: 'We will reach out as soon as spots open up.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Could not join waitlist',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
 
   const newsletterMutation = useMutation({
     mutationFn: subscribeNewsletter,
@@ -497,9 +469,6 @@ export default function Home() {
               </Link>
               <Link href="#pricing" className="hover:text-brand dark:hover:text-accent2-400 transition">
                 Pricing
-              </Link>
-              <Link href="#waitlist" className="hover:text-brand dark:hover:text-accent2-400 transition">
-                Waitlist
               </Link>
               <Link href="#faq" className="hover:text-brand dark:hover:text-accent2-400 transition">
                 FAQ
@@ -592,27 +561,47 @@ export default function Home() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.85, duration: 0.6 }}
-                className="flex flex-wrap gap-3 mb-10"
+                className="mb-10"
               >
-                <ConfettiBurst>
+                <div className="flex flex-wrap gap-3">
+                  <ConfettiBurst>
+                    <Magnetic>
+                      <a href={TRIAL_FORM_URL} target="_blank" rel="noreferrer">
+                        <Button className="shine-sweep relative overflow-hidden bg-brand hover:bg-brand-600 rounded-full px-6 shadow-lg shadow-brand/25">
+                          Book a trial class
+                        </Button>
+                      </a>
+                    </Magnetic>
+                  </ConfettiBurst>
                   <Magnetic>
-                    <Link href="/register">
-                      <Button className="shine-sweep relative overflow-hidden bg-brand hover:bg-brand-600 rounded-full px-6 shadow-lg shadow-brand/25">
-                        Create family account
+                    <a href={WHATSAPP_URL} target="_blank" rel="noreferrer">
+                      <Button
+                        variant="outline"
+                        className="rounded-full px-6 border-brand text-brand hover:bg-accent2-50"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Message us on WhatsApp
                       </Button>
-                    </Link>
+                    </a>
                   </Magnetic>
-                </ConfettiBurst>
-                <Magnetic>
-                  <Link href="/login">
-                    <Button
-                      variant="outline"
-                      className="rounded-full px-6 border-brand text-brand hover:bg-accent2-50"
-                    >
-                      Log in
-                    </Button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-3">
+                  No account needed to book a trial.{' '}
+                  <Link
+                    href="/register"
+                    className="text-brand dark:text-accent2-400 underline underline-offset-2"
+                  >
+                    Create a family account
+                  </Link>{' '}
+                  or{' '}
+                  <Link
+                    href="/login"
+                    className="text-brand dark:text-accent2-400 underline underline-offset-2"
+                  >
+                    log in
                   </Link>
-                </Magnetic>
+                  .
+                </p>
               </motion.div>
 
               {/* Animated stat row */}
@@ -662,6 +651,7 @@ export default function Home() {
                   <Image
                     src={graduateImg}
                     alt="Paired student"
+                    priority
                     className="relative z-10 w-full h-[498px] object-cover"
                   />
                 </motion.div>
@@ -927,7 +917,7 @@ export default function Home() {
       <section
         id="pairing"
         ref={pairingRef}
-        className="relative py-16 sm:py-20 text-white bg-[url('/graduation.svg')] bg-cover bg-center bg-no-repeat overflow-hidden"
+        className="relative py-16 sm:py-20 text-white bg-[url('/graduation.jpg')] bg-cover bg-center bg-no-repeat overflow-hidden"
       >
         <div className="absolute inset-0 bg-brand-800/85" />
         {/* Floating accent dots */}
@@ -1135,150 +1125,6 @@ export default function Home() {
                 })}
               </ul>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section id="waitlist" className="py-16 sm:py-20 bg-white dark:bg-card">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-start">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-                Waitlist
-              </p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-brand mb-3">
-                Join the list and hear from us first.
-              </h2>
-              <p className="text-gray-600 dark:text-muted-foreground max-w-xl">
-                Leave your full name, email, WhatsApp number, and user type. We&apos;ll
-                use it for launch updates, new slot openings, and the right onboarding
-                follow-up.
-              </p>
-              <div className="grid sm:grid-cols-3 gap-3 mt-8">
-                <div className="rounded-2xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-4 py-4">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-                    Early access
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                    Be first in line when we open new spots.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-4 py-4">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-                    Fast follow-up
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                    WhatsApp makes it easy for our team to reach you.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-4 py-4">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-                    Launch news
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                    Product updates without needing to check back.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.form
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!waitlistForm.userType) {
-                  return;
-                }
-                waitlistMutation.mutate({
-                  fullName: waitlistForm.fullName.trim(),
-                  email: waitlistForm.email.trim(),
-                  phone: waitlistForm.phone.trim(),
-                  userType: waitlistForm.userType,
-                });
-              }}
-              className="rounded-3xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-background p-6 space-y-4"
-            >
-              <div>
-                <p className="text-lg font-semibold text-gray-900 dark:text-foreground">
-                  Save my spot
-                </p>
-                <p className="text-sm text-gray-500 dark:text-muted-foreground mt-1">
-                  We&apos;ll only use these details for DoLearn updates and onboarding.
-                </p>
-              </div>
-              <Input
-                value={waitlistForm.fullName}
-                onChange={(event) =>
-                  setWaitlistForm((current) => ({
-                    ...current,
-                    fullName: event.target.value,
-                  }))
-                }
-                placeholder="Full name"
-                className="h-11 rounded-2xl bg-white dark:bg-card"
-              />
-              <Input
-                type="email"
-                value={waitlistForm.email}
-                onChange={(event) =>
-                  setWaitlistForm((current) => ({
-                    ...current,
-                    email: event.target.value,
-                  }))
-                }
-                placeholder="Email address"
-                className="h-11 rounded-2xl bg-white dark:bg-card"
-              />
-              <Input
-                value={waitlistForm.phone}
-                onChange={(event) =>
-                  setWaitlistForm((current) => ({
-                    ...current,
-                    phone: event.target.value,
-                  }))
-                }
-                placeholder="WhatsApp number"
-                className="h-11 rounded-2xl bg-white dark:bg-card"
-              />
-              <Select
-                value={waitlistForm.userType}
-                onValueChange={(value) =>
-                  setWaitlistForm((current) => ({
-                    ...current,
-                    userType: value as 'family/student' | 'teacher',
-                  }))
-                }
-              >
-                <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-card">
-                  <SelectValue placeholder="User type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="family/student">family/student</SelectItem>
-                  <SelectItem value="teacher">teacher</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                type="submit"
-                className="w-full h-11 rounded-2xl bg-brand hover:bg-brand-600"
-                disabled={
-                  waitlistMutation.isPending ||
-                  !waitlistForm.fullName.trim() ||
-                  !waitlistForm.email.trim() ||
-                  !waitlistForm.phone.trim() ||
-                  !waitlistForm.userType
-                }
-              >
-                {waitlistMutation.isPending ? 'Joining...' : 'Join the waitlist'}
-              </Button>
-            </motion.form>
           </div>
         </div>
       </section>
@@ -1603,27 +1449,38 @@ export default function Home() {
               <span className="text-brand">child?</span>
             </h2>
             <p className="text-gray-700 dark:text-foreground/90 mb-6 max-w-md">
-              Start the intake. We&apos;ll take it from there.
+              Book a trial class or message us on WhatsApp — no account needed.
             </p>
             <div className="flex flex-wrap gap-3">
               <Magnetic>
-                <Link href="/register">
+                <a href={TRIAL_FORM_URL} target="_blank" rel="noreferrer">
                   <Button className="shine-sweep relative overflow-hidden bg-brand hover:bg-brand-600 rounded-full px-6 shadow-lg shadow-brand/25">
-                    Create family account
+                    Book a trial class
                   </Button>
-                </Link>
+                </a>
               </Magnetic>
               <Magnetic>
-                <Link href="#pricing">
+                <a href={WHATSAPP_URL} target="_blank" rel="noreferrer">
                   <Button
                     variant="outline"
                     className="rounded-full px-6 border-brand text-brand"
                   >
-                    See pricing
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    WhatsApp us
                   </Button>
-                </Link>
+                </a>
               </Magnetic>
             </div>
+            <p className="text-xs text-gray-600 dark:text-muted-foreground mt-3">
+              Prefer to sign up?{' '}
+              <Link
+                href="/register"
+                className="text-brand dark:text-accent2-400 underline underline-offset-2"
+              >
+                Create a family account
+              </Link>
+              .
+            </p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 40 }}
@@ -1766,6 +1623,17 @@ export default function Home() {
             DoLearn © {new Date().getFullYear()} · All rights reserved
           </div>
         </div>
+
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Book a trial class on WhatsApp"
+          className="fixed bottom-20 right-6 z-40 flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-black/20 hover:brightness-105 transition"
+        >
+          <MessageCircle className="w-5 h-5" />
+          <span className="hidden sm:inline">Book a trial class</span>
+        </a>
 
         <motion.button
           initial={{ opacity: 0, scale: 0 }}

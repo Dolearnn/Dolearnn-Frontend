@@ -463,10 +463,10 @@
     justify-content: center;
     pointer-events: none;
     background: radial-gradient(circle at 50% 50%, #044272 0%, #022A49 70%, #010E18 100%);
-    animation: splash-fade 2.6s ease-in-out forwards;
+    animation: splash-fade 1.2s ease-in-out forwards;
   }
   .splash-mark {
-    animation: splash-zoom 2.6s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+    animation: splash-zoom 1.2s cubic-bezier(0.7, 0, 0.3, 1) forwards;
   }
 
   /* ===== Glitch / scramble text ===== */

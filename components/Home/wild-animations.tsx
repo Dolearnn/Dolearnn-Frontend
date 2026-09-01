@@ -20,7 +20,12 @@ import { cn } from '@/lib/utils';
 export function SplashLoader() {
   const [done, setDone] = useState(false);
   useEffect(() => {
-    const t = window.setTimeout(() => setDone(true), 2700);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setDone(true);
+      return;
+    }
+    const t = window.setTimeout(() => setDone(true), 1250);
     return () => window.clearTimeout(t);
   }, []);
   if (done) return null;
@@ -886,7 +891,6 @@ export const navSections: Sections = [
   { id: 'subjects', label: 'Subjects' },
   { id: 'parents', label: 'For parents' },
   { id: 'students', label: 'For students' },
-  { id: 'waitlist', label: 'Waitlist' },
   { id: 'pricing', label: 'Pricing' },
   { id: 'voices', label: 'Voices' },
   { id: 'faq', label: 'FAQ' },
