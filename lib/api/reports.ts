@@ -54,3 +54,45 @@ export async function getAdminReport(month?: string) {
   const response = await apiFetch<{ report: AdminReport }>(`/admin/reports${query}`);
   return response.report;
 }
+
+export interface ImpactReport {
+  generatedAt: string;
+  people: { families: number; learnerProfiles: number; activeTeachers: number };
+  practice: {
+    publishedQuestions: number;
+    attemptsStarted: number;
+    attemptsSubmitted: number;
+    attemptsLast30Days: number;
+    attemptsLast7Days: number;
+    learnersWhoPractised: number;
+    activeLearners30Days: number;
+    activeLearners7Days: number;
+    repeatLearners: number;
+    repeatRatePercent: number;
+  };
+  learning: {
+    comparablePairs: number;
+    improvedPairs: number;
+    improvedPercent: number;
+    averageFirstScore: number | null;
+    averageLatestScore: number | null;
+    averageChangePoints: number | null;
+  };
+  tutoring: {
+    completedSessions: number;
+    bookingRequests: number;
+    practisedBeforeTutoring: number;
+    practisedAfterTutoring: number;
+    matchedLearners: number;
+    averageScoreBeforeTutoring: number | null;
+    averageScoreAfterTutoring: number | null;
+  };
+  revenue: { totalRevenue: number; paymentCount: number; teacherPayoutsPaid: number };
+}
+
+export const impactKeys = { admin: ['admin', 'impact'] as const };
+
+export async function getImpactReport() {
+  const response = await apiFetch<{ impact: ImpactReport }>('/admin/reports/impact');
+  return response.impact;
+}

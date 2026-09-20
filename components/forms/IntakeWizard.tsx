@@ -178,9 +178,19 @@ function defaultsFromIntake(initial?: IntakeForm): Values {
 export default function IntakeWizard({
   childId,
   initial,
+  prefill,
 }: {
   childId: string;
   initial?: IntakeForm;
+  // Values suggested elsewhere (for example from quiz results). They override
+  // the saved intake for the fields they contain, and nothing is saved until
+  // the family submits the form.
+  prefill?: Partial<
+    Pick<
+      Values,
+      'subjects' | 'subjectOther' | 'learningGoal' | 'currentLevel' | 'specificTopics'
+    >
+  >;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -190,7 +200,13 @@ export default function IntakeWizard({
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     mode: 'onTouched',
-    defaultValues: defaultsFromIntake(initial),
+    defaultValues: {
+      ...defaultsFromIntake(initial),
+      // An undefined suggestion must not wipe out a real default.
+      ...(Object.fromEntries(
+        Object.entries(prefill ?? {}).filter(([, value]) => value !== undefined),
+      ) as Partial<Values>),
+    },
   });
 
   const fieldsPerStep: Record<number, (keyof Values)[]> = {
