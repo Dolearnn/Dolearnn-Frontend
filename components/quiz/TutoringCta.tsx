@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GraduationCap, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import {
 import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 import type { QuizTutoringPrefill } from '@/lib/api/quiz';
 import { adminRequestMessage, intakeHref } from '@/lib/quiz';
+import { getAuthUser } from '@/lib/api/auth-storage';
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'dolearnnn@gmail.com';
@@ -28,9 +29,16 @@ export default function TutoringCta({
   prefill: QuizTutoringPrefill;
   weakTopics: Array<{ topicId: string; name: string; accuracyPercent: number }>;
 }) {
+  const [accountKind, setAccountKind] = useState<'loading' | 'parent' | 'learner'>('loading');
+  const isParent = accountKind === 'parent';
+  useEffect(
+    () => setAccountKind(getAuthUser()?.role === 'PARENT' ? 'parent' : 'learner'),
+    [],
+  );
   const studentsQuery = useQuery({
     queryKey: familyKeys.students,
     queryFn: listFamilyStudents,
+    enabled: isParent,
   });
   const [chosenId, setChosenId] = useState<string | null>(null);
 
@@ -60,7 +68,24 @@ export default function TutoringCta({
           </p>
 
           <div className="mt-4">
-            {studentsQuery.isLoading ? (
+            {accountKind === 'loading' ? (
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">Loading support options…</p>
+            ) : !isParent ? (
+              <div>
+                <p className="mb-3 text-xs text-gray-600 dark:text-muted-foreground">
+                  Your results will be included so the teacher knows where to begin.
+                </p>
+                <Button asChild className="h-10 px-5 rounded-xl">
+                  <a
+                    href={`mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(
+                      `Tutor request: ${prefill.subject}`,
+                    )}&body=${encodeURIComponent(adminRequestMessage(prefill))}`}
+                  >
+                    <Mail className="w-4 h-4 mr-2" /> Request teacher support
+                  </a>
+                </Button>
+              </div>
+            ) : studentsQuery.isLoading ? (
               <p className="text-xs text-gray-500 dark:text-muted-foreground">
                 Loading...
               </p>

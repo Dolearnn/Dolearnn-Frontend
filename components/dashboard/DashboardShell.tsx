@@ -61,15 +61,22 @@ type NavItem = {
 
 const familyNav: NavItem[] = [
   { label: 'Home', href: '/family', icon: Home },
+  { label: 'Practice', href: '/family/quiz', icon: ListChecks },
+  { label: 'Arena', href: '/family/arena', icon: Swords },
+  { label: 'Progress', href: '/family/progress', icon: TrendingUp },
+  { label: 'Learning', href: '/family/learning', icon: BookOpen },
   { label: 'My Children', href: '/family/children', icon: Users },
   { label: 'Sessions', href: '/family/sessions', icon: Calendar },
-  { label: 'Learning', href: '/family/learning', icon: BookOpen },
-  { label: 'Practice Quizzes', href: '/family/quiz', icon: ListChecks },
-  { label: 'Progress', href: '/family/progress', icon: TrendingUp },
-  { label: 'Arena', href: '/family/arena', icon: Swords },
   { label: 'Payments', href: '/family/payments', icon: CreditCard },
   { label: 'Reports', href: '/family/reports', icon: ChartNoAxesColumnIncreasing },
   { label: 'Notifications', href: '/family/notifications', icon: Bell },
+];
+
+const studentNav: NavItem[] = [
+  { label: 'Today', href: '/student', icon: Home },
+  { label: 'Practice', href: '/student/practice', icon: ListChecks },
+  { label: 'Progress', href: '/student/progress', icon: TrendingUp },
+  { label: 'Notifications', href: '/student/notifications', icon: Bell },
 ];
 
 const teacherNav: NavItem[] = [
@@ -85,6 +92,7 @@ const teacherNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { label: 'Overview', href: '/admin', icon: Home },
+  { label: 'Question bank', href: '/admin/questions', icon: BookOpen },
   { label: 'Intakes', href: '/admin/intakes', icon: ClipboardList },
   { label: 'Teachers', href: '/admin/teachers', icon: GraduationCap },
   { label: 'Sessions', href: '/admin/sessions', icon: Calendar },
@@ -96,11 +104,12 @@ const adminNav: NavItem[] = [
   { label: 'Notifications', href: '/admin/notifications', icon: Bell },
 ];
 
-type Role = 'family' | 'teacher' | 'admin';
+type Role = 'student' | 'family' | 'teacher' | 'admin';
 
 function roleFromPath(path: string): Role {
   if (path.startsWith('/teacher')) return 'teacher';
   if (path.startsWith('/admin')) return 'admin';
+  if (path.startsWith('/student')) return 'student';
   return 'family';
 }
 
@@ -110,6 +119,8 @@ function navForRole(role: Role): NavItem[] {
       return teacherNav;
     case 'admin':
       return adminNav;
+    case 'student':
+      return studentNav;
     default:
       return familyNav;
   }
@@ -119,10 +130,12 @@ function roleForAuthUser(user: AuthUser | null): Role | null {
   if (!user) return null;
   if (user.role === 'ADMIN') return 'admin';
   if (user.role === 'TEACHER') return 'teacher';
+  if (user.role === 'STUDENT') return 'student';
   return 'family';
 }
 
 const roleLabel: Record<Role, string> = {
+  student: 'Learner',
   family: 'Family',
   teacher: 'Teacher',
   admin: 'Admin',
@@ -177,7 +190,11 @@ export default function DashboardShell({
     queryKey: notificationKeys.all,
     queryFn: listNotifications,
     enabled: authChecked && !!authUser && !isWrongWorkspace,
-    refetchInterval: 30000,
+    // Avoid a permanent 30-second polling storm as the user base grows.
+    // The notifications page still invalidates this query after user actions.
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 60_000,
   });
 
   const unreadNotificationCount = useMemo(

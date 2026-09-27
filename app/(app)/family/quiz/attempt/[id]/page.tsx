@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import QuizResults from '@/components/quiz/QuizResults';
 import QuizRunner from '@/components/quiz/QuizRunner';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { getQuizAttempt, isSubmittedView, quizKeys } from '@/lib/api/quiz';
 
 export default function QuizAttemptPage() {
   const params = useParams<{ id: string }>();
+  const pathname = usePathname();
+  const practicePath = pathname.startsWith('/student') ? '/student/practice' : '/family/quiz';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: quizKeys.attempt(params.id),
@@ -43,7 +45,7 @@ export default function QuizAttemptPage() {
           {error instanceof Error ? error.message : 'Please try again.'}
         </p>
         <Button asChild className="h-10 px-5 rounded-xl">
-          <Link href="/family/quiz">Back to quizzes</Link>
+          <Link href={practicePath}>Back to practice</Link>
         </Button>
       </div>
     );
