@@ -1,8 +1,11 @@
 import { getAuthToken } from '@/lib/api/auth-storage';
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ??
-  'https://dolearnn-backend.onrender.com/api';
+const DEFAULT_API_URL =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:4000/api'
+    : 'https://dolearnn-backend.onrender.com/api';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || DEFAULT_API_URL;
 
 export class ApiError extends Error {
   status: number;

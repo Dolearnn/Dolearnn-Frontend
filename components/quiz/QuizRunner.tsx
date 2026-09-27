@@ -95,6 +95,9 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
       queryClient.setQueryData(quizKeys.attempt(attempt.id), data);
       void queryClient.invalidateQueries({ queryKey: quizKeys.history });
       void queryClient.invalidateQueries({ queryKey: ['quiz', 'weak-topics'] });
+      void queryClient.invalidateQueries({ queryKey: ['quiz', 'overview'] });
+      void queryClient.invalidateQueries({ queryKey: ['quiz', 'progress'] });
+      void queryClient.invalidateQueries({ queryKey: ['quiz', 'next-actions'] });
       window.scrollTo({ top: 0 });
     },
     onError: (error) => {
