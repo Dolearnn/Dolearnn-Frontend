@@ -7,8 +7,10 @@ import { ThemeProvider } from '@/components/theme-provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Dolearnn',
-  description: 'The right teacher, hand-picked for your child.',
+  metadataBase: new URL('https://www.dolearnn.com'),
+  title: 'DoLearnn',
+  description:
+    'Practice, identify learning gaps, compete, get targeted support and measure progress with DoLearnn.',
 
   icons: {
     icon: '/logo.png',
