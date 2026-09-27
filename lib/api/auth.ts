@@ -14,6 +14,7 @@ interface LoginInput {
 interface RegisterInput extends LoginInput {
   name: string;
   whatsapp?: string;
+  accountType: 'STUDENT' | 'PARENT';
 }
 
 interface ChangePasswordInput {
@@ -38,6 +39,7 @@ interface AuthResponse {
 export function dashboardPathForRole(role: AuthUser['role']) {
   if (role === 'ADMIN') return '/admin';
   if (role === 'TEACHER') return '/teacher';
+  if (role === 'STUDENT') return '/student';
   return '/family';
 }
 
@@ -62,7 +64,10 @@ export async function register(input: RegisterInput) {
   return storeSession(response);
 }
 
-export async function loginWithGoogle(input: { idToken: string }) {
+export async function loginWithGoogle(input: {
+  idToken: string;
+  accountType?: 'STUDENT' | 'PARENT';
+}) {
   const response = await apiFetch<AuthResponse>('/auth/google', {
     method: 'POST',
     body: JSON.stringify(input),

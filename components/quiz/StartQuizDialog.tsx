@@ -24,7 +24,7 @@ const COUNT_CHOICES = [10, 20, 40];
 const MIN_COUNT = 5;
 
 const modes: Array<{ value: QuizMode; title: string; hint: string }> = [
-  { value: 'PRACTICE', title: 'Practice', hint: 'No timer. See explanations after.' },
+  { value: 'PRACTICE', title: 'Guided practice', hint: 'No timer. Diagnose the result and review explanations.' },
   { value: 'MOCK', title: 'Timed mock', hint: '1 minute per question, like the real exam.' },
 ];
 
@@ -61,7 +61,7 @@ export default function StartQuizDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{subject.name}</DialogTitle>
+          <DialogTitle>Set up {subject.name}</DialogTitle>
           <DialogDescription>
             {exam ? `${exam.name} · ` : ''}
             {available} questions available
@@ -130,7 +130,7 @@ export default function StartQuizDialog({
               </legend>
               <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">
                 {topicIds.length === 0
-                  ? 'All topics. Tick some to focus on them.'
+                  ? 'All topics gives you a broad assessment. Select topics for a focused mission.'
                   : `${topicIds.length} selected`}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -167,7 +167,13 @@ export default function StartQuizDialog({
             }
           >
             <Play className="w-4 h-4 mr-2" />
-            {start.isPending ? 'Starting...' : 'Start quiz'}
+            {start.isPending
+              ? 'Starting…'
+              : mode === 'MOCK'
+                ? 'Start timed mock'
+                : topicIds.length > 0
+                  ? 'Start focused mission'
+                  : 'Start assessment'}
           </Button>
         </DialogFooter>
       </DialogContent>

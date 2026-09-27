@@ -6,9 +6,13 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { dashboardPathForRole, loginWithGoogle } from '@/lib/api/auth';
+import { saveGuestBaseline } from '@/lib/api/student';
+import { readGuestBaseline } from '@/lib/guest-practice';
 
 interface GoogleAuthButtonProps {
   mode: 'login' | 'register';
+  nextPath?: string;
+  accountType?: 'STUDENT' | 'PARENT';
 }
 
 interface GoogleCredentialResponse {
@@ -48,7 +52,7 @@ declare global {
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 
-export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
+export default function GoogleAuthButton({ mode, nextPath, accountType }: GoogleAuthButtonProps) {
   const router = useRouter();
   const { toast } = useToast();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -57,7 +61,7 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
 
   const mutation = useMutation({
     mutationFn: loginWithGoogle,
-    onSuccess: ({ user }) => {
+    onSuccess: async ({ user }) => {
       toast({
         title: mode === 'register' ? 'Account created' : 'Welcome back',
         description: `Signed in as ${user.name}.`,
@@ -67,7 +71,11 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
         router.refresh();
         return;
       }
-      router.push(dashboardPathForRole(user.role));
+      if (user.role === 'STUDENT') {
+        const baseline = readGuestBaseline();
+        if (baseline) await saveGuestBaseline(baseline).catch(() => null);
+      }
+      router.push(nextPath && user.role === 'PARENT' ? nextPath : dashboardPathForRole(user.role));
       router.refresh();
     },
     onError: (error) => {
@@ -108,7 +116,7 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
         ux_mode: 'popup',
         callback: (response) => {
           if (response?.credential) {
-            mutateRef.current({ idToken: response.credential });
+            mutateRef.current({ idToken: response.credential, accountType });
           }
         },
       });
@@ -143,7 +151,7 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     return () => {
       script?.removeEventListener('load', render);
     };
-  }, [mode, width]);
+  }, [accountType, mode, width]);
 
   if (!GOOGLE_CLIENT_ID) {
     return (

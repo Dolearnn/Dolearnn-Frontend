@@ -29,7 +29,7 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
-export default function LoginForm() {
+export default function LoginForm({ nextPath }: { nextPath?: string }) {
   const router = useRouter();
   const { toast } = useToast();
   const form = useForm<Values>({
@@ -49,7 +49,7 @@ export default function LoginForm() {
         router.refresh();
         return;
       }
-      router.push(dashboardPathForRole(user.role));
+      router.push(nextPath && user.role === 'PARENT' ? nextPath : dashboardPathForRole(user.role));
       router.refresh();
     },
     onError: (error) => {
@@ -68,7 +68,7 @@ export default function LoginForm() {
 
   return (
     <div className="space-y-4">
-      <GoogleAuthButton mode="login" />
+      <GoogleAuthButton mode="login" nextPath={nextPath} />
       <AuthDivider />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
