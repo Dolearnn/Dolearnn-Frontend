@@ -1,1653 +1,689 @@
-'use client';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Bricolage_Grotesque, Manrope } from "next/font/google";
 import {
-  Magnetic,
-  Marquee,
-  ScrollProgress,
-  SparkleField,
-  WordsReveal,
-} from '@/components/Home/animations';
-import {
-  AuroraBackdrop,
-  ConfettiBurst,
-  CursorGlow,
-  DrawnUnderline,
-  MatchingVisualizer,
-  OrbitAvatars,
-  PointerSpotlight,
-  RollingNumber,
-  TestimonialsMarquee,
-  WaveDivider,
-  orbitTeachers,
-  sampleTestimonials,
-} from '@/components/Home/extra-animations';
-import {
-  ChatPreview,
-  GlitchText,
-  GlobalRipples,
-  JourneyTimeline,
-  KonamiParty,
-  MouseConstellation,
-  SectionDotNav,
-  SplashLoader,
-  journeySteps,
-  navSections,
-} from '@/components/Home/wild-animations';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { useToast } from '@/hooks/use-toast';
-import { subscribeNewsletter } from '@/lib/api/public';
-import {
-  Award,
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
   Check,
-  ChevronUp,
-  ClipboardList,
-  Compass,
-  Facebook,
-  Flame,
-  GraduationCap,
-  HeartHandshake,
-  Instagram,
-  Linkedin,
-  LineChart,
-  MessageCircle,
-  Music2,
-  PhoneCall,
-  Radar,
-  ShieldCheck,
-  Sparkles,
-  UserCheck,
-  Users,
-  Video,
-} from 'lucide-react';
-import logo from '../assests/home/logo.svg';
-import fullLogo from '../assests/home/full-logo.png';
-import graduateImg from '../assests/home/hero-profile-img.webp';
-import profileSmallImg from '../assests/home/small-profile-img.jpg';
-import slantArrow from '../assests/home/slant-arrow.svg';
-import onlineImg1 from '../assests/home/online-img1.jpg';
-import productImg from '../assests/home/productive-img.webp';
+  CornerDownRight,
+  Target,
+} from "lucide-react";
+import {
+  ArenaPreview,
+  LearningLoop,
+  LandingNav,
+  Newsletter,
+} from "@/components/Home/LearningExperience";
+import s from "./landing.module.css";
 
-const pairingReasons = [
-  {
-    icon: ShieldCheck,
-    title: 'Quality controlled',
-    body: 'Every teacher is interviewed, trial-taught, and approved by our team before they ever meet your child.',
+const display = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--landing-display",
+  display: "swap",
+});
+const body = Manrope({
+  subsets: ["latin"],
+  variable: "--landing-body",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "DoLearnn — Know your gaps. Make your next move.",
+  description:
+    "One connected learning system for Nigerian students preparing for external examinations. Find your gaps, practise with purpose, compete, get teacher support and track your progress.",
+  openGraph: {
+    title: "DoLearnn — Know your gaps. Make your next move.",
+    description:
+      "Assessment, AI-guided practice, Arena and qualified tutors. Connected around your progress.",
+    images: ["/logo.png"],
   },
-  {
-    icon: HeartHandshake,
-    title: 'Personalised match',
-    body: 'We match on learning goals, schedule, and how your child learns — not just the subject name.',
-  },
-  {
-    icon: Users,
-    title: 'One team, end-to-end',
-    body: 'One team owns your child\u2019s journey from intake to progress report. If the match isn\u2019t right, we re-pair at no cost.',
-  },
-];
-
-const parentFeatures = [
-  { icon: Users, label: 'Family Hub — manage 2–4 children from one account' },
-  { icon: ClipboardList, label: 'Teacher notes after every session' },
-  { icon: LineChart, label: 'Monthly progress report, sent as PDF' },
-  { icon: ShieldCheck, label: 'Payments recorded by admin after confirmation' },
-];
-
-const studentFeatures = [
-  { icon: Compass, label: 'Learning Journey Map with milestones' },
-  { icon: Award, label: 'Badges for streaks, subjects, and milestones' },
-  { icon: Radar, label: 'Skills Radar — see strengths build across subjects' },
-  { icon: Flame, label: 'Daily streaks and goal tracking' },
-];
-
-const plans = [
-  {
-    name: 'Single Session',
-    price: '₦10,000',
-    per: 'per session',
-    description: 'Try it with no commitment.',
-    features: [
-      '1 live 1-on-1 session',
-      'Teacher hand-picked for your child',
-      'Session feedback in your dashboard',
-    ],
-    cta: 'Book a session',
-    highlight: false,
-  },
-  {
-    name: 'Starter Bundle',
-    price: 'N90,000',
-    per: '10 sessions',
-    description: 'Enough sessions to see real change.',
-    features: [
-      '10 sessions with the same teacher',
-      'Save vs. single session price',
-      'Progress tracked across every session',
-      'Monthly PDF report',
-    ],
-    cta: 'Get started',
-    highlight: true,
-  },
-];
-
-const INSTAGRAM_URL =
-  process.env.NEXT_PUBLIC_INSTAGRAM_URL ?? 'https://instagram.com/dolearnn';
-const LINKEDIN_URL =
-  process.env.NEXT_PUBLIC_LINKEDIN_URL ?? 'https://linkedin.com/company/dolearnn';
-const TIKTOK_URL =
-  process.env.NEXT_PUBLIC_TIKTOK_URL ?? 'https://tiktok.com/@dolearnn';
-const FACEBOOK_URL =
-  process.env.NEXT_PUBLIC_FACEBOOK_URL ?? 'https://facebook.com/dolearnn';
-const PHONE_NUMBER =
-  process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '0905 763 8887';
-
-// Book a trial class without creating an account
-const TRIAL_FORM_URL =
-  process.env.NEXT_PUBLIC_TRIAL_FORM_URL ?? 'https://forms.gle/SYjkRgS1Y5JoD43v7';
-const WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '2349057638887';
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent(
-  "Hi DoLearn! I'd like to book a trial class for my child.",
-)}`;
-
-const socialLinks = [
-  { label: 'Instagram', href: INSTAGRAM_URL, icon: Instagram },
-  { label: 'LinkedIn', href: LINKEDIN_URL, icon: Linkedin },
-  { label: 'TikTok', href: TIKTOK_URL, icon: Music2 },
-  { label: 'Facebook', href: FACEBOOK_URL, icon: Facebook },
-  {
-    label: 'Call us',
-    href: `tel:${PHONE_NUMBER.replace(/\s/g, '')}`,
-    icon: PhoneCall,
-  },
-];
-
-const subjectStrip = [
-  'Maths',
-  'English',
-  'Sciences',
-  'Coding',
-  'Music',
-  'French',
-  'SAT prep',
-  'Reading',
-  'Chemistry',
-  'Biology',
-  'Physics',
-  'Writing',
-  'Languages',
-];
-
-const stats = [
-  { value: 24, suffix: 'h', label: 'Average pairing time' },
-  { value: 100, suffix: '+', label: 'Vetted teachers on roster' },
-  { value: 12, suffix: '', label: 'Subjects covered' },
-  { value: 98, suffix: '%', label: 'Parents who re-book' },
-];
-
-type CurriculumGroup = { level: string; subjects: string[] };
-type Region = {
-  id: string;
-  label: string;
-  flag: string;
-  blurb: string;
-  groups: CurriculumGroup[];
 };
 
-const regions: Region[] = [
-  {
-    id: 'ng',
-    label: 'Nigeria',
-    flag: '🇳🇬',
-    blurb:
-      '',
-    groups: [
-      {
-        level: 'Primary (Primary 1–6)',
-        subjects: [
-          'Mathematics',
-          'English',
-          'Basic Science',
-          'Quantitative Reasoning',
-          'Verbal Reasoning',
-          'Social Studies',
-          'Common Entrance Prep',
-        ],
-      },
-      {
-        level: 'Junior Secondary (JSS 1–3)',
-        subjects: [
-          'Mathematics',
-          'English',
-          'Basic Science & Technology',
-          'Business Studies',
-          'Computer Studies',
-          'Social Studies',
-          'BECE Prep',
-        ],
-      },
-      {
-        level: 'Senior Secondary (SSS 1–3)',
-        subjects: [
-          'Mathematics',
-          'Further Mathematics',
-          'English',
-          'Physics',
-          'Chemistry',
-          'Biology',
-          'Economics',
-          'Government',
-          'Literature-in-English',
-          'Geography',
-          'Agricultural Science',
-        ],
-      },
-      {
-        level: 'Exam Prep',
-        subjects: ['WAEC', 'NECO', 'JAMB (UTME)', 'Post-UTME'],
-      },
-    ],
-  },
-  {
-    id: 'uk',
-    label: 'United Kingdom',
-    flag: '🇬🇧',
-    blurb:
-      '',
-    groups: [
-      {
-        level: 'Primary & Lower Secondary (Key Stages 1–3)',
-        subjects: [
-          'Maths',
-          'English (Reading & Writing)',
-          'Science (General)',
-          'Geography',
-          'History',
-          'French / Spanish',
-        ],
-      },
-      {
-        level: 'GCSE (Ages 14–16)',
-        subjects: [
-          'Maths (Foundation / Higher)',
-          'English Language',
-          'English Literature',
-          'Biology',
-          'Chemistry',
-          'Physics',
-          'Combined Science (Double Award)',
-          'Computer Science',
-          'Geography / History',
-          'French / Spanish / German',
-        ],
-      },
-      {
-        level: 'A-Level (Ages 16–18)',
-        subjects: [
-          'Mathematics',
-          'Further Mathematics',
-          'English Literature',
-          'Biology',
-          'Chemistry',
-          'Physics',
-          'Computer Science',
-          'Psychology',
-          'Economics / Business Studies',
-          'History / Geography',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'us',
-    label: 'United States',
-    flag: '🇺🇸',
-    blurb:
-      '',
-    groups: [
-      {
-        level: 'Elementary & Middle School (Grades K–8)',
-        subjects: [
-          'Math',
-          'English Language Arts (ELA)',
-          'Science (General / Earth Science)',
-          'Social Studies',
-          'Reading & Writing Foundations',
-        ],
-      },
-      {
-        level: 'High School Math (Grades 9–12)',
-        subjects: [
-          'Pre-Algebra',
-          'Algebra 1',
-          'Geometry',
-          'Algebra 2',
-          'Trigonometry',
-          'Pre-Calculus',
-          'Calculus (AB/BC)',
-          'Statistics',
-        ],
-      },
-      {
-        level: 'High School Science & Humanities (Grades 9–12)',
-        subjects: [
-          'Earth Science',
-          'Biology',
-          'Chemistry',
-          'Physics',
-          'U.S. History / World History',
-          'U.S. Government / Civics',
-          'English Literature & Composition',
-        ],
-      },
-      {
-        level: 'Advanced Test Prep',
-        subjects: ['AP Subjects (Calculus, Biology, US History…)', 'SAT / ACT Prep'],
-      },
-    ],
-  },
-  {
-    id: 'ca',
-    label: 'Canada',
-    flag: '🇨🇦',
-    blurb:
-      '',
-    groups: [
-      {
-        level: 'Elementary & Middle School (Grades 1–8)',
-        subjects: [
-          'Math',
-          'English Language Arts (ELA)',
-          'Science & Technology',
-          'Social Studies',
-          'French (Core / Immersion)',
-        ],
-      },
-      {
-        level: 'High School (Grades 9–12)',
-        subjects: [
-          'Principles of Mathematics',
-          'Foundations of Mathematics',
-          'Pre-Calculus',
-          'Calculus & Vectors',
-          'English (Academic / Applied)',
-          'Biology',
-          'Chemistry',
-          'Physics',
-          'Canadian & World Studies',
-          'Computer Studies',
-        ],
-      },
-    ],
-  },
+const topics = [
+  { name: "Algebra", score: 84 },
+  { name: "Trigonometry", score: 68 },
+  { name: "Calculus", score: 43 },
+  { name: "Probability", score: 31 },
 ];
+const whatsapp = `https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "2349057638887").replace(/\D/g, "")}?text=${encodeURIComponent("Hi DoLearnn! I would like to know more about learning and tutor support.")}`;
+const trial =
+  process.env.NEXT_PUBLIC_TRIAL_FORM_URL ??
+  "https://forms.gle/SYjkRgS1Y5JoD43v7";
 
 export default function Home() {
-  const { toast } = useToast();
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [activeRegion, setActiveRegion] = useState(regions[0].id);
-  const selectedRegion =
-    regions.find((r) => r.id === activeRegion) ?? regions[0];
-  const scrollToTop = () =>
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  const heroRef = useRef<HTMLDivElement | null>(null);
-  const { scrollYProgress: heroProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  });
-  const heroImageY = useTransform(heroProgress, [0, 1], [0, -120]);
-  const heroImageRotate = useTransform(heroProgress, [0, 1], [0, -6]);
-
-  const pairingRef = useRef<HTMLDivElement | null>(null);
-  const { scrollYProgress: pairingProgress } = useScroll({
-    target: pairingRef,
-    offset: ['start end', 'end start'],
-  });
-  const pairingImageY = useTransform(pairingProgress, [0, 1], [80, -80]);
-
-  const newsletterMutation = useMutation({
-    mutationFn: subscribeNewsletter,
-    onSuccess: () => {
-      setNewsletterEmail('');
-      toast({
-        title: 'Subscribed',
-        description: 'You will now get DoLearn updates in your inbox.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Could not subscribe',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
   return (
-    <main id="top" className="min-h-screen bg-white dark:bg-background overflow-x-hidden">
-      <SplashLoader />
-      <ScrollProgress />
-      <CursorGlow />
-      <GlobalRipples />
-      <KonamiParty />
-      <SectionDotNav sections={navSections} />
-
-      {/* Nav */}
-      <nav className="fixed top-0 w-full bg-white/95 dark:bg-background/80 backdrop-blur-sm z-50 border-b border-gray-100 dark:border-border">
-        <div className="max-w-7xl mx-auto px-6 py-2">
-          <div className="flex items-center justify-between">
-            <Image
-              src={logo}
-              alt="DoLearn"
-              className="w-[100px] h-[20px] dark:invert dark:brightness-200"
-            />
-            <div className="hidden md:flex items-center space-x-6 text-sm text-gray-700 dark:text-foreground/90">
-              <Link href="#how-it-works" className="hover:text-brand dark:hover:text-accent2-400 transition">
-                How it works
+    <div
+      className={`${s.landing} ${display.variable} ${body.variable}`}
+      id="top"
+    >
+      <a href="#main-content" className={s.skipLink}>
+        Skip to content
+      </a>
+      <LandingNav />
+      <main id="main-content">
+        <section
+          className={`${s.container} ${s.hero}`}
+          aria-labelledby="hero-title"
+        >
+          <div className={s.heroCopy}>
+            <p className={s.eyebrow}>
+              <span className={s.statusDot} /> YOUR NEXT CHAPTER STARTS HERE
+            </p>
+            <h1 id="hero-title">
+              Know your gaps.
+              <br />
+              Make your <br />
+              <span>next move.</span>
+            </h1>
+            <p className={s.heroDescription}>
+              Find what needs work. Practise with a plan. Challenge a friend.
+              Get a teacher when you need one.
+            </p>
+            <p className={s.heroDefinition}>
+              DoLearnn connects assessment, AI-guided practice, competition and
+              tutoring — so you can see what’s improving.
+            </p>
+            <div className={s.actions}>
+              <Link className={s.primaryButton} href="/practice">
+                Try free Mathematics practice <ArrowUpRight size={19} />
               </Link>
-              <Link href="#curriculum" className="hover:text-brand dark:hover:text-accent2-400 transition">
-                Curriculum
-              </Link>
-              <Link href="#parents" className="hover:text-brand dark:hover:text-accent2-400 transition">
-                For parents
-              </Link>
-              <Link href="#students" className="hover:text-brand dark:hover:text-accent2-400 transition">
-                For students
-              </Link>
-              <Link href="#pricing" className="hover:text-brand dark:hover:text-accent2-400 transition">
-                Pricing
-              </Link>
-              <Link href="#faq" className="hover:text-brand dark:hover:text-accent2-400 transition">
-                FAQ
-              </Link>
+              <a className={s.textLink} href="#learning-loop">
+                See how it connects <ArrowDown size={16} />
+              </a>
             </div>
-            <div className="flex items-center space-x-3">
-              <ThemeToggle />
-              <Link href="/login" className="hidden md:inline-block text-sm text-gray-700 dark:text-foreground/90 hover:text-brand dark:hover:text-accent2-400 transition">
-                Log in
-              </Link>
-              <Link href="/register">
-                <Button className="bg-brand hover:bg-brand-600 px-3 sm:px-6 rounded-full text-xs sm:text-sm">
-                  <span className="sm:hidden">Sign up</span>
-                  <span className="hidden sm:inline">Create family account</span>
-                </Button>
-              </Link>
+            <p className={s.heroAudience}>
+              For Nigerian SS2 / SS3 students & recent school leavers.
+              <br />
+              Built around your external examination goals.
+            </p>
+          </div>
+          <div className={s.heroVisual}>
+            <div className={s.visualHeading}>
+              <span>YOUR LEARNING, CONNECTED</span>
+              <span>01 → 06</span>
             </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section
-        ref={heroRef}
-        className="relative pt-24 sm:pt-28 lg:pt-32 pb-14 sm:pb-16 lg:pb-20 bg-accent2-50 dark:bg-gradient-to-br dark:from-background dark:to-brand-900/40 overflow-hidden noise-overlay"
-      >
-        <AuroraBackdrop />
-        <SparkleField count={28} />
-        <MouseConstellation density={42} />
-
-        <div className="relative max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -60 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <motion.span
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="hidden items-center gap-2 bg-white dark:bg-card border border-accent2-200 text-brand text-xs font-medium px-3 py-1 rounded-full mb-4 shadow-sm"
-              >
-                <span className="relative flex w-2 h-2">
-                  <span className="absolute inline-flex w-full h-full rounded-full bg-accent2-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex w-2 h-2 rounded-full bg-accent2-500" />
+            <div className={s.resultSheet}>
+              <div className={s.sheetTop}>
+                <span>
+                  <span className={s.miniMark}>d.</span> DoLearnn Practice
                 </span>
-                <Sparkles className="w-3.5 h-3.5" />
-                Curated pairing model
-              </motion.span>
-
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-foreground leading-tight mb-4">
-                <span className="block overflow-hidden">
-                  <WordsReveal text="The right teacher," />
-                </span>
-                <span className="block overflow-hidden">
-                  <WordsReveal
-                    text="hand-picked for your"
-                    delay={0.25}
-                    highlight={{
-                      'hand-picked':
-                        'animate-gradient-text bg-gradient-to-r from-brand via-accent2-500 to-brand dark:from-accent2-400 dark:via-accent2-300 dark:to-accent2-400',
-                    }}
-                  />
-                </span>
-                <span className="block overflow-hidden">
-                  <WordsReveal
-                    text="child."
-                    delay={0.55}
-                    highlight={{
-                      'child':
-                        'animate-gradient-text bg-gradient-to-r from-accent2-500 via-accent2-400 to-brand',
-                    }}
-                  />
-                </span>
-              </h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.6 }}
-                className="text-base lg:text-lg text-gray-600 dark:text-muted-foreground mb-8 max-w-lg"
-              >
-                We hand-pick a teacher for your child and run live 1-on-1
-                sessions in Classroom. You skip the profile-scrolling. Our
-                team owns the match.
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.85, duration: 0.6 }}
-                className="mb-10"
-              >
-                <div className="flex flex-wrap gap-3">
-                  <ConfettiBurst>
-                    <Magnetic>
-                      <a href={TRIAL_FORM_URL} target="_blank" rel="noreferrer">
-                        <Button className="shine-sweep relative overflow-hidden bg-brand hover:bg-brand-600 rounded-full px-6 shadow-lg shadow-brand/25">
-                          Book a trial class
-                        </Button>
-                      </a>
-                    </Magnetic>
-                  </ConfettiBurst>
-                  <Magnetic>
-                    <a href={WHATSAPP_URL} target="_blank" rel="noreferrer">
-                      <Button
-                        variant="outline"
-                        className="rounded-full px-6 border-brand text-brand hover:bg-accent2-50"
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Message us on WhatsApp
-                      </Button>
-                    </a>
-                  </Magnetic>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-3">
-                  No account needed to book a trial.{' '}
-                  <Link
-                    href="/register"
-                    className="text-brand dark:text-accent2-400 underline underline-offset-2"
-                  >
-                    Create a family account
-                  </Link>{' '}
-                  or{' '}
-                  <Link
-                    href="/login"
-                    className="text-brand dark:text-accent2-400 underline underline-offset-2"
-                  >
-                    log in
-                  </Link>
-                  .
-                </p>
-              </motion.div>
-
-              {/* Animated stat row */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.05, duration: 0.6 }}
-                className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl"
-              >
-                {stats.map((s) => (
-                  <div key={s.label} className="text-left">
-                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-brand dark:text-accent2-400">
-                      <RollingNumber to={s.value} suffix={s.suffix} />
-                    </div>
-                    <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-muted-foreground leading-tight mt-1">
-                      {s.label}
-                    </p>
-                  </div>
-                ))}
-              </motion.div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 60 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative hidden lg:flex justify-center"
-            >
-              <motion.div
-                style={{ y: heroImageY, rotate: heroImageRotate }}
-                className="relative"
-              >
-                {/* Rotating decorative ring */}
-                <div
-                  aria-hidden
-                  className="absolute -inset-6 rounded-full border-2 border-dashed border-accent2-300/60 animate-spin-slow"
-                />
-                <Image
-                  src={slantArrow}
-                  alt=""
-                  className="absolute -left-[110px] w-28 h-[120px] top-[170px] animate-float-slow"
-                />
-                <div
-                  className="absolute w-[370px] h-[350px] rounded-full left-[28px] top-36 bg-[url('/circle.png')] bg-cover bg-center"
-                />
-                <motion.div className="animate-float">
-                  <Image
-                    src={graduateImg}
-                    alt="Paired student"
-                    priority
-                    className="relative z-10 w-full h-[498px] object-cover"
-                  />
-                </motion.div>
-                <motion.div
-                  initial={{ scale: 0, rotate: -20 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 1.1, type: 'spring', stiffness: 180, damping: 12 }}
-                  className="absolute top-[130px] left-20 z-20"
-                >
-                  <div className="relative animate-pulse-ring rounded-full">
-                    <Image
-                      src={profileSmallImg}
-                      alt="teacher"
-                      className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
-                    />
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -30, y: 20 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  transition={{ delay: 1.3, duration: 0.6 }}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="bg-white dark:bg-card z-20 absolute bottom-24 -left-24 shadow-xl rounded-xl px-4 py-3 w-[230px] animate-float"
-                  style={{ animationDelay: '0.5s' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-accent2-100 text-brand flex items-center justify-center">
-                      <UserCheck className="w-4 h-4" />
-                    </div>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-foreground">
-                      Paired in under 24h
-                    </p>
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-muted-foreground mt-2 leading-relaxed">
-                    We matched Alex with a Maths teacher based on his goals,
-                    schedule, and how his learns best.
-                  </p>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Subjects marquee strip */}
-      <section className="relative py-6 bg-brand text-white overflow-hidden">
-        <Marquee
-          items={subjectStrip.map((label) => (
-            <span
-              key={label}
-              className="flex items-center gap-3 text-lg lg:text-xl font-semibold tracking-tight"
-            >
-              {label}
-              <span className="inline-block w-2 h-2 rounded-full bg-accent2-400" />
-            </span>
-          ))}
-        />
-      </section>
-
-      {/* Live matching visualizer */}
-      <section className="relative pt-16 sm:pt-20 lg:pt-24 pb-14 sm:pb-16 lg:pb-20 bg-white dark:bg-card overflow-hidden">
-        <WaveDivider flip fill="#044272" className="text-brand" />
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 -left-20 w-72 h-72 rounded-full bg-accent2-200/40 dark:bg-accent2-500/10 blur-3xl animate-blob" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-brand/10 blur-3xl animate-blob-slow" />
-        </div>
-        <div className="relative max-w-7xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-10 max-w-2xl mx-auto"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-              Live pairing
-            </p>
-            <h2 className="relative inline-block text-2xl sm:text-3xl font-bold text-brand mb-3">
-              <span>Watch a match happen.</span>
-              <DrawnUnderline className="absolute left-0 -bottom-3 w-full" />
-            </h2>
-            <p className="text-gray-600 dark:text-muted-foreground mt-5">
-              Intake comes in. Our team picks the right teacher. The session
-              lands within 24 hours. No profile-scrolling roulette.
-            </p>
-          </motion.div>
-          <MatchingVisualizer />
-        </div>
-      </section>
-
-      {/* Subjects covered — regional curriculum + teacher orbit */}
-      <section
-        id="curriculum"
-        className="relative py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-accent2-50 to-white dark:from-background dark:to-card overflow-hidden"
-      >
-        <AuroraBackdrop className="opacity-60" />
-        <div className="relative max-w-7xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8 max-w-2xl mx-auto"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-              Subjects covered
-            </p>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand mb-3 leading-tight">
-              One roster. Subjects in your language.
-            </h2>
-            <p className="text-gray-600 dark:text-muted-foreground">
-              Pick your region and we&apos;ll show the subjects the way your
-              school does — from GCSE and A-Levels to AP tracks and WAEC prep.
-            </p>
-          </motion.div>
-
-          {/* Region tabs */}
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10">
-            {regions.map((region) => {
-              const isActive = region.id === activeRegion;
-              return (
-                <button
-                  key={region.id}
-                  type="button"
-                  onClick={() => setActiveRegion(region.id)}
-                  aria-pressed={isActive}
-                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-brand text-white border-brand shadow-md shadow-brand/25'
-                      : 'bg-white dark:bg-card text-gray-700 dark:text-foreground/90 border-gray-200 dark:border-border hover:border-brand hover:text-brand'
-                  }`}
-                >
-                  <span className="text-base leading-none">{region.flag}</span>
-                  {region.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 lg:gap-12 items-center">
-            {/* Region panel */}
-            <motion.div
-              key={selectedRegion.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="rounded-3xl border border-gray-200 dark:border-border bg-white/70 dark:bg-card backdrop-blur-sm p-6 sm:p-8"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-2xl leading-none">{selectedRegion.flag}</span>
+                <span className={s.exampleLabel}>EXAMPLE</span>
+              </div>
+              <div className={s.sheetTitle}>
                 <div>
-                  <h3 className="text-lg font-bold text-brand">
-                    {selectedRegion.label} curriculum
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-muted-foreground">
-                    {selectedRegion.blurb}
-                  </p>
+                  <p className={s.smallLabel}>DIAGNOSTIC / MATHEMATICS</p>
+                  <h2>More than a score.</h2>
                 </div>
+                <Target size={29} strokeWidth={1.4} />
               </div>
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                {selectedRegion.groups.map((group, i) => (
-                  <motion.div
-                    key={group.level}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, delay: i * 0.06 }}
-                    className="rounded-2xl bg-gray-50 dark:bg-background border border-gray-100 dark:border-border p-4 sm:p-5"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-3">
-                      {group.level}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {group.subjects.map((subject) => (
-                        <span
-                          key={subject}
-                          className="px-3 py-1 rounded-full bg-accent2-50 dark:bg-accent2-500/10 border border-accent2-200 dark:border-accent2-500/30 text-xs text-brand dark:text-accent2-300"
-                        >
-                          {subject}
-                        </span>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Teacher orbit visual */}
-            <div className="relative mx-auto hidden lg:flex items-center justify-center w-full aspect-square max-w-[400px] sm:max-w-[460px] lg:max-w-[460px]">
-              <div className="absolute inset-0">
-                <OrbitAvatars
-                  items={orbitTeachers}
-                  radiusPct={0.45}
-                  maxRadius={220}
-                  speed={28}
-                />
-              </div>
-              <div className="absolute inset-[18%]">
-                <OrbitAvatars
-                  items={orbitTeachers.slice().reverse()}
-                  radiusPct={0.5}
-                  maxRadius={140}
-                  speed={20}
-                  reverse
-                />
-              </div>
-              <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full bg-brand text-white flex items-center justify-center shadow-2xl shadow-brand/40 animate-pulse-ring">
-                <div className="text-center px-2">
-                  <p className="text-xl sm:text-2xl font-extrabold">DoLearn</p>
-                  <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-accent2-300">
-                    Curated
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works — vertical journey timeline */}
-      <JourneyTimeline steps={journeySteps} />
-
-      {/* Live chat preview */}
-      <section className="relative py-16 sm:py-20 bg-gray-50 dark:bg-background overflow-hidden">
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 right-0 w-72 h-72 rounded-full bg-accent2-200/50 dark:bg-accent2-500/10 blur-3xl animate-blob" />
-          <div className="absolute bottom-1/4 -left-10 w-72 h-72 rounded-full bg-brand/10 blur-3xl animate-blob-slow" />
-        </div>
-        <div className="relative max-w-5xl mx-auto px-6 grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-              Behind the scenes
-            </p>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand mb-3 leading-tight">
-              Watch a real{' '}
-              <GlitchText text="pairing" className="text-brand" /> happen.
-            </h2>
-            <p className="text-gray-600 dark:text-muted-foreground max-w-md mb-6">
-              This is what the first day looks like — a parent reaches out, our
-              team picks the right teacher, and the teacher reaches out
-              directly. All before the first session.
-            </p>
-            <ul className="space-y-2 text-sm text-gray-700 dark:text-foreground/80">
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-accent2-500" />
-                Real conversation, not auto-generated.
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-accent2-500" />
-                Encrypted thread inside the dashboard.
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-accent2-500" />
-                You stay in the loop — but you don&apos;t have to manage it.
-              </li>
-            </ul>
-          </div>
-          <ChatPreview />
-        </div>
-      </section>
-
-      {/* Pairing Model */}
-      <section
-        id="pairing"
-        ref={pairingRef}
-        className="relative py-16 sm:py-20 text-white bg-[url('/graduation.jpg')] bg-cover bg-center bg-no-repeat overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-brand-800/85" />
-        {/* Floating accent dots */}
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute top-10 left-10 w-2 h-2 rounded-full bg-accent2-400 animate-float" />
-          <div className="absolute top-1/3 right-20 w-3 h-3 rounded-full bg-accent2-300 animate-float-slow" />
-          <div className="absolute bottom-20 left-1/4 w-2 h-2 rounded-full bg-accent2-400 animate-float" style={{ animationDelay: '1.5s' }} />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent2-400 mb-2">
-                Why pairing beats browsing
-              </p>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 leading-tight">
-                You shouldn&apos;t have to pick a teacher blind.
-              </h2>
-              <p className="text-white/80 mb-8 leading-relaxed max-w-lg">
-                Most platforms hand you hundreds of profiles and let you guess.
-                We read every intake, know every teacher on our roster, and
-                make the call ourselves — so the first session actually lands.
-              </p>
-              <div className="space-y-5">
-                {pairingReasons.map((r, i) => {
-                  const Icon = r.icon;
-                  return (
-                    <motion.div
-                      key={r.title}
-                      initial={{ opacity: 0, x: -30 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: 0.15 + i * 0.12 }}
-                      className="flex gap-4 group"
-                    >
-                      <motion.div
-                        whileHover={{ rotate: 360, scale: 1.1 }}
-                        transition={{ duration: 0.6 }}
-                        className="w-10 h-10 rounded-lg bg-accent2-500/20 text-accent2-400 flex items-center justify-center flex-shrink-0 group-hover:bg-accent2-500/30"
-                      >
-                        <Icon className="w-5 h-5" />
-                      </motion.div>
-                      <div>
-                        <h3 className="font-semibold mb-1">{r.title}</h3>
-                        <p className="text-sm text-white/70 leading-relaxed">
-                          {r.body}
-                        </p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="hidden lg:block"
-            >
-              <motion.div
-                style={{ y: pairingImageY }}
-                className="rounded-3xl overflow-hidden shadow-2xl relative"
-              >
-                <div className="absolute inset-0 ring-1 ring-accent2-400/30 rounded-3xl z-10 pointer-events-none" />
-                <Image
-                  src={onlineImg1}
-                  alt="Tutor and student on a video call"
-                  className="w-full h-[440px] object-cover"
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5 }}
-                  className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl p-4 flex items-center gap-3 shadow-xl"
-                >
-                  <div className="relative">
-                    <div className="w-3 h-3 rounded-full bg-accent2-500" />
-                    <div className="absolute inset-0 w-3 h-3 rounded-full bg-accent2-500 animate-ping" />
-                  </div>
-                  <p className="text-sm font-semibold text-brand">Live session in progress</p>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* For Parents & Students */}
-      <section className="py-16 sm:py-20 bg-white dark:bg-card">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-10 sm:mb-14"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-              Built for the whole family
-            </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-brand mb-3">
-              What parents need. What students want.
-            </h2>
-            <p className="text-gray-600 dark:text-muted-foreground max-w-2xl mx-auto">
-              Parents get the visibility to trust the process. Students get
-              something they actually want to log into.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <motion.div
-              id="parents"
-              initial={{ opacity: 0, y: 40, rotateY: -10 }}
-              whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -6 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="relative bg-accent2-50 dark:bg-accent2-500/10 rounded-3xl p-6 sm:p-8 border border-accent2-100 dark:border-accent2-500/20 overflow-hidden spotlight"
-            >
-              <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-accent2-200/40 blur-2xl animate-blob" />
-              <motion.div
-                whileHover={{ rotate: [0, -8, 8, 0], scale: 1.08 }}
-                transition={{ duration: 0.5 }}
-                className="relative w-12 h-12 rounded-xl bg-brand text-white flex items-center justify-center mb-5"
-              >
-                <Users className="w-5 h-5" />
-              </motion.div>
-              <h3 className="text-xl font-bold text-brand mb-2 relative">
-                For parents
-              </h3>
-              <p className="text-sm text-gray-700 dark:text-foreground/90 mb-6 relative">
-                Visibility into every session, without hovering.
-              </p>
-              <ul className="space-y-3 relative">
-                {parentFeatures.map((f, i) => {
-                  const Icon = f.icon;
-                  return (
-                    <motion.li
-                      key={f.label}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.2 + i * 0.08 }}
-                      className="flex gap-3 items-start"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-white dark:bg-card text-brand flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <p className="text-sm text-gray-800 dark:text-foreground pt-1.5">{f.label}</p>
-                    </motion.li>
-                  );
-                })}
-              </ul>
-            </motion.div>
-
-            <motion.div
-              id="students"
-              initial={{ opacity: 0, y: 40, rotateY: 10 }}
-              whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -6 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="relative bg-brand rounded-3xl p-6 sm:p-8 text-white overflow-hidden"
-            >
-              <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-accent2-500/30 blur-3xl animate-blob-slow" />
-              <div className="absolute top-6 right-6 opacity-30">
-                <Sparkles className="w-8 h-8 text-accent2-400 animate-sparkle" />
-              </div>
-              <motion.div
-                whileHover={{ rotate: [0, -8, 8, 0], scale: 1.08 }}
-                transition={{ duration: 0.5 }}
-                className="relative w-12 h-12 rounded-xl bg-accent2-500 text-brand flex items-center justify-center mb-5"
-              >
-                <GraduationCap className="w-5 h-5" />
-              </motion.div>
-              <h3 className="text-xl font-bold mb-2 relative">For students</h3>
-              <p className="text-sm text-white/80 mb-6 relative">
-                A dashboard students actually open.
-              </p>
-              <ul className="space-y-3 relative">
-                {studentFeatures.map((f, i) => {
-                  const Icon = f.icon;
-                  return (
-                    <motion.li
-                      key={f.label}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.3 + i * 0.08 }}
-                      className="flex gap-3 items-start"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-white/10 text-accent2-400 flex items-center justify-center flex-shrink-0 backdrop-blur">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <p className="text-sm text-white/90 pt-1.5">{f.label}</p>
-                    </motion.li>
-                  );
-                })}
-              </ul>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="py-16 sm:py-20 bg-gray-50 dark:bg-background">
-        <div className="max-w-5xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-10 sm:mb-14"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-              Pricing
-            </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-brand mb-3">
-              Start with one session. Or save with a bundle.
-            </h2>
-            <p className="text-gray-600 dark:text-muted-foreground max-w-xl mx-auto">
-              No subscriptions. No lock-in. Payments are confirmed offline by admin.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {plans.map((plan, idx) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 40, scale: 0.96 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -8 }}
-                transition={{ duration: 0.6, delay: idx * 0.12, ease: [0.16, 1, 0.3, 1] }}
-                className={`relative rounded-3xl p-6 sm:p-8 border overflow-hidden ${
-                  plan.highlight
-                    ? 'bg-brand text-white border-brand shadow-xl shadow-brand/30'
-                    : 'bg-white dark:bg-card border-gray-200 dark:border-border'
-                }`}
-              >
-                {plan.highlight && (
-                  <>
-                    <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-accent2-500/30 blur-3xl animate-blob" />
-                    <div className="absolute -bottom-16 -left-12 w-48 h-48 rounded-full bg-accent2-400/20 blur-2xl animate-blob-slow" />
-                  </>
-                )}
-                {plan.highlight && (
-                  <motion.span
-                    initial={{ scale: 0, rotate: -10 }}
-                    whileInView={{ scale: 1, rotate: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.4, type: 'spring', stiffness: 220 }}
-                    className="relative inline-block text-xs font-semibold bg-accent2-500 text-brand px-3 py-1 rounded-full mb-4 shadow-md"
-                  >
-                    Best value
-                  </motion.span>
-                )}
-                <h3
-                  className={`text-xl font-bold mb-1 ${
-                    plan.highlight ? 'text-white' : 'text-brand'
-                  }`}
-                >
-                  {plan.name}
-                </h3>
-                <p
-                  className={`text-sm mb-6 ${
-                    plan.highlight ? 'text-white/80' : 'text-gray-600'
-                  }`}
-                >
-                  {plan.description}
-                </p>
-                <div className="flex items-baseline gap-2 mb-6">
-                  <span className="text-3xl font-bold">{plan.price}</span>
-                  <span
-                    className={`text-sm ${
-                      plan.highlight ? 'text-white/70' : 'text-gray-500'
-                    }`}
-                  >
-                    {plan.per}
-                  </span>
-                </div>
-                <ul className="space-y-2 mb-8">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check
-                        className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
-                          plan.highlight
-                            ? 'text-accent2-400'
-                            : 'text-accent2-500'
-                        }`}
-                      />
-                      <span
-                        className={
-                          plan.highlight ? 'text-white/90' : 'text-gray-700'
-                        }
-                      >
-                        {f}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Magnetic strength={0.25} className="block w-full">
-                  <Link href="/register" className="block">
-                    <Button
-                      className={`shine-sweep relative overflow-hidden w-full rounded-full ${
-                        plan.highlight
-                          ? 'bg-accent2-500 text-brand hover:bg-accent2-400'
-                          : 'bg-brand text-white hover:bg-brand-600'
-                      }`}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </Link>
-                </Magnetic>
-              </motion.div>
-            ))}
-          </div>
-          <p className="text-center text-xs text-gray-500 dark:text-muted-foreground mt-6">
-            After payment confirmation, admin records the plan in your family dashboard.
-          </p>
-        </div>
-      </section>
-
-      {/* Trust strip */}
-      <section className="py-10 bg-white dark:bg-card border-y border-gray-100 dark:border-border">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm text-gray-600 dark:text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-brand" />
-              ID-verified teachers
-            </span>
-            <span className="hidden sm:inline text-gray-300 dark:text-border">·</span>
-            <span className="flex items-center gap-2">
-              <Video className="w-4 h-4 text-brand" />
-              Sessions in Classroom
-            </span>
-            <span className="hidden sm:inline text-gray-300 dark:text-border">·</span>
-            <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-brand" />
-              Offline payment confirmation by admin
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials marquee */}
-      <section
-        id="voices"
-        className="relative py-16 sm:py-20 bg-white dark:bg-card overflow-hidden"
-      >
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-accent2-200/40 dark:bg-accent2-500/10 blur-3xl animate-blob-slow" />
-        </div>
-        <div className="relative max-w-7xl mx-auto px-6 grid lg:grid-cols-[0.9fr_1.1fr] gap-8 lg:gap-10 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-              What parents say
-            </p>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand mb-3 leading-tight">
-              Real families.{' '}
-              <span className="animate-gradient-text bg-gradient-to-r from-brand via-accent2-500 to-brand">
-                Real progress.
-              </span>
-            </h2>
-            <p className="text-gray-600 dark:text-muted-foreground max-w-md">
-              Pulled straight from messages parents send our team after
-              sessions, weekly check-ins, and after the first month.
-            </p>
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {['👩🏾', '👨🏾', '👩🏾‍🦰', '🧑🏾‍🎓'].map((e, i) => (
+              <div className={s.topicList}>
+                {topics.map((topic) => (
                   <div
-                    key={i}
-                    className="w-9 h-9 rounded-full bg-gradient-to-br from-accent2-400 to-brand flex items-center justify-center text-base border-2 border-white dark:border-card shadow"
+                    key={topic.name}
+                    className={`${s.topicRow} ${topic.name === "Probability" ? s.weakTopic : ""}`}
                   >
-                    {e}
+                    <div>
+                      <span>{topic.name}</span>
+                      <strong>
+                        {topic.score}
+                        <small>%</small>
+                      </strong>
+                    </div>
+                    <div className={s.barTrack}>
+                      <span style={{ width: `${topic.score}%` }} />
+                    </div>
+                    {topic.name === "Probability" && (
+                      <p>
+                        <CornerDownRight size={13} /> Your next focus
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-gray-700 dark:text-foreground/80">
-                <span className="font-bold text-brand dark:text-accent2-400">
-                  <RollingNumber to={250} suffix="+" />
-                </span>{' '}
-                families and counting
+              <div className={s.diagnosis}>
+                <span className={s.diagnosisIcon}>
+                  <Target size={18} />
+                </span>
+                <p>
+                  <strong>Start with probability.</strong>
+                  <br />
+                  Work on counting possible outcomes before moving to combined
+                  events.
+                </p>
+              </div>
+            </div>
+            <div className={s.missionConnector}>
+              <ArrowDown size={18} />
+              <span>INSIGHT BECOMES ACTION</span>
+            </div>
+            <a className={s.missionStrip} href="#learning-loop">
+              <div>
+                <p className={s.smallLabel}>
+                  YOUR NEXT MOVE / PERSONALISED MISSION
+                </p>
+                <h3>Let’s work on probability.</h3>
+                <p>
+                  8 questions <span>·</span> 15 minutes <span>·</span> One clear
+                  focus
+                </p>
+              </div>
+              <ArrowUpRight size={26} />
+            </a>
+            <p className={s.exampleNote}>
+              Illustrative learning journey. Scores are examples, not learner
+              outcomes.
+            </p>
+          </div>
+        </section>
+        <div className={s.focusStrip}>
+          <div className={s.container}>
+            <span>FOCUSED FROM DAY ONE</span>
+            <strong>EXAM-ALIGNED</strong>
+            <span className={s.stripDivider} />
+            <p>
+              Mathematics first. Selected high-demand subjects alongside it.
+            </p>
+          </div>
+        </div>
+        <section
+          id="learning-loop"
+          className={`${s.container} ${s.section}`}
+          aria-labelledby="loop-title"
+        >
+          <div className={s.sectionIntro}>
+            <div>
+              <p className={s.eyebrow}>01 / THE DOLEARNN WAY</p>
+              <h2 id="loop-title">
+                A score is a starting point.
+                <br />
+                <span>Not the end of the story.</span>
+              </h2>
+            </div>
+            <p>
+              Finishing a quiz shouldn’t leave you wondering what to do next.
+              Each part of DoLearnn helps you take the next useful step.
+            </p>
+          </div>
+          <LearningLoop />
+          <div className={s.connectedModules}>
+            <p>
+              FOUR PARTS.
+              <br />
+              <strong>ONE LEARNING SYSTEM.</strong>
+            </p>
+            <span>
+              Practice <ArrowRight size={15} />
+            </span>
+            <span>
+              AI <ArrowRight size={15} />
+            </span>
+            <span>
+              Arena <ArrowRight size={15} />
+            </span>
+            <span>
+              Tutors <span aria-hidden="true">↺</span>
+            </span>
+          </div>
+        </section>
+        <section
+          id="practice"
+          className={s.practiceSection}
+          aria-labelledby="practice-title"
+        >
+          <div className={`${s.container} ${s.practiceGrid}`}>
+            <div>
+              <p className={s.eyebrow}>02 / PRACTICE + AI</p>
+              <h2 id="practice-title">
+                Less “try again.”
+                <br />
+                More “here’s why.”
+              </h2>
+              <p className={s.sectionBody}>
+                Your mistakes should help you learn. DoLearnn AI uses your
+                results to explain gaps, guide practice and recommend a focused
+                study plan.
               </p>
+              <p className={s.sectionBody}>
+                A mission gives you a manageable next step. An explanation helps
+                you understand it. Your next attempt tells us what support you
+                need.
+              </p>
+              <a href="#arena" className={s.textLink}>
+                Put your practice to the test <ArrowRight size={17} />
+              </a>
             </div>
-          </motion.div>
-          <PointerSpotlight className="rounded-3xl">
-            <TestimonialsMarquee items={sampleTestimonials} />
-          </PointerSpotlight>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="py-16 sm:py-20 bg-gray-50 dark:bg-background">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-8 md:gap-16">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent2-500 mb-2">
-              FAQ
-            </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-brand mb-3">
-              Before you book, parents usually ask:
-            </h2>
-            <p className="text-gray-600 dark:text-muted-foreground">
-              The honest answers, up front.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Accordion type="single" collapsible className="space-y-3">
-              <AccordionItem
-                value="q1"
-                className="border-none rounded-lg bg-white dark:bg-card border dark:border-border"
-              >
-                <AccordionTrigger className="px-6 rounded-md hover:no-underline text-left">
-                  <span className="font-semibold text-gray-900 dark:text-foreground">
-                    How does the pairing actually work?
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-muted-foreground px-6 pb-4">
-                  You fill a short intake for your child. A member of the
-                  DoLearn team reviews it and hand-picks the best-matched
-                  teacher based on subject, availability, and learning style —
-                  usually within 24 hours.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem
-                value="q2"
-                className="border-none rounded-lg bg-white dark:bg-card border dark:border-border"
-              >
-                <AccordionTrigger className="px-6 rounded-md hover:no-underline text-left">
-                  <span className="font-semibold text-gray-900 dark:text-foreground">
-                    What subjects do you support?
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-muted-foreground px-6 pb-4">
-                  Whatever your school calls them. Pick your region in the{' '}
-                  <Link href="#curriculum" className="text-brand underline underline-offset-2">
-                    Subjects covered
-                  </Link>{' '}
-                  section to see the full list — from GCSE and A-Levels to AP
-                  tracks and WAEC/JAMB prep. If we don&apos;t have a teacher for
-                  your subject, we&apos;ll tell you on the spot.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem
-                value="q3"
-                className="border-none rounded-lg bg-white dark:bg-card border dark:border-border"
-              >
-                <AccordionTrigger className="px-6 rounded-md hover:no-underline text-left">
-                  <span className="font-semibold text-gray-900 dark:text-foreground">
-                    What if the teacher isn&apos;t a good fit?
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-muted-foreground px-6 pb-4">
-                  Tell us. We&apos;ll re-pair your child with another teacher — no
-                  friction, no extra charge. That&apos;s the point of the pairing
-                  model.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem
-                value="q4"
-                className="border-none rounded-lg bg-white dark:bg-card border dark:border-border"
-              >
-                <AccordionTrigger className="px-6 rounded-md hover:no-underline text-left">
-                  <span className="font-semibold text-gray-900 dark:text-foreground">
-                    How are sessions conducted?
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-muted-foreground px-6 pb-4">
-                  Every session is live and 1-on-1 in Classroom. A join button
-                  appears in your dashboard before the session starts — no extra
-                  apps needed.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem
-                value="q5"
-                className="border-none rounded-lg bg-white dark:bg-card border dark:border-border"
-              >
-                <AccordionTrigger className="px-6 rounded-md hover:no-underline text-left">
-                  <span className="font-semibold text-gray-900 dark:text-foreground">
-                    How do payments work?
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-muted-foreground px-6 pb-4">
-                  A parent pays offline, then the admin team confirms the plan
-                  and records the sessions inside the dashboard.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="bg-accent2-100 dark:bg-gradient-to-br dark:from-brand-900 dark:to-background relative py-12 lg:py-0">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-8 md:gap-16">
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="flex flex-col justify-center"
-          >
-            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-foreground mb-3">
-              Ready to find the right teacher for your{' '}
-              <span className="text-brand">child?</span>
-            </h2>
-            <p className="text-gray-700 dark:text-foreground/90 mb-6 max-w-md">
-              Book a trial class or message us on WhatsApp — no account needed.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Magnetic>
-                <a href={TRIAL_FORM_URL} target="_blank" rel="noreferrer">
-                  <Button className="shine-sweep relative overflow-hidden bg-brand hover:bg-brand-600 rounded-full px-6 shadow-lg shadow-brand/25">
-                    Book a trial class
-                  </Button>
-                </a>
-              </Magnetic>
-              <Magnetic>
-                <a href={WHATSAPP_URL} target="_blank" rel="noreferrer">
-                  <Button
-                    variant="outline"
-                    className="rounded-full px-6 border-brand text-brand"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    WhatsApp us
-                  </Button>
-                </a>
-              </Magnetic>
+            <div className={s.workedExample}>
+              <div className={s.exampleHeader}>
+                <span>INSIDE A PROBABILITY MISSION</span>
+                <span>EXAMPLE</span>
+              </div>
+              <p className={s.question}>
+                A bag holds 3 green counters and 2 white counters. What is the
+                probability of picking green?
+              </p>
+              <div className={s.answerReview}>
+                <span>
+                  Your answer <s>3/2</s>
+                </span>
+                <span>
+                  Let’s work through it <CornerDownRight size={17} />
+                </span>
+              </div>
+              <div className={s.coachExplanation}>
+                <span className={s.smallLabel}>
+                  DOLEARNN AI / EXPLAIN THE MISTAKE
+                </span>
+                <p>
+                  You counted the green counters correctly. The denominator
+                  needs <strong>all possible outcomes</strong>, including the
+                  green ones.
+                </p>
+                <div className={s.equation}>
+                  <span>3 green</span>
+                  <span>÷</span>
+                  <span>5 total</span>
+                  <span>=</span>
+                  <strong>3/5</strong>
+                </div>
+                <p className={s.coachPrompt}>
+                  Next, practise identifying the total number of outcomes.
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-gray-600 dark:text-muted-foreground mt-3">
-              Prefer to sign up?{' '}
-              <Link
-                href="/register"
-                className="text-brand dark:text-accent2-400 underline underline-offset-2"
-              >
-                Create a family account
+            <div className={s.aiRule}>
+              <p>
+                <strong>AI recommends.</strong> The platform verifies. Teachers
+                decide.
+              </p>
+              <span>
+                Explanations and suggestions support learning. Teachers use
+                their judgement to shape the lesson.
+              </span>
+            </div>
+          </div>
+        </section>
+        <section
+          id="arena"
+          className={s.arenaSection}
+          aria-labelledby="arena-title"
+        >
+          <div className={`${s.container} ${s.arenaGrid}`}>
+            <div className={s.arenaCopy}>
+              <p className={s.eyebrow}>03 / DOLEARNN ARENA</p>
+              <h2 id="arena-title">
+                A little rivalry.
+                <br />
+                <span>A lot of practice.</span>
+              </h2>
+              <p>
+                Take what you’ve been working on into a 1v1 battle. Challenge a
+                friend, test your understanding and give yourself a reason to
+                come back.
+              </p>
+              <div className={s.arenaPrinciple}>
+                <span>01</span>
+                <p>
+                  <strong>Every answer is a learning signal.</strong>Missed a
+                  topic? That result can guide your next mission, AI explanation
+                  or tutor recommendation.
+                </p>
+              </div>
+              <Link href="/family/arena" className={s.mintButton}>
+                Enter the Arena <ArrowUpRight size={18} />
               </Link>
-              .
+              <p className={s.signInNote}>
+                Sign in to create or join a battle.
+              </p>
+              <div className={s.arenaRoadmap}>
+                <span>
+                  <strong>START HERE</strong>1v1 battles
+                </span>
+                <ArrowRight size={17} />
+                <span>
+                  <strong>PLANNED</strong>Teams & tournaments
+                </span>
+              </div>
+            </div>
+            <ArenaPreview />
+          </div>
+        </section>
+        <section
+          id="tutors"
+          className={`${s.container} ${s.section} ${s.tutorSection}`}
+          aria-labelledby="tutor-title"
+        >
+          <div className={s.tutorBrief}>
+            <div className={s.briefTop}>
+              <span className={s.smallLabel}>DOLEARNN TUTORS</span>
+              <span className={s.exampleLabel}>EXAMPLE BRIEF</span>
+            </div>
+            <h3>
+              A useful starting point.
+              <br />
+              Before the lesson starts.
+            </h3>
+            <dl>
+              <div>
+                <dt>Focus topic</dt>
+                <dd>Probability</dd>
+              </div>
+              <div>
+                <dt>Learning signals</dt>
+                <dd>Assessment + Arena answers</dd>
+              </div>
+              <div>
+                <dt>Needs attention</dt>
+                <dd>Counting outcomes in combined events</dd>
+              </div>
+              <div>
+                <dt>Suggested lesson goal</dt>
+                <dd>Build a sample space, then solve independently</dd>
+              </div>
+            </dl>
+            <div className={s.teacherNote}>
+              <span className={s.miniMark}>AI</span>
+              <p>
+                AI-assisted learning summary.
+                <br />
+                <strong>The teacher sets the lesson direction.</strong>
+              </p>
+            </div>
+            <div className={s.briefFooter}>
+              <Check size={17} /> Next: a comparable reassessment
+            </div>
+          </div>
+          <div>
+            <p className={s.eyebrow}>04 / THE HUMAN PART</p>
+            <h2 id="tutor-title">
+              When it still <br />
+              doesn’t click,
+              <br />
+              <span>bring in a teacher.</span>
+            </h2>
+            <p className={s.sectionBody}>
+              Sometimes another set of questions isn’t the answer. When a topic
+              keeps causing difficulty, get targeted help from a qualified
+              teacher.
             </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="justify-center hidden lg:flex"
-          >
-            <Image
-              src={productImg}
-              alt=""
-              className="-mt-24 w-full object-contain"
-            />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Newsletter */}
-      <section className="bg-gray-100 dark:bg-secondary">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid lg:grid-cols-[auto_1fr_auto] gap-6 items-center">
-            <Image
-              src={logo}
-              alt="DoLearn"
-              className="w-[150px] h-[28px]"
-            />
-            <div className="text-center lg:text-left">
-              <h3 className="font-semibold text-gray-800 dark:text-foreground text-lg">
-                DoLearn updates, once a week
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-muted-foreground">
-                New teacher stories, learning tips, and product updates. No spam.
-              </p>
-            </div>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                newsletterMutation.mutate({ email: newsletterEmail.trim() });
-              }}
-              className="flex flex-col sm:flex-row items-center bg-white dark:bg-card rounded-3xl p-2 shadow-sm border border-gray-200 dark:border-border"
-            >
-              <Input
-                type="email"
-                value={newsletterEmail}
-                onChange={(event) => setNewsletterEmail(event.target.value)}
-                placeholder="your@email.com"
-                className="flex-1 w-full bg-transparent border-none shadow-none h-10 rounded-2xl"
-              />
-              <Button
-                type="submit"
-                className="mt-2 sm:mt-0 sm:ml-2 px-6 py-2 text-sm font-medium bg-brand text-white rounded-2xl hover:bg-brand-600 transition"
-                disabled={newsletterMutation.isPending || !newsletterEmail.trim()}
-              >
-                {newsletterMutation.isPending ? 'Subscribing...' : 'Subscribe'}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-950 text-gray-300 relative">
-        <div className="max-w-7xl mx-auto px-6 py-14">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10">
-            <div className="lg:col-span-2">
-              <Image
-                src={fullLogo}
-                alt="DoLearn"
-                className="w-[160px] h-[30px] mb-4"
-              />
-              <p className="text-sm text-gray-500 dark:text-muted-foreground leading-relaxed max-w-xs">
-                Hand-picked teachers. Live 1-on-1 sessions. One team that owns
-                the match.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-500 dark:text-muted-foreground">
-                <li className="hover:text-white cursor-pointer">
-                  <Link href="#how-it-works">How it works</Link>
-                </li>
-                <li className="hover:text-white cursor-pointer">
-                  <Link href="#pricing">Pricing</Link>
-                </li>
-                <li className="hover:text-white cursor-pointer">
-                  <Link href="#faq">FAQ</Link>
-                </li>
-              </ul>
-            </div>
-            {/* <div> */}
-              {/* <h4 className="text-white font-semibold mb-4">Teachers</h4> */}
-              {/* <ul className="space-y-2 text-sm text-gray-500 dark:text-muted-foreground"> */}
-                {/* <li className="hover:text-white cursor-pointer">
-                  <a href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'dolearnnn@gmail.com'}`}>
-                    Apply to teach
-                  </a>
-                </li> */}
-                {/* WAITLIST_SWAP: was <Link href="/login">Teacher login</Link> */}
-                {/* <li className="hover:text-white cursor-pointer">
-                  <Link href={WAITLIST_HREF}>{WAITLIST_LABEL}</Link>
-                </li> */}
-              {/* </ul> */}
-            {/* </div> */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm text-gray-500 dark:text-muted-foreground">
-                <li className="hover:text-white cursor-pointer">Contact</li>
-                <li className="hover:text-white cursor-pointer">Terms</li>
-                <li className="hover:text-white cursor-pointer">Privacy</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-10 pt-6 flex flex-wrap items-center gap-3">
-            {socialLinks.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target={item.href.startsWith('http') ? '_blank' : undefined}
-                  rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
-                  className="inline-flex items-center gap-2 rounded-full border border-gray-800 px-3 py-2 text-sm text-gray-400 hover:text-white hover:border-gray-600 transition"
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </a>
-              );
-            })}
+            <p className={s.sectionBody}>
+              Your learning history gives the teacher context. The lesson
+              tackles the gap. A later assessment helps show what changed.
+            </p>
+            <ol className={s.tutorFlow}>
+              <li>Identify the gap</li>
+              <li>Match a tutor</li>
+              <li>Learn together</li>
+              <li>Reassess</li>
+            </ol>
             <a
-              href={`https://wa.me/${PHONE_NUMBER.replace(/\D/g, '')}`}
+              href={trial}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-gray-800 px-3 py-2 text-sm text-gray-400 hover:text-white hover:border-gray-600 transition"
+              className={s.textLink}
             >
-              <MessageCircle className="w-4 h-4" />
-              WhatsApp
+              Talk to us about tutor support <ArrowUpRight size={18} />
             </a>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-6 text-center text-xs text-gray-600 dark:text-muted-foreground">
-            DoLearn © {new Date().getFullYear()} · All rights reserved
+        </section>
+        <section
+          id="progress"
+          className={s.progressSection}
+          aria-labelledby="progress-title"
+        >
+          <div className={s.container}>
+            <div className={s.sectionIntro}>
+              <div>
+                <p className={s.eyebrow}>05 / CLOSE THE LOOP</p>
+                <h2 id="progress-title">
+                  Put your progress
+                  <br />
+                  <span>where you can see it.</span>
+                </h2>
+              </div>
+              <p>
+                More questions answered is one thing. Better understanding is
+                another. Revisit the same topic with a comparable assessment to
+                see what’s changed — and what still needs work.
+              </p>
+            </div>
+            <div className={s.progressReport}>
+              <div className={s.reportHeading}>
+                <div>
+                  <p className={s.smallLabel}>TOPIC PROGRESS / MATHEMATICS</p>
+                  <h3>Probability</h3>
+                </div>
+                <span className={s.exampleLabel}>ILLUSTRATIVE REPORT</span>
+              </div>
+              <div className={s.progressComparison}>
+                <div>
+                  <span>FIRST ASSESSMENT</span>
+                  <strong>
+                    31<small>%</small>
+                  </strong>
+                  <div className={s.progressTrack}>
+                    <i style={{ width: "31%" }} />
+                  </div>
+                </div>
+                <div className={s.progressIntervention}>
+                  <span>Targeted practice</span>
+                  <span>AI explanations</span>
+                  <span>Teacher support</span>
+                  <ArrowRight size={24} />
+                </div>
+                <div>
+                  <span>COMPARABLE REASSESSMENT</span>
+                  <strong>
+                    62<small>%</small>
+                    <ArrowUpRight size={30} />
+                  </strong>
+                  <div className={s.progressTrack}>
+                    <i style={{ width: "62%" }} />
+                  </div>
+                </div>
+              </div>
+              <div className={s.reportConclusion}>
+                <p>
+                  <Check size={17} /> Stronger on simple probability.
+                </p>
+                <p>
+                  <CornerDownRight size={17} /> Next focus: combined events.
+                </p>
+              </div>
+              <p className={s.exampleNote}>
+                Example only, not a measured DoLearnn result or a promise of
+                improvement.
+              </p>
+            </div>
+            <div className={s.audienceGrid}>
+              <div id="students">
+                <p className={s.eyebrow}>FOR STUDENTS</p>
+                <h3>Own your next move.</h3>
+                <p>
+                  Know today’s focus, work through a mission and challenge a
+                  friend. Build XP, levels and milestones around meaningful
+                  learning — with progress beyond a leaderboard.
+                </p>
+                <Link href="/practice" className={s.textLink}>
+                  Try a Mathematics warm-up <ArrowUpRight size={16} />
+                </Link>
+              </div>
+              <div id="parents">
+                <p className={s.eyebrow}>FOR PARENTS</p>
+                <h3>See more than study time.</h3>
+                <p>
+                  Understand where your child needs help, why a tutor is
+                  recommended and how their topic results change. Learning
+                  history and teacher feedback make the next conversation more
+                  useful.
+                </p>
+                <Link href="/register" className={s.textLink}>
+                  Start a family account <ArrowUpRight size={16} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section
+          id="questions"
+          className={`${s.container} ${s.faqSection}`}
+          aria-labelledby="questions-title"
+        >
+          <div>
+            <p className={s.eyebrow}>A FEW USEFUL ANSWERS</p>
+            <h2 id="questions-title">
+              Before you <br />
+              make a move.
+            </h2>
+          </div>
+          <div className={s.faqList}>
+            <details>
+              <summary>
+                Who is DoLearnn built for?<span>+</span>
+              </summary>
+              <p>
+                Our first focus is Nigerian SS2 and SS3 students and recent
+                school leavers preparing for external examinations including WAEC, NECO and JAMB. We’re starting with
+                Mathematics and selected high-demand subjects. Parents can use a
+                family account to support their child’s learning.
+              </p>
+            </details>
+            <details>
+              <summary>
+                How is this different from a quiz app?<span>+</span>
+              </summary>
+              <p>
+                The score starts a connected journey: identify topic gaps,
+                practise with AI guidance, compete in Arena, get a teacher’s
+                help when needed, then reassess. Your results inform what you do
+                next.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Does AI replace the teacher?<span>+</span>
+              </summary>
+              <p>
+                No. AI helps explain mistakes, recommend practice and summarise
+                learning needs. The platform verifies results and teachers
+                decide how to teach. Official competitions use reviewed
+                questions, rather than unreviewed questions generated live by
+                AI.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Can I start with tutoring?<span>+</span>
+              </summary>
+              <p>
+                Yes. You can{" "}
+                <a href={trial} target="_blank" rel="noreferrer">
+                  request tutor support
+                </a>
+                . Tutoring is part of the learning system: identify what needs
+                attention, work with a qualified teacher, then check
+                understanding again.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Are teams and tournaments available?<span>+</span>
+              </summary>
+              <p>
+                Arena starts with 1v1 battles. Team battles and tournaments are
+                planned for later, with school and sponsor-supported
+                competitions part of the longer-term direction.
+              </p>
+            </details>
+          </div>
+        </section>
+        <section className={s.finalCta}>
+          <div className={s.container}>
+            <p className={s.eyebrow}>YOUR GOAL. YOUR NEXT MOVE.</p>
+            <h2>
+              You don’t have to guess <br />
+              what to work on next.
+            </h2>
+            <div className={s.actions}>
+              <Link href="/practice" className={s.primaryButton}>
+                Start with free practice <ArrowUpRight size={20} />
+              </Link>
+              <a
+                href={whatsapp}
+                target="_blank"
+                rel="noreferrer"
+                className={s.textLink}
+              >
+                Talk to the DoLearnn team <ArrowUpRight size={17} />
+              </a>
+            </div>
+            <p>Find the gap. Get the right support. See what changes.</p>
+          </div>
+        </section>
+      </main>
+      <footer className={s.footer}>
+        <div className={s.container}>
+          <div className={s.footerTop}>
+            <div>
+              <a href="#top" className={s.wordmark}>
+                do<span>learnn</span>
+                <span className={s.brandPeriod}>.</span>
+              </a>
+              <p>
+                A clearer next step.
+                <br />A learning journey that connects.
+              </p>
+            </div>
+              <nav aria-label="Footer learning links">
+                <strong>Explore</strong>
+                <Link href="/practice">Try practice</Link>
+                <a href="#learning-loop">The learning loop</a>
+              <a href="#arena">Arena</a>
+              <a href="#tutors">Tutor support</a>
+              <a href="#parents">For parents</a>
+            </nav>
+            <nav aria-label="Footer support links">
+              <strong>Stay connected</strong>
+              <a href={whatsapp} target="_blank" rel="noreferrer">
+                WhatsApp us <ArrowUpRight size={13} />
+              </a>
+              <a
+                href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "dolearnnn@gmail.com"}`}
+              >
+                Contact the team
+              </a>
+              <Link href="/login">Student & teacher login</Link>
+              <a
+                href={
+                  process.env.NEXT_PUBLIC_INSTAGRAM_URL ??
+                  "https://instagram.com/dolearnn"
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                Instagram <ArrowUpRight size={13} />
+              </a>
+              <a
+                href={
+                  process.env.NEXT_PUBLIC_LINKEDIN_URL ??
+                  "https://linkedin.com/company/dolearnn"
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                LinkedIn <ArrowUpRight size={13} />
+              </a>
+            </nav>
+            <Newsletter />
+          </div>
+          <div className={s.footerBottom}>
+            <span>
+              © {new Date().getFullYear()} DoLearnn. All rights reserved.
+            </span>
+            <span>Built around learning. Measured by progress.</span>
           </div>
         </div>
-
-        <a
-          href={WHATSAPP_URL}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Book a trial class on WhatsApp"
-          className="fixed bottom-20 right-6 z-40 flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-black/20 hover:brightness-105 transition"
-        >
-          <MessageCircle className="w-5 h-5" />
-          <span className="hidden sm:inline">Book a trial class</span>
-        </a>
-
-        <motion.button
-          initial={{ opacity: 0, scale: 0 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: false, margin: '-200px' }}
-          whileHover={{ scale: 1.1, rotate: -8 }}
-          whileTap={{ scale: 0.92 }}
-          onClick={scrollToTop}
-          aria-label="Scroll to top"
-          className="fixed bottom-6 right-6 z-40 bg-brand p-3 rounded-full text-white shadow-xl shadow-brand/40 hover:bg-brand-600 transition animate-pulse-ring"
-        >
-          <ChevronUp size={20} />
-        </motion.button>
       </footer>
-    </main>
+    </div>
   );
 }

@@ -202,6 +202,19 @@ export interface QuizNextAction {
   } | null;
 }
 
+export interface QuizPracticeOverview {
+  catalog: QuizCatalog;
+  history: { attempts: QuizHistoryItem[]; nextCursor: string | null };
+  progress: QuizProgress;
+  weak: QuizWeakTopicsResponse;
+  actions: QuizNextAction[];
+  learningPlan: {
+    externalExams: string[];
+    unavailableExams: string[];
+    subjectIds: string[];
+  } | null;
+}
+
 export interface StartQuizInput {
   subjectId: string;
   examId?: string;
@@ -215,10 +228,13 @@ export const quizKeys = {
   catalog: ['quiz', 'catalog'] as const,
   history: ['quiz', 'history'] as const,
   attempt: (attemptId: string) => ['quiz', 'attempt', attemptId] as const,
+  diagnosis: (attemptId: string) => ['quiz', 'diagnosis', attemptId] as const,
   weakTopics: (studentId: string | null) =>
     ['quiz', 'weak-topics', studentId ?? 'self'] as const,
   nextActions: (studentId: string | null) =>
     ['quiz', 'next-actions', studentId ?? 'self'] as const,
+  overview: (studentId: string | null) =>
+    ['quiz', 'overview', studentId ?? 'self'] as const,
   progress: (studentId: string | null) =>
     ['quiz', 'progress', studentId ?? 'self'] as const,
 };
@@ -274,6 +290,11 @@ export function getQuizProgress(studentId: string | null) {
 export function getQuizNextActions(studentId: string | null) {
   const query = studentId ? `?studentId=${encodeURIComponent(studentId)}` : '';
   return apiFetch<{ actions: QuizNextAction[] }>(`/quiz/next-actions${query}`);
+}
+
+export function getQuizPracticeOverview(studentId: string | null) {
+  const query = studentId ? `?studentId=${encodeURIComponent(studentId)}` : '';
+  return apiFetch<QuizPracticeOverview>(`/quiz/overview${query}`);
 }
 
 export interface QuizDiagnosis {

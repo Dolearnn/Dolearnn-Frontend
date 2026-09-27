@@ -1,87 +1,87 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
-import { Loader2, Sparkles } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getQuizDiagnosis } from '@/lib/api/quiz';
+import { getQuizDiagnosis, quizKeys } from '@/lib/api/quiz';
 
 const SECTIONS = ['Strengths', 'Needs work', 'Next step'] as const;
 
-// Splits "Strengths: ...\nNeeds work: ...\nNext step: ..." into labelled parts.
-// If the text does not match, it is shown as-is.
 function parseSections(text: string) {
   const parts = SECTIONS.map((label) => {
-    const match = text.match(new RegExp(`^${label}:\\s*([\\s\\S]*?)(?=^(?:${SECTIONS.join('|')}):|$(?![\\s\\S]))`, 'm'));
+    const match = text.match(
+      new RegExp(`^${label}:\\s*([\\s\\S]*?)(?=^(?:${SECTIONS.join('|')}):|$(?![\\s\\S]))`, 'm'),
+    );
     return match ? { label, body: match[1].trim() } : null;
   });
   return parts.every(Boolean) ? (parts as Array<{ label: string; body: string }>) : null;
 }
 
-// A short read of the quiz result: what went well, what needs work, and the next
-// step. The server writes it once per quiz and reuses it.
+// Diagnosis is part of the result, so it loads as soon as grading finishes.
+// The server always has a rules-based answer and may replace the wording with
+// AI; scores and next actions remain platform-verified.
 export default function DiagnosisCard({ attemptId }: { attemptId: string }) {
-  const diagnose = useMutation({ mutationFn: () => getQuizDiagnosis(attemptId) });
-  const result = diagnose.data;
+  const diagnosis = useQuery({
+    queryKey: quizKeys.diagnosis(attemptId),
+    queryFn: () => getQuizDiagnosis(attemptId),
+    staleTime: Infinity,
+    retry: 1,
+  });
+  const result = diagnosis.data;
   const sections = result ? parseSections(result.diagnosis) : null;
 
   return (
-    <section className="rounded-2xl border border-accent2-200 bg-accent2-50 dark:border-accent2-500/30 dark:bg-accent2-500/10 p-5 sm:p-6">
+    <section className="border-l-4 border-accent2-500 bg-accent2-50 p-5 dark:bg-accent2-500/10 sm:p-6" aria-labelledby="diagnosis-heading">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-foreground">
-            <Sparkles className="w-5 h-5 text-brand dark:text-accent2-400" />
-            {result?.source === 'AI' ? 'AI diagnosis' : 'Your diagnosis'}
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">
+            Diagnose
+          </p>
+          <h2 id="diagnosis-heading" className="mt-1 flex items-center gap-2 text-xl font-semibold text-gray-950 dark:text-foreground">
+            <Sparkles className="h-5 w-5 text-brand dark:text-accent2-400" />
+            What this result means
           </h2>
-          {!result && (
-            <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
-              A short summary of what went well, what needs work, and what to do next.
-            </p>
-          )}
         </div>
-        {!result && (
-          <Button
-            type="button"
-            className="h-10 px-4 rounded-xl shrink-0"
-            disabled={diagnose.isPending}
-            onClick={() => diagnose.mutate()}
-          >
-            {diagnose.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2" />
-            )}
-            {diagnose.isPending ? 'Reading your results...' : 'Explain my results'}
-          </Button>
-        )}
+        {diagnosis.isFetching && <Loader2 className="h-5 w-5 animate-spin text-brand dark:text-accent2-400" aria-label="Reading your results" />}
       </div>
 
-      {diagnose.isError && (
-        <p className="mt-3 text-xs text-red-600" role="alert">
-          {diagnose.error instanceof Error ? diagnose.error.message : 'Could not get your diagnosis.'}{' '}
-          Tap the button to try again.
+      {diagnosis.isLoading && (
+        <p className="mt-3 text-sm text-gray-600 dark:text-muted-foreground">
+          Reading your topic results and choosing the next useful step…
         </p>
       )}
 
+      {diagnosis.isError && (
+        <div className="mt-3" role="alert">
+          <p className="text-sm text-red-700 dark:text-red-400">
+            {diagnosis.error instanceof Error ? diagnosis.error.message : 'Could not read your results.'}
+          </p>
+          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => diagnosis.refetch()}>
+            <RefreshCw className="mr-2 h-3.5 w-3.5" /> Try again
+          </Button>
+        </div>
+      )}
+
       {result && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-4 space-y-4">
           {sections ? (
             sections.map((section) => (
-              <div key={section.label}>
+              <div key={section.label} className="grid gap-1 sm:grid-cols-[7rem_1fr] sm:gap-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand dark:text-accent2-400">
                   {section.label}
                 </p>
-                <p className="text-sm text-gray-800 dark:text-foreground/90">{section.body}</p>
+                <p className="text-sm leading-6 text-gray-800 dark:text-foreground/90">{section.body}</p>
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-800 dark:text-foreground/90 whitespace-pre-line">
+            <p className="whitespace-pre-line text-sm leading-6 text-gray-800 dark:text-foreground/90">
               {result.diagnosis}
             </p>
           )}
-          <p className="text-xs text-gray-500 dark:text-muted-foreground">
+          <p className="border-t border-accent2-200 pt-3 text-xs text-gray-500 dark:border-accent2-500/25 dark:text-muted-foreground">
             {result.source === 'AI'
-              ? 'Written by AI from your quiz results. The numbers come from your quiz and the next step is set by DoLearnn. If something looks wrong, check with a teacher.'
-              : 'Worked out from your quiz results.'}
+              ? 'AI explains the result. DoLearnn verifies the scores and chooses actions from your recorded answers.'
+              : 'DoLearnn worked this out from your recorded answers.'}
           </p>
         </div>
       )}
