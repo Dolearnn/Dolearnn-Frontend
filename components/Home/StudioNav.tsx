@@ -4,19 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Menu, X } from "lucide-react";
 import { subscribeNewsletter } from "@/lib/api/public";
-import s from "@/app/pitch.module.css";
+import s from "@/app/studio.module.css";
 
 const navigation = [
-  { href: "#problem", label: "The problem" },
-  { href: "#how", label: "How it works" },
+  { href: "#loop", label: "The loop" },
+  { href: "#modules", label: "Inside the product" },
   { href: "#pricing", label: "Pricing" },
-  { href: "#traction", label: "Traction" },
+  { href: "#proof", label: "Traction" },
   { href: "#team", label: "Team" },
 ];
 
-export function PitchNav() {
+export function StudioNav() {
   const [open, setOpen] = useState(false);
+  const [stuck, setStuck] = useState(false);
   const toggle = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setStuck(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -31,7 +39,7 @@ export function PitchNav() {
   }, [open]);
 
   return (
-    <header className={s.header}>
+    <header className={`${s.header} ${stuck ? s.headerStuck : ""}`}>
       <div className={`${s.container} ${s.navBar}`}>
         <Link href="/" aria-label="DoLearnn home" className={s.wordmark}>
           Do<span>Learnn</span>
@@ -48,7 +56,7 @@ export function PitchNav() {
             Log in
           </Link>
           <Link href="/practice" className={s.navCta}>
-            Try practice <ArrowUpRight size={16} />
+            Try practice <ArrowUpRight size={15} />
           </Link>
           <button
             ref={toggle}
@@ -59,7 +67,7 @@ export function PitchNav() {
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen(!open)}
           >
-            {open ? <X size={23} /> : <Menu size={23} />}
+            {open ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
@@ -83,7 +91,7 @@ export function PitchNav() {
   );
 }
 
-export function PitchNewsletter() {
+export function StudioNewsletter() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<
     "idle" | "pending" | "success" | "error"
@@ -91,7 +99,7 @@ export function PitchNewsletter() {
 
   return (
     <div className={s.newsletter}>
-      <strong>Study tips and product updates.</strong>
+      <strong>Study tips and product updates</strong>
       <form
         onSubmit={async (event) => {
           event.preventDefault();
@@ -127,7 +135,7 @@ export function PitchNewsletter() {
               status === "pending" ? "Subscribing" : "Subscribe to updates"
             }
           >
-            {status === "pending" ? "…" : <ArrowRight size={20} />}
+            {status === "pending" ? "…" : <ArrowRight size={18} />}
           </button>
         </div>
         <p className={s.formStatus} role="status">

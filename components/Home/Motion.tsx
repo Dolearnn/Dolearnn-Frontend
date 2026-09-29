@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import s from "@/app/pitch.module.css";
+import s from "./motion.module.css";
 
 function useInView<T extends HTMLElement>(threshold = 0.18) {
   const ref = useRef<T>(null);
