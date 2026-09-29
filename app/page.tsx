@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  ClipboardCheck,
-  GraduationCap,
-  LineChart,
-  ScanSearch,
-  Swords,
-  Target,
-  UserRoundCheck,
-} from "lucide-react";
+import { Bricolage_Grotesque, Caveat } from "next/font/google";
+import { ArrowDown, ArrowUpRight, Check, Minus } from "lucide-react";
 import { PitchNav, PitchNewsletter } from "@/components/Home/PitchNav";
 import s from "./pitch.module.css";
+
+const display = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--f-display",
+  display: "swap",
+});
+const hand = Caveat({
+  subsets: ["latin"],
+  variable: "--f-hand",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "DoLearnn — Diagnose the weakness. Prove the improvement.",
@@ -33,97 +33,89 @@ const trial =
   process.env.NEXT_PUBLIC_TRIAL_FORM_URL ??
   "https://forms.gle/SYjkRgS1Y5JoD43v7";
 
-const topics = [
-  { name: "Algebra", score: 84 },
-  { name: "Trigonometry", score: 68 },
-  { name: "Calculus", score: 43 },
-  { name: "Probability", score: 31 },
+const ticker = [
+  "WAEC",
+  "UTME",
+  "Mathematics",
+  "English",
+  "Diagnose",
+  "Support",
+  "Prove",
+  "Lagos first",
+];
+
+const script = [
+  { q: "1", topic: "Algebra", score: 84, ok: true },
+  { q: "2", topic: "Trigonometry", score: 68, ok: true },
+  { q: "3", topic: "Calculus", score: 43, ok: false },
+  { q: "4", topic: "Probability", score: 31, ok: false },
 ];
 
 const problems = [
   {
-    title: "Weak diagnosis",
-    text: "Scores rarely tell the learner which topics are causing the problem.",
+    title: "You get a score, not a diagnosis.",
+    text: "58% doesn’t say which topics are costing you marks.",
   },
   {
-    title: "Generic support",
-    text: "Families often buy help before understanding the exact learning gap.",
+    title: "Help gets bought blind.",
+    text: "Families pay for lessons before anyone knows the exact gap.",
   },
   {
-    title: "No proof loop",
-    text: "Most tutoring outcomes are never measured with a structured reassessment.",
+    title: "Nobody checks it worked.",
+    text: "Tutoring outcomes are rarely measured with a structured reassessment.",
   },
 ];
 
 const steps = [
-  { name: "Assess", text: "Exam or diagnostic", icon: ClipboardCheck },
-  { name: "Diagnose", text: "Rank topic-level gaps", icon: ScanSearch },
-  { name: "Practise", text: "AI-generated targeted missions", icon: Target },
-  { name: "Compete", text: "Arena challenges + peer practice", icon: Swords },
-  {
-    name: "Get support",
-    text: "AI Study Coach + human tutor",
-    icon: UserRoundCheck,
-  },
-  {
-    name: "Reassess",
-    text: "Measure progress + update profile",
-    icon: LineChart,
-  },
+  ["Assess", "Take an exam-style or diagnostic test."],
+  ["Diagnose", "Rank your weak topics, worst first."],
+  ["Practise", "AI builds a targeted mission for the gap."],
+  ["Compete", "Take it into the Arena against a friend."],
+  ["Get support", "AI Study Coach, then a human tutor if needed."],
+  ["Reassess", "Test again. Measure it. Update your profile."],
 ];
 
-const alternatives = [
-  { name: "Free CBT apps", text: "Practice + scores" },
-  { name: "Exam-prep sites", text: "Content + past questions" },
-  { name: "Video lessons", text: "Lessons + practice" },
-  { name: "Tutor marketplaces", text: "Find a tutor" },
-  { name: "AI workspaces", text: "Quizzes, summaries & games" },
-  { name: "1-on-1 tutoring", text: "Human help, no diagnosis" },
+const compareCols = [
+  "Score-only apps",
+  "Video & content",
+  "Tutor marketplaces",
+  "DoLearnn",
 ];
-
-const advantages = [
-  {
-    title: "Diagnostic intelligence",
-    text: "Assessment results become a ranked map of the learner’s weakest topics.",
-  },
-  {
-    title: "Context-aware AI",
-    text: "AI support uses the learner’s diagnosis, attempts and progress history.",
-  },
-  {
-    title: "Human escalation",
-    text: "A matched tutor receives context on where the learner is struggling.",
-  },
-  {
-    title: "Reassessment + proof",
-    text: "The learner is tested again so the intervention can be measured.",
-  },
+const compareRows: { label: string; values: (boolean | "some")[] }[] = [
+  { label: "Ranks your weakest topics", values: [false, false, false, true] },
+  { label: "Targeted practice for the gap", values: ["some", "some", false, true] },
+  { label: "AI that knows your history", values: [false, false, false, true] },
+  { label: "Human tutor who sees your data", values: [false, false, "some", true] },
+  { label: "Reassessment to prove progress", values: [false, false, false, true] },
 ];
 
 const audiences = [
   {
     id: "students",
-    label: "For students",
+    tone: "audBlue",
+    label: "Students",
     title: "Know exactly what to fix next.",
-    text: "SS2 / SS3 students and recent school leavers preparing for WAEC and UTME. Start with Mathematics and selected high-demand subjects.",
+    text: "Built for SS2 / SS3 students and recent school leavers preparing for WAEC and UTME. Mathematics first, with selected high-demand subjects alongside.",
     href: "/practice",
     cta: "Try a free warm-up",
   },
   {
     id: "parents",
-    label: "For parents",
+    tone: "audMint",
+    label: "Parents",
     title: "Understand before you pay for help.",
-    text: "See where your child needs support, why a tutor is recommended and how topic results change. Pro plans include a parent progress report.",
+    text: "See where your child needs support, why a tutor is recommended and how their topic results change. Pro plans include a parent progress report.",
     href: "/register",
     cta: "Start a family account",
   },
   {
     id: "schools",
-    label: "For schools",
-    title: "See where a whole class struggles.",
-    text: "Class-wide diagnostics, progress dashboards, parent reporting and competition hosting for schools.",
+    tone: "audNavy",
+    label: "Schools",
+    title: "See where the whole class struggles.",
+    text: "Class-wide diagnostics, progress dashboards, parent reporting and competition hosting, at ₦900,000 a year.",
     href: trial,
-    cta: "Ask about a school pilot",
+    cta: "Ask about a pilot",
     external: true,
   },
 ];
@@ -144,7 +136,7 @@ const plans = [
   {
     name: "Plus",
     price: "₦2,500",
-    unit: "per month",
+    unit: "/ month",
     tagline: "For daily exam prep",
     popular: true,
     features: [
@@ -157,7 +149,7 @@ const plans = [
   {
     name: "Pro",
     price: "₦4,500",
-    unit: "per month",
+    unit: "/ month",
     tagline: "For the final push",
     features: [
       "Everything in Plus",
@@ -172,42 +164,30 @@ const plans = [
 const team = [
   {
     name: "Adeola Olude",
-    role: "Founder and CEO",
-    tag: "Software engineer, Accion Microfinance Bank",
-    text: "400 Level Systems Engineering student at the University of Lagos. Brings production engineering, regulated finance exposure and compliance-aware thinking.",
+    role: "Founder & CEO",
+    bg: "Software engineer, Accion Microfinance Bank. 400 Level Systems Engineering, University of Lagos.",
   },
   {
     name: "Peter Opeyemi",
-    role: "Co-Founder and CTO",
-    tag: "Senior product engineer, EventPadi",
-    text: "Scaled product engineering experience from a platform serving more than 100,000 ticket buyers and 4,000 events.",
+    role: "Co-Founder & CTO",
+    bg: "Senior product engineer, EventPadi. A platform serving 100,000+ ticket buyers and 4,000 events.",
   },
   {
     name: "Samuel Abdulkareem",
     role: "Head of Product",
-    tag: "Qoray Mobility and Energies",
-    text: "Leads product strategy and partnerships, with a sustainable-finance perspective on how the product grows.",
+    bg: "Qoray Mobility and Energies. Leads product strategy and partnerships.",
   },
   {
     name: "Israel Adedokun",
-    role: "Finance and Strategy",
-    tag: "Financial advisor, Andersen",
-    text: "Manages budgets, pricing and unit economics.",
+    role: "Finance & Strategy",
+    bg: "Financial advisor, Andersen. Budgets, pricing and unit economics.",
   },
   {
     name: "Dolapo Abraham",
     role: "Academic Director",
-    tag: "Mechanical Engineering graduate, University of Lagos",
-    text: "Top 10 of his class (2025/2026) with 4 years of teaching experience and strong academic quality control.",
+    bg: "Mechanical Engineering graduate, University of Lagos (top 10, 2025/26). 4 years teaching.",
   },
 ];
-
-const initials = (name: string) =>
-  name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2);
 
 const faqs = [
   {
@@ -228,265 +208,307 @@ const faqs = [
   },
   {
     q: "How does tutoring work?",
-    a: "Tutoring is ₦10,000 per hour one-on-one, or ₦5,000 each for a shared hour, matched to your diagnosed gaps. Booking, payment and progress stay in the app.",
+    a: "₦10,000 per hour one-on-one, or ₦5,000 each for a shared hour, matched to your diagnosed gaps. Booking, payment and progress stay in the app.",
   },
 ];
 
-export default function Home() {
+function Circle() {
   return (
-    <div className={s.landing} id="top">
+    <svg
+      className={s.circle}
+      viewBox="0 0 220 70"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M14 38 C 8 14, 90 4, 160 10 C 214 15, 222 46, 150 58 C 84 68, 6 60, 12 30 C 14 20, 40 12, 62 9"
+        pathLength="1"
+      />
+    </svg>
+  );
+}
+
+function Underline({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`${s.underline} ${className ?? ""}`}
+      viewBox="0 0 300 14"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <path d="M3 9 C 60 2, 110 12, 165 6 S 250 4, 297 8" pathLength="1" />
+    </svg>
+  );
+}
+
+export default function Home() {
+  const marquee = [...ticker, ...ticker];
+  return (
+    <div
+      className={`${s.landing} ${display.variable} ${hand.variable}`}
+      id="top"
+    >
       <a href="#main-content" className={s.skipLink}>
         Skip to content
       </a>
       <PitchNav />
       <main id="main-content">
+        {/* ---------------- HERO ---------------- */}
         <section
           className={`${s.container} ${s.hero}`}
           aria-labelledby="hero-title"
         >
           <div className={s.heroCopy}>
-            <p className={s.badge}>FOR WAEC + UTME STUDENTS</p>
+            <p className={s.kicker}>
+              <span /> For WAEC + UTME students · Lagos first
+            </p>
             <h1 id="hero-title">
-              Diagnose the weakness.
+              Diagnose the{" "}
+              <span className={s.marked}>
+                weakness.
+                <Circle />
+              </span>
               <br />
               Match the right support.
               <br />
-              <span>Prove the improvement.</span>
+              <span className={s.proved}>
+                Prove the improvement.
+                <Underline />
+              </span>
             </h1>
             <p className={s.lead}>
-              DoLearnn is a data-driven learning platform that combines
-              diagnosis, targeted practice, AI and human support, and
-              reassessment inside one measurable loop.
+              DoLearnn finds the exact topics costing you marks, matches the
+              right practice, AI and tutor support, then tests you again to
+              prove it worked.
             </p>
             <div className={s.actions}>
               <Link className={s.primaryButton} href="/practice">
                 Try free Mathematics practice <ArrowUpRight size={19} />
               </Link>
               <a className={s.textLink} href="#how">
-                See how it works <ArrowDown size={16} />
+                See the loop <ArrowDown size={16} />
               </a>
             </div>
-            <div className={s.loopChips} aria-label="The DoLearnn loop">
-              <span className={s.chipNavy}>ASSESS</span>
-              <span className={s.chipBlue}>SUPPORT</span>
-              <span className={s.chipGreen}>REASSESS</span>
-              <em>Lagos first. Nigeria next.</em>
-            </div>
           </div>
 
-          <div className={s.heroVisual}>
-            <div className={s.reportCard}>
-              <div className={s.reportTop}>
-                <span>
-                  <b className={s.miniMark}>D</b> Diagnostic / Mathematics
-                </span>
-                <span className={s.example}>EXAMPLE</span>
+          <div className={s.heroVisual} aria-label="Example marked exam script">
+            <div className={s.sheet}>
+              <div className={s.sheetHead}>
+                <span>WAEC Mathematics · Mock 3</span>
+                <span>Example</span>
               </div>
-              <h2>More than a score.</h2>
-              <div className={s.topicList}>
-                {topics.map((topic) => (
-                  <div
-                    key={topic.name}
-                    className={`${s.topicRow} ${topic.score < 40 ? s.weak : ""}`}
+              <ol className={s.sheetRows}>
+                {script.map((row) => (
+                  <li
+                    key={row.q}
+                    className={row.topic === "Probability" ? s.sheetWeak : ""}
                   >
-                    <div>
-                      <span>{topic.name}</span>
-                      <strong>{topic.score}%</strong>
-                    </div>
-                    <div className={s.track}>
-                      <i style={{ width: `${topic.score}%` }} />
-                    </div>
-                  </div>
+                    <span className={s.qNum}>{row.q}.</span>
+                    <span className={s.qTopic}>{row.topic}</span>
+                    <span className={s.qScore}>{row.score}%</span>
+                    <span
+                      className={row.ok ? s.tick : s.cross}
+                      aria-label={row.ok ? "Correct" : "Needs work"}
+                    >
+                      {row.ok ? "✓" : "✗"}
+                    </span>
+                  </li>
                 ))}
-              </div>
-              <div className={s.nextMove}>
-                <Target size={20} />
-                <p>
-                  <strong>Start with probability.</strong> Your weakest topic
-                  becomes a focused practice mission.
-                </p>
-              </div>
-            </div>
-            <p className={s.note}>
-              Illustrative example. Scores are not learner outcomes.
-            </p>
-          </div>
-        </section>
-
-        <section className={s.statBand} aria-label="Market context">
-          <div className={`${s.container} ${s.statGrid}`}>
-            <div>
-              <strong>2,243,816</strong>
-              <span>UTME registrations in 2026 (JAMB)</span>
-            </div>
-            <div>
-              <strong>381,814</strong>
-              <span>UTME registrations in Lagos, the largest single state</span>
-            </div>
-            <div>
-              <strong>SS2 / SS3</strong>
-              <span>Primary learners, plus recent school leavers</span>
-            </div>
-          </div>
-        </section>
-
-        <section
-          id="problem"
-          className={`${s.container} ${s.section}`}
-          aria-labelledby="problem-title"
-        >
-          <div className={s.sectionHead}>
-            <p className={s.eyebrow}>THE PROBLEM</p>
-            <h2 id="problem-title">
-              Students practise, get a score and still don’t know what to fix
-              next.
-            </h2>
-            <p>
-              Exam preparation is a large market, but the experience is
-              fragmented for students, parents and schools.
-            </p>
-          </div>
-          <div className={s.problemGrid}>
-            {problems.map((item, index) => (
-              <article key={item.title} className={s.problemCard}>
-                <span className={s.num}>{index + 1}</span>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-          <p className={s.pullQuote}>
-            The opportunity is not more practice. It is better direction and
-            measurable improvement.
-          </p>
-        </section>
-
-        <section
-          id="how"
-          className={s.howSection}
-          aria-labelledby="how-title"
-        >
-          <div className={s.container}>
-            <div className={s.sectionHead}>
-              <p className={s.eyebrow}>HOW IT WORKS</p>
-              <h2 id="how-title">
-                We turn assessment data into the right support, then prove it
-                worked.
-              </h2>
-              <p>
-                DoLearnn remembers your diagnosed gaps, interventions and
-                outcomes, so the next recommendation is based on evidence, not
-                a blank chat.
+              </ol>
+              <p className={s.penScore}>
+                58<small>/100</small>
+              </p>
+              <p className={s.penNote}>
+                Probability is the gap.
+                <br />
+                Start here ↑
               </p>
             </div>
-            <ol className={s.steps}>
-              {steps.map((step, index) => (
+            <div className={s.sticky}>
+              <b>Your next move</b>
+              <span>Probability mission</span>
+              <small>8 questions · 15 min</small>
+            </div>
+          </div>
+        </section>
+
+        <div className={s.ticker} aria-hidden="true">
+          <div>
+            {marquee.map((word, index) => (
+              <span key={`${word}-${index}`}>
+                {word} <i>✦</i>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* ---------------- PROBLEM ---------------- */}
+        <section
+          id="problem"
+          className={`${s.container} ${s.problem}`}
+          aria-labelledby="problem-title"
+        >
+          <div className={s.problemLead}>
+            <p className={s.label}>The problem</p>
+            <h2 id="problem-title">
+              You practise. You get a score.{" "}
+              <em>Then you still don’t know what to fix.</em>
+            </h2>
+            <div className={s.bigStat}>
+              <strong>2,243,816</strong>
+              <span>
+                UTME registrations in 2026 (JAMB). <b>381,814</b> of them in
+                Lagos, the largest single state.
+              </span>
+            </div>
+          </div>
+          <ol className={s.problemList}>
+            {problems.map((item, index) => (
+              <li key={item.title}>
+                <span className={s.bigNum}>0{index + 1}</span>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
+              </li>
+            ))}
+            <li className={s.problemTail}>
+              <p>
+                The opportunity isn’t more practice.
+                <br />
+                It’s better direction and measurable improvement.
+              </p>
+            </li>
+          </ol>
+        </section>
+
+        {/* ---------------- HOW ---------------- */}
+        <section id="how" className={s.how} aria-labelledby="how-title">
+          <div className={s.container}>
+            <div className={s.howHead}>
+              <p className={s.labelLight}>How it works</p>
+              <h2 id="how-title">
+                One loop. Every action starts with evidence and ends with a
+                re-test.
+              </h2>
+            </div>
+            <ol className={s.stepGrid}>
+              {steps.map(([name, text], index) => (
                 <li
-                  key={step.name}
+                  key={name}
                   className={index === steps.length - 1 ? s.stepLast : ""}
                 >
                   <span className={s.stepNum}>{index + 1}</span>
-                  <step.icon size={26} strokeWidth={1.6} />
-                  <strong>{step.name}</strong>
-                  <p>{step.text}</p>
+                  <h3>{name}</h3>
+                  <p>{text}</p>
                 </li>
               ))}
             </ol>
-            <p className={s.banner}>
-              AI is part of the intervention, not the moat: every action starts
-              with evidence and ends with reassessment.
+            <p className={s.loopBack}>
+              ↺ &nbsp;Then the new result feeds the next diagnosis. AI is part
+              of the intervention, not the moat.
             </p>
           </div>
         </section>
 
+        {/* ---------------- COMPARE ---------------- */}
         <section
           id="advantage"
-          className={`${s.container} ${s.section}`}
-          aria-labelledby="advantage-title"
+          className={`${s.container} ${s.compare}`}
+          aria-labelledby="compare-title"
         >
-          <div className={s.sectionHead}>
-            <p className={s.eyebrow}>WHY DOLEARNN</p>
-            <h2 id="advantage-title">
-              Others offer practice, content or AI. We close the loop to
-              measured outcomes.
+          <div className={s.compareHead}>
+            <p className={s.label}>Why DoLearnn</p>
+            <h2 id="compare-title">
+              Others offer practice, content or AI.{" "}
+              <em>We close the loop to measured outcomes.</em>
             </h2>
-            <p>
-              The difference isn’t “we also have AI.” It’s diagnosis-led
-              support, human escalation when needed, and reassessment that
-              shows whether learning improved.
-            </p>
           </div>
-          <ul className={s.altList} aria-label="Typical alternatives">
-            {alternatives.map((item) => (
-              <li key={item.name}>
-                <strong>{item.name}</strong>
-                <span>{item.text}</span>
-              </li>
-            ))}
-            <li className={s.altUs}>
-              <strong>DoLearnn</strong>
-              <span>Diagnosis + AI/human support + proof</span>
-            </li>
-          </ul>
-          <div className={s.advGrid}>
-            {advantages.map((item, index) => (
-              <article
-                key={item.title}
-                className={index === advantages.length - 1 ? s.advLast : ""}
-              >
-                <span className={s.num}>{index + 1}</span>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-          <p className={s.banner}>
-            Our advantage is the outcome data linking weakness → intervention →
-            measurable improvement.
-          </p>
-        </section>
-
-        <section className={s.audienceSection} aria-label="Who DoLearnn is for">
-          <div className={`${s.container} ${s.audienceGrid}`}>
-            {audiences.map((item) => (
-              <article key={item.id} id={item.id}>
-                <p className={s.eyebrow}>{item.label.toUpperCase()}</p>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-                {item.external ? (
-                  <a
-                    className={s.textLink}
-                    href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {item.cta} <ArrowUpRight size={16} />
-                  </a>
-                ) : (
-                  <Link className={s.textLink} href={item.href}>
-                    {item.cta} <ArrowUpRight size={16} />
-                  </Link>
-                )}
-              </article>
-            ))}
+          <div className={s.tableWrap}>
+            <table className={s.table}>
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <span className={s.srOnly}>Capability</span>
+                  </th>
+                  {compareCols.map((col, index) => (
+                    <th
+                      key={col}
+                      scope="col"
+                      className={index === 3 ? s.usCol : ""}
+                    >
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {compareRows.map((row) => (
+                  <tr key={row.label}>
+                    <th scope="row">{row.label}</th>
+                    {row.values.map((value, index) => (
+                      <td key={index} className={index === 3 ? s.usCol : ""}>
+                        {value === true ? (
+                          <Check
+                            size={20}
+                            strokeWidth={3}
+                            aria-label="Yes"
+                          />
+                        ) : value === "some" ? (
+                          <span className={s.some}>Partly</span>
+                        ) : (
+                          <Minus size={18} aria-label="No" />
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
 
+        {/* ---------------- AUDIENCES ---------------- */}
+        <section className={s.audiences} aria-label="Who DoLearnn is for">
+          {audiences.map((item) => (
+            <article
+              key={item.id}
+              id={item.id}
+              className={`${s.aud} ${s[item.tone as "audBlue"]}`}
+            >
+              <p className={s.audLabel}>{item.label}</p>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+              {item.external ? (
+                <a
+                  className={s.audLink}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {item.cta} <ArrowUpRight size={18} />
+                </a>
+              ) : (
+                <Link className={s.audLink} href={item.href}>
+                  {item.cta} <ArrowUpRight size={18} />
+                </Link>
+              )}
+            </article>
+          ))}
+        </section>
+
+        {/* ---------------- PRICING ---------------- */}
         <section
           id="pricing"
-          className={`${s.container} ${s.section}`}
+          className={`${s.container} ${s.pricing}`}
           aria-labelledby="pricing-title"
         >
-          <div className={s.sectionHead}>
-            <p className={s.eyebrow}>PRICING</p>
+          <div className={s.compareHead}>
+            <p className={s.label}>Pricing</p>
             <h2 id="pricing-title">
-              Free to start. Cheap to upgrade. Priced for students.
+              Free to start. Cheap to upgrade.{" "}
+              <em>Priced for students.</em>
             </h2>
-            <p>
-              Every learner gets real value for free. Limits are reached at the
-              moment of need, mid-topic or in exam week, which is when an
-              upgrade helps most.
-            </p>
           </div>
           <div className={s.planGrid}>
             {plans.map((plan) => (
@@ -494,171 +516,143 @@ export default function Home() {
                 key={plan.name}
                 className={`${s.plan} ${plan.popular ? s.planPopular : ""}`}
               >
-                {plan.popular && <span className={s.popular}>MOST POPULAR</span>}
-                <p className={s.planName}>{plan.name.toUpperCase()}</p>
+                {plan.popular && (
+                  <span className={s.popular}>Most popular</span>
+                )}
+                <h3>{plan.name}</h3>
                 <p className={s.price}>
-                  {plan.price} <small>{plan.unit}</small>
+                  {plan.price}
+                  <small> {plan.unit}</small>
                 </p>
                 <p className={s.tagline}>{plan.tagline}</p>
                 <ul>
                   {plan.features.map((feature) => (
                     <li key={feature}>
-                      <Check size={16} /> {feature}
+                      <Check size={16} strokeWidth={3} /> {feature}
                     </li>
                   ))}
                 </ul>
               </article>
             ))}
           </div>
-          <div className={s.extras}>
-            <p>
-              <strong>Exam Season Pass:</strong> ₦12,000 for 3 months of Pro,
-              timed to WAEC and UTME windows.
-            </p>
-            <p>
-              <strong>Targeted tutoring:</strong> ₦10,000/hour one-on-one, or
-              ₦5,000 each for a shared hour, matched to your diagnosed gaps.
-            </p>
-            <p>
-              <strong>School packages:</strong> ₦900,000/year for class-wide
-              diagnostics, dashboards, parent reporting and competition hosting.
-            </p>
-          </div>
-          <p className={s.banner}>
-            Upgrades happen inside the learning loop: Free → Plus when limits
-            bite, Plus → Pro near exams, Pro → tutor when AI is not enough.
-          </p>
+          <dl className={s.extras}>
+            <div>
+              <dt>Exam Season Pass</dt>
+              <dd>₦12,000 for 3 months of Pro, timed to WAEC and UTME.</dd>
+            </div>
+            <div>
+              <dt>Targeted tutoring</dt>
+              <dd>
+                ₦10,000/hour 1-on-1, or ₦5,000 each for a shared hour. Booking
+                and payment stay in-app.
+              </dd>
+            </div>
+            <div>
+              <dt>School packages</dt>
+              <dd>
+                ₦900,000/year: class diagnostics, dashboards, parent reports.
+              </dd>
+            </div>
+          </dl>
         </section>
 
+        {/* ---------------- TRACTION ---------------- */}
         <section
           id="traction"
-          className={s.tractionSection}
+          className={s.traction}
           aria-labelledby="traction-title"
         >
-          <div className={`${s.container} ${s.tractionGrid}`}>
+          <div className={`${s.container} ${s.tractionInner}`}>
             <div>
-              <p className={s.eyebrow}>TRACTION</p>
+              <p className={s.label}>Traction</p>
               <h2 id="traction-title">
-                Early demand already exists, before scale.
+                Early demand exists <em>before</em> we’ve scaled.
               </h2>
-              <p>
-                A free pilot tested the diagnose → practise loop, students have
-                been tutored, and schools want pilots.
-              </p>
             </div>
-            <div className={s.tractionStats}>
-              <div>
+            <ul className={s.stamps}>
+              <li>
                 <strong>15</strong>
-                <span>students in free pilot</span>
-              </div>
-              <div>
+                <span>students in the free pilot</span>
+              </li>
+              <li>
                 <strong>4</strong>
                 <span>students tutored</span>
-              </div>
-              <div>
+              </li>
+              <li>
                 <strong>2</strong>
-                <span>school conversations</span>
-              </div>
-            </div>
-            <div className={s.schoolsBox}>
-              <p className={s.eyebrow}>SCHOOLS THAT HAVE EXPRESSED INTEREST</p>
-              <ul>
-                <li>Temperance College</li>
-                <li>Divine Grace Private School</li>
-              </ul>
-              <span>
-                Interest in school-based diagnostics and learning-support
-                pilots.
-              </span>
-            </div>
-          </div>
-        </section>
-
-        <section
-          id="team"
-          className={`${s.container} ${s.section}`}
-          aria-labelledby="team-title"
-        >
-          <div className={s.sectionHead}>
-            <p className={s.eyebrow}>THE TEAM</p>
-            <h2 id="team-title">
-              An operator team across engineering, product, learning and
-              finance.
-            </h2>
-            <p>
-              Production engineering, product execution, academic quality and
-              financial discipline in one team.
+                <span>schools in conversation</span>
+              </li>
+            </ul>
+            <p className={s.schoolNote}>
+              Interest in school pilots from{" "}
+              <b>Temperance College</b> and <b>Divine Grace Private School</b>.
             </p>
           </div>
-          <div className={s.teamGrid}>
+        </section>
+
+        {/* ---------------- TEAM ---------------- */}
+        <section
+          id="team"
+          className={`${s.container} ${s.team}`}
+          aria-labelledby="team-title"
+        >
+          <div className={s.teamHead}>
+            <p className={s.label}>The team</p>
+            <h2 id="team-title">
+              Engineering, product, teaching and finance <em>in one team.</em>
+            </h2>
+          </div>
+          <ul className={s.teamList}>
             {team.map((member) => (
-              <article key={member.name} className={s.member}>
-                <span className={s.avatar} aria-hidden="true">
-                  {initials(member.name)}
-                </span>
-                <div>
-                  <h3>{member.name}</h3>
-                  <p className={s.role}>{member.role}</p>
-                  <p className={s.tag}>{member.tag}</p>
-                  <p>{member.text}</p>
-                </div>
-              </article>
+              <li key={member.name}>
+                <h3>{member.name}</h3>
+                <span>{member.role}</span>
+                <p>{member.bg}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
-        <section className={s.impactSection} aria-labelledby="impact-title">
+        {/* ---------------- IMPACT ---------------- */}
+        <section className={s.impact} aria-labelledby="impact-title">
           <div className={s.container}>
-            <div className={s.sectionHead}>
-              <p className={s.eyebrow}>OUR IMPACT GOALS</p>
-              <h2 id="impact-title">
-                Free diagnosis for every learner. Real income for tutors.
-              </h2>
-              <p>
-                We measure impact the way we measure learning: assess,
-                intervene, reassess and report. These are Year 1 goals, not
-                results to date.
-              </p>
-            </div>
-            <div className={s.impactGrid}>
-              <article>
-                <GraduationCap size={26} strokeWidth={1.6} />
+            <p className={s.labelLight}>Year 1 goals</p>
+            <h2 id="impact-title">
+              Free diagnosis for every learner. Real income for tutors.
+            </h2>
+            <ul className={s.impactList}>
+              <li>
                 <strong>5,000+</strong>
-                <h3>learners with free topic diagnosis</h3>
-                <p>
-                  The free tier means no student is priced out of knowing their
-                  gaps, and progress is proven by reassessment, not assumed.
-                </p>
-              </article>
-              <article>
-                <UserRoundCheck size={26} strokeWidth={1.6} />
+                <span>learners get a free topic diagnosis</span>
+              </li>
+              <li>
                 <strong>50</strong>
-                <h3>planned jobs and income opportunities</h3>
-                <p>
-                  Full-time hires, 25 part-time tutors who keep 80% of every
-                  hour booked, and 20 paid student ambassadors across Lagos.
-                </p>
-              </article>
-              <article>
-                <LineChart size={26} strokeWidth={1.6} />
-                <strong>Class-level</strong>
-                <h3>insight into where students struggle</h3>
-                <p>
-                  Teachers see which topics a whole class is failing, and
-                  parents get clear progress reports.
-                </p>
-              </article>
-            </div>
+                <span>
+                  planned jobs and income opportunities. Tutors keep 80% of
+                  every hour booked.
+                </span>
+              </li>
+              <li>
+                <strong>1 class</strong>
+                <span>
+                  at a time: teachers see which topics a whole class is failing
+                </span>
+              </li>
+            </ul>
+            <p className={s.fine}>
+              Goals, not results to date.
+            </p>
           </div>
         </section>
 
+        {/* ---------------- FAQ ---------------- */}
         <section
           id="questions"
-          className={`${s.container} ${s.faqSection}`}
+          className={`${s.container} ${s.faq}`}
           aria-labelledby="questions-title"
         >
           <div>
-            <p className={s.eyebrow}>QUESTIONS</p>
+            <p className={s.label}>Questions</p>
             <h2 id="questions-title">Before you make a move.</h2>
           </div>
           <div className={s.faqList}>
@@ -674,12 +668,14 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ---------------- CTA ---------------- */}
         <section className={s.finalCta}>
           <div className={s.container}>
-            <p className={s.eyebrow}>DIAGNOSE · SUPPORT · PROVE</p>
-            <h2>You don’t have to guess what to work on next.</h2>
+            <h2>
+              Stop guessing what to study next.
+            </h2>
             <div className={s.actions}>
-              <Link href="/practice" className={s.mintButton}>
+              <Link href="/practice" className={s.ctaButton}>
                 Start with free practice <ArrowUpRight size={20} />
               </Link>
               <a
