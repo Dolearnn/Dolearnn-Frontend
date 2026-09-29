@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Bricolage_Grotesque, Caveat } from "next/font/google";
 import { ArrowDown, ArrowUpRight, Check, Minus } from "lucide-react";
 import { PitchNav, PitchNewsletter } from "@/components/Home/PitchNav";
+import { CountUp, Reveal } from "@/components/Home/Motion";
 import s from "./pitch.module.css";
 
 const display = Bricolage_Grotesque({
@@ -248,6 +249,9 @@ export default function Home() {
       className={`${s.landing} ${display.variable} ${hand.variable}`}
       id="top"
     >
+      <noscript>
+        <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
+      </noscript>
       <a href="#main-content" className={s.skipLink}>
         Skip to content
       </a>
@@ -355,7 +359,9 @@ export default function Home() {
               <em>Then you still don’t know what to fix.</em>
             </h2>
             <div className={s.bigStat}>
-              <strong>2,243,816</strong>
+              <strong>
+                <CountUp to={2243816} duration={1800} />
+              </strong>
               <span>
                 UTME registrations in 2026 (JAMB). <b>381,814</b> of them in
                 Lagos, the largest single state.
@@ -364,44 +370,46 @@ export default function Home() {
           </div>
           <ol className={s.problemList}>
             {problems.map((item, index) => (
-              <li key={item.title}>
+              <Reveal as="li" key={item.title} delay={index * 120} variant="left">
                 <span className={s.bigNum}>0{index + 1}</span>
                 <div>
                   <h3>{item.title}</h3>
                   <p>{item.text}</p>
                 </div>
-              </li>
+              </Reveal>
             ))}
-            <li className={s.problemTail}>
+            <Reveal as="li" className={s.problemTail} delay={360}>
               <p>
                 The opportunity isn’t more practice.
                 <br />
                 It’s better direction and measurable improvement.
               </p>
-            </li>
+            </Reveal>
           </ol>
         </section>
 
         {/* ---------------- HOW ---------------- */}
         <section id="how" className={s.how} aria-labelledby="how-title">
           <div className={s.container}>
-            <div className={s.howHead}>
+            <Reveal className={s.howHead}>
               <p className={s.labelLight}>How it works</p>
               <h2 id="how-title">
                 One loop. Every action starts with evidence and ends with a
                 re-test.
               </h2>
-            </div>
+            </Reveal>
             <ol className={s.stepGrid}>
               {steps.map(([name, text], index) => (
-                <li
+                <Reveal
+                  as="li"
                   key={name}
+                  delay={index * 90}
                   className={index === steps.length - 1 ? s.stepLast : ""}
                 >
                   <span className={s.stepNum}>{index + 1}</span>
                   <h3>{name}</h3>
                   <p>{text}</p>
-                </li>
+                </Reveal>
               ))}
             </ol>
             <p className={s.loopBack}>
@@ -417,14 +425,14 @@ export default function Home() {
           className={`${s.container} ${s.compare}`}
           aria-labelledby="compare-title"
         >
-          <div className={s.compareHead}>
+          <Reveal className={s.compareHead}>
             <p className={s.label}>Why DoLearnn</p>
             <h2 id="compare-title">
               Others offer practice, content or AI.{" "}
               <em>We close the loop to measured outcomes.</em>
             </h2>
-          </div>
-          <div className={s.tableWrap}>
+          </Reveal>
+          <Reveal className={s.tableWrap}>
             <table className={s.table}>
               <thead>
                 <tr>
@@ -465,15 +473,17 @@ export default function Home() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Reveal>
         </section>
 
         {/* ---------------- AUDIENCES ---------------- */}
         <section className={s.audiences} aria-label="Who DoLearnn is for">
-          {audiences.map((item) => (
-            <article
+          {audiences.map((item, index) => (
+            <Reveal
+              as="article"
               key={item.id}
               id={item.id}
+              delay={index * 130}
               className={`${s.aud} ${s[item.tone as "audBlue"]}`}
             >
               <p className={s.audLabel}>{item.label}</p>
@@ -493,7 +503,7 @@ export default function Home() {
                   {item.cta} <ArrowUpRight size={18} />
                 </Link>
               )}
-            </article>
+            </Reveal>
           ))}
         </section>
 
@@ -503,17 +513,19 @@ export default function Home() {
           className={`${s.container} ${s.pricing}`}
           aria-labelledby="pricing-title"
         >
-          <div className={s.compareHead}>
+          <Reveal className={s.compareHead}>
             <p className={s.label}>Pricing</p>
             <h2 id="pricing-title">
               Free to start. Cheap to upgrade.{" "}
               <em>Priced for students.</em>
             </h2>
-          </div>
+          </Reveal>
           <div className={s.planGrid}>
-            {plans.map((plan) => (
-              <article
+            {plans.map((plan, index) => (
+              <Reveal
+                as="article"
                 key={plan.name}
+                delay={index * 130}
                 className={`${s.plan} ${plan.popular ? s.planPopular : ""}`}
               >
                 {plan.popular && (
@@ -532,10 +544,10 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-              </article>
+              </Reveal>
             ))}
           </div>
-          <dl className={s.extras}>
+          <Reveal as="dl" className={s.extras}>
             <div>
               <dt>Exam Season Pass</dt>
               <dd>₦12,000 for 3 months of Pro, timed to WAEC and UTME.</dd>
@@ -553,7 +565,7 @@ export default function Home() {
                 ₦900,000/year: class diagnostics, dashboards, parent reports.
               </dd>
             </div>
-          </dl>
+          </Reveal>
         </section>
 
         {/* ---------------- TRACTION ---------------- */}
@@ -570,18 +582,24 @@ export default function Home() {
               </h2>
             </div>
             <ul className={s.stamps}>
-              <li>
-                <strong>15</strong>
+              <Reveal as="li" variant="pop">
+                <strong>
+                  <CountUp to={15} />
+                </strong>
                 <span>students in the free pilot</span>
-              </li>
-              <li>
-                <strong>4</strong>
+              </Reveal>
+              <Reveal as="li" variant="pop" delay={160}>
+                <strong>
+                  <CountUp to={4} />
+                </strong>
                 <span>students tutored</span>
-              </li>
-              <li>
-                <strong>2</strong>
+              </Reveal>
+              <Reveal as="li" variant="pop" delay={320}>
+                <strong>
+                  <CountUp to={2} />
+                </strong>
                 <span>schools in conversation</span>
-              </li>
+              </Reveal>
             </ul>
             <p className={s.schoolNote}>
               Interest in school pilots from{" "}
@@ -596,19 +614,19 @@ export default function Home() {
           className={`${s.container} ${s.team}`}
           aria-labelledby="team-title"
         >
-          <div className={s.teamHead}>
+          <Reveal className={s.teamHead}>
             <p className={s.label}>The team</p>
             <h2 id="team-title">
               Engineering, product, teaching and finance <em>in one team.</em>
             </h2>
-          </div>
+          </Reveal>
           <ul className={s.teamList}>
-            {team.map((member) => (
-              <li key={member.name}>
+            {team.map((member, index) => (
+              <Reveal as="li" key={member.name} delay={index * 70}>
                 <h3>{member.name}</h3>
                 <span>{member.role}</span>
                 <p>{member.bg}</p>
-              </li>
+              </Reveal>
             ))}
           </ul>
         </section>
@@ -621,23 +639,27 @@ export default function Home() {
               Free diagnosis for every learner. Real income for tutors.
             </h2>
             <ul className={s.impactList}>
-              <li>
-                <strong>5,000+</strong>
+              <Reveal as="li">
+                <strong>
+                  <CountUp to={5000} suffix="+" />
+                </strong>
                 <span>learners get a free topic diagnosis</span>
-              </li>
-              <li>
-                <strong>50</strong>
+              </Reveal>
+              <Reveal as="li" delay={140}>
+                <strong>
+                  <CountUp to={50} />
+                </strong>
                 <span>
                   planned jobs and income opportunities. Tutors keep 80% of
                   every hour booked.
                 </span>
-              </li>
-              <li>
+              </Reveal>
+              <Reveal as="li" delay={280}>
                 <strong>1 class</strong>
                 <span>
                   at a time: teachers see which topics a whole class is failing
                 </span>
-              </li>
+              </Reveal>
             </ul>
             <p className={s.fine}>
               Goals, not results to date.
