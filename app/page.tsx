@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Fraunces, JetBrains_Mono } from "next/font/google";
 import { ArrowDown, ArrowUpRight, Check, Swords } from "lucide-react";
@@ -163,30 +164,32 @@ const plans = [
 
 const team = [
   {
-    name: "Adeola Olude",
+    name: "Adeola David",
     role: "Founder & CEO",
     bg: "Software engineer at Accion Microfinance Bank. 400 Level Systems Engineering, University of Lagos.",
+    image: "/team/david.jpg",
   },
   {
     name: "Peter Opeyemi",
     role: "Co-Founder & CTO",
     bg: "Senior product engineer at EventPadi, a platform serving 100,000+ ticket buyers and 4,000 events.",
+    image: "/team/peter.jpg",
   },
-  {
-    name: "Samuel Abdulkareem",
-    role: "Head of Product",
-    bg: "Qoray Mobility and Energies. Leads product strategy and partnerships.",
-  },
-  {
-    name: "Israel Adedokun",
-    role: "Finance & Strategy",
-    bg: "Financial advisor at Andersen. Budgets, pricing and unit economics.",
-  },
-  {
-    name: "Dolapo Abraham",
-    role: "Academic Director",
-    bg: "Mechanical Engineering graduate, University of Lagos (top 10, 2025/26). Four years of teaching.",
-  },
+  // {
+  //   name: "Samuel Abdulkareem",
+  //   role: "Head of Product",
+  //   bg: "Qoray Mobility and Energies. Leads product strategy and partnerships.",
+  // },
+  // {
+  //   name: "Israel Adedokun",
+  //   role: "Finance & Strategy",
+  //   bg: "Financial advisor at Andersen. Budgets, pricing and unit economics.",
+  // },
+  // {
+  //   name: "Dolapo Abraham",
+  //   role: "Academic Director",
+  //   bg: "Mechanical Engineering graduate, University of Lagos (top 10, 2025/26). Four years of teaching.",
+  // },
 ];
 
 const faqs = [
@@ -211,13 +214,6 @@ const faqs = [
     a: "₦10,000 per hour one-on-one, or ₦5,000 each for a shared hour, matched to your diagnosed gaps. Booking, payment and progress stay in the app.",
   },
 ];
-
-const initials = (name: string) =>
-  name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2);
 
 export default function Home() {
   return (
@@ -612,12 +608,17 @@ export default function Home() {
           <ul className={s.teamGrid}>
             {team.map((member, index) => (
               <Reveal as="li" key={member.name} delay={index * 80}>
-                <span className={s.monogram} aria-hidden="true">
-                  {initials(member.name)}
-                </span>
+                <Image
+                  className={s.teamPhoto}
+                  src={member.image}
+                  alt={member.name}
+                  width={144}
+                  height={144}
+                  sizes="144px"
+                />
                 <h3>{member.name}</h3>
                 <small>{member.role}</small>
-                <p>{member.bg}</p>
+                {/* <p>{member.bg}</p> */}
               </Reveal>
             ))}
           </ul>

@@ -1228,6 +1228,15 @@
   color: var(--muted);
   font-size: 15px;
 }
+.teamPhoto {
+  width: 144px;
+  height: 144px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  background: var(--ink);
+}
 .monogram {
   display: grid;
   place-items: center;
