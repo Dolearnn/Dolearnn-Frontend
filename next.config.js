@@ -1,3 +1,5 @@
+const path = require('path');
+
 const apiOrigin = (() => {
   try {
     return new URL(
@@ -29,6 +31,7 @@ const csp = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: { unoptimized: true },
+  outputFileTracingRoot: path.join(__dirname),
   async headers() {
     return [
       {
