@@ -70,6 +70,8 @@ export function listAdminQuestions(filters: {
   examId?: string;
   subjectId?: string;
   topicId?: string;
+  search?: string;
+  cursor?: string;
   limit?: number;
 }) {
   const params = new URLSearchParams();
@@ -85,6 +87,23 @@ export function setAdminQuestionStatus(questionIds: string[], status: AdminQuest
   return apiFetch<{ updated: number }>('/admin/quiz/questions/status', {
     method: 'POST',
     body: JSON.stringify({ questionIds, status }),
+  });
+}
+
+export interface AdminQuestionUpdate {
+  text?: string;
+  options?: Array<{ id: string; text: string }>;
+  correctOptionId?: string;
+  explanation?: string | null;
+  difficulty?: AdminQuestionDifficulty;
+  status?: AdminQuestionStatus;
+  year?: number | null;
+}
+
+export function updateAdminQuestion(questionId: string, input: AdminQuestionUpdate) {
+  return apiFetch<{ question: unknown }>(`/admin/quiz/questions/${questionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
   });
 }
 
