@@ -68,6 +68,18 @@ export interface QuizAttemptSummary {
   startedAt: string;
   expiresAt: string | null;
   submittedAt: string | null;
+  // Set when this attempt re-tests the weak topics of an earlier attempt.
+  retakeOfAttemptId?: string | null;
+}
+
+// Before vs after on the topics a retake targeted.
+export interface QuizRetakeComparison {
+  originalAttemptId: string;
+  originalSubmittedAt: string | null;
+  beforePercent: number;
+  afterPercent: number;
+  changePoints: number;
+  topics: Array<{ topicId: string; name: string; beforePercent: number; afterPercent: number }>;
 }
 
 export interface QuizTopicResult {
@@ -105,6 +117,8 @@ export interface QuizResult {
   tutoring: QuizTutoringSuggestion | null;
   // Versus the learner's previous attempt in this subject; null on a first attempt.
   comparison: QuizComparison | null;
+  // Only on a retake: the like-for-like comparison with the original attempt.
+  retake?: QuizRetakeComparison | null;
 }
 
 export interface QuizInProgressView {
@@ -222,6 +236,8 @@ export interface StartQuizInput {
   count: number;
   mode: QuizMode;
   studentId?: string;
+  // Re-test the weak topics of this submitted attempt (the server picks topics and count).
+  retakeOfAttemptId?: string;
 }
 
 export const quizKeys = {

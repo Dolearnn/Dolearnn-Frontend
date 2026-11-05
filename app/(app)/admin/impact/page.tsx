@@ -147,6 +147,38 @@ export default function AdminImpactPage() {
       </Section>
 
       <Section
+        title="Proof of progress (targeted retakes)"
+        note="Each retake re-tests the weak topics of an earlier quiz with new questions. Before and after are compared on those topics only, so this is the like-for-like measure."
+      >
+        <StatTile icon={TrendingUp} label="Retakes completed" value={n(learning.retakes)} />
+        <StatTile
+          icon={TrendingUp}
+          label="Improved on retake"
+          value={learning.retakes > 0 ? `${learning.retakesImprovedPercent}%` : '-'}
+          sub={
+            learning.retakes > 0
+              ? `${n(learning.retakesImproved)} of ${n(learning.retakes)}`
+              : 'No retakes yet'
+          }
+          accent={learning.retakes > 0}
+        />
+        <StatTile
+          icon={TrendingUp}
+          label="Average change on targeted topics"
+          value={
+            learning.retakeAverageChangePoints === null
+              ? '-'
+              : `${signed(learning.retakeAverageChangePoints)} pts`
+          }
+          sub={
+            learning.retakeAverageBefore === null || learning.retakeAverageAfter === null
+              ? undefined
+              : `${learning.retakeAverageBefore}% → ${learning.retakeAverageAfter}%`
+          }
+        />
+      </Section>
+
+      <Section
         title="Tutoring and outcomes"
         note="Quiz scores before vs after each learner's first completed tutoring session. Subjects are not matched, so treat this as indicative, not proof."
       >

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clock, Minus, RotateCcw, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { BadgeCheck, Clock, Minus, RotateCcw, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { QuizSubmittedView } from '@/lib/api/quiz';
 import { scoreMessage, scoreTone, toneClasses } from '@/lib/quiz';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import DiagnosisCard from './DiagnosisCard';
 import PracticeLoop from './PracticeLoop';
 import QuizReview from './QuizReview';
+import RetakeComparison from './RetakeComparison';
 import RewardsStrip from './RewardsStrip';
 import { useStartQuiz } from './useStartQuiz';
 
@@ -110,9 +111,11 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
 
       </div>
 
+      {result.retake && <RetakeComparison retake={result.retake} />}
+
       <RewardsStrip studentId={attempt.studentId ?? null} />
 
-      <PracticeLoop active="Diagnose" />
+      <PracticeLoop active={result.retake ? 'Reassess' : 'Diagnose'} />
 
       <DiagnosisCard attemptId={attempt.id} />
 
@@ -172,6 +175,23 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
           )}
         </div>
         <div className="mt-5 flex flex-wrap gap-2 border-t border-white/15 pt-4 dark:border-brand/15">
+          <Button
+            variant="outline"
+            className="h-10 border-white/30 bg-transparent px-4 text-white hover:bg-white/10 hover:text-white dark:border-brand/30 dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand"
+            disabled={start.isPending}
+            title="New questions on the same topics, compared with this result"
+            onClick={() =>
+              start.mutate({
+                ...base,
+                count: attempt.totalQuestions,
+                mode: 'PRACTICE',
+                retakeOfAttemptId: attempt.id,
+              })
+            }
+          >
+            <BadgeCheck className="mr-2 h-4 w-4" />
+            {weakTopicIds.length > 0 ? 'Retake weak topics to prove progress' : 'Retake to prove progress'}
+          </Button>
           <Button
             variant="outline"
             className="h-10 border-white/30 bg-transparent px-4 text-white hover:bg-white/10 hover:text-white dark:border-brand/30 dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand"

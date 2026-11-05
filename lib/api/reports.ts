@@ -77,6 +77,13 @@ export interface ImpactReport {
     averageFirstScore: number | null;
     averageLatestScore: number | null;
     averageChangePoints: number | null;
+    // Targeted retakes: same topics, new questions, compared with the original.
+    retakes: number;
+    retakesImproved: number;
+    retakesImprovedPercent: number;
+    retakeAverageBefore: number | null;
+    retakeAverageAfter: number | null;
+    retakeAverageChangePoints: number | null;
   };
   tutoring: {
     completedSessions: number;
