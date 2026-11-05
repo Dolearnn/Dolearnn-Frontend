@@ -1,10 +1,17 @@
+const path = require('path');
+
 const apiOrigin = (() => {
   try {
     return new URL(
-      process.env.NEXT_PUBLIC_API_URL || 'https://dolearnn-backend.onrender.com/api',
+      process.env.NEXT_PUBLIC_API_URL ||
+        (process.env.NODE_ENV === 'development'
+          ? 'http://localhost:4000/api'
+          : 'https://dolearnn-backend.onrender.com/api'),
     ).origin;
   } catch {
-    return 'https://dolearnn-backend.onrender.com';
+    return process.env.NODE_ENV === 'development'
+      ? 'http://localhost:4000'
+      : 'https://dolearnn-backend.onrender.com';
   }
 })();
 
@@ -24,6 +31,7 @@ const csp = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: { unoptimized: true },
+  outputFileTracingRoot: path.join(__dirname),
   async headers() {
     return [
       {

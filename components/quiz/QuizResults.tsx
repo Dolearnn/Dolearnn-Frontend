@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Clock, Minus, RotateCcw, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { QuizSubmittedView } from '@/lib/api/quiz';
 import { scoreMessage, scoreTone, toneClasses } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
 import DiagnosisCard from './DiagnosisCard';
+import PracticeLoop from './PracticeLoop';
 import QuizReview from './QuizReview';
-import TutoringCta from './TutoringCta';
 import { useStartQuiz } from './useStartQuiz';
 
 const WEAK_BELOW_PERCENT = 60;
@@ -44,6 +45,8 @@ function ScoreRing({ percent }: { percent: number }) {
 export default function QuizResults({ view }: { view: QuizSubmittedView }) {
   const { attempt, result, review } = view;
   const start = useStartQuiz();
+  const pathname = usePathname();
+  const practicePath = pathname.startsWith('/student') ? '/student/practice' : '/family/quiz';
 
   const weakTopicIds = result.topics
     .filter((topic) => topic.accuracyPercent < WEAK_BELOW_PERCENT)
@@ -104,37 +107,11 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          {weakTopicIds.length > 0 && (
-            <Button
-              className="h-10 px-4 rounded-xl"
-              disabled={start.isPending}
-              onClick={() =>
-                start.mutate({ ...base, topicIds: weakTopicIds, count: 10, mode: 'PRACTICE' })
-              }
-            >
-              <Target className="w-4 h-4 mr-2" /> Practise weak topics
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            className="h-10 px-4 rounded-xl"
-            disabled={start.isPending}
-            onClick={() =>
-              start.mutate({
-                ...base,
-                count: Math.max(5, attempt.totalQuestions),
-                mode: attempt.mode,
-              })
-            }
-          >
-            <RotateCcw className="w-4 h-4 mr-2" /> Try again
-          </Button>
-          <Button asChild variant="ghost" className="h-10 px-4 rounded-xl">
-            <Link href="/family/quiz">All quizzes</Link>
-          </Button>
-        </div>
       </div>
+
+      <PracticeLoop active="Diagnose" />
+
+      <DiagnosisCard attemptId={attempt.id} />
 
       <section className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5 sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-foreground mb-4">
@@ -163,14 +140,54 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
         </ul>
       </section>
 
-      <DiagnosisCard attemptId={attempt.id} />
-
-      {result.tutoring && (
-        <TutoringCta
-          prefill={result.tutoring.prefill}
-          weakTopics={result.tutoring.weakTopics}
-        />
-      )}
+      <section className="bg-brand p-5 text-white dark:bg-accent2-500 dark:text-brand sm:p-6" aria-labelledby="result-next-step">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent2-300 dark:text-brand/65">
+          Practise
+        </p>
+        <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 id="result-next-step" className="text-xl font-semibold">
+              {weakTopicIds.length > 0 ? 'Turn the weak topics into a mission' : 'Keep the result moving'}
+            </h2>
+            <p className="mt-1 max-w-xl text-sm leading-6 text-white/75 dark:text-brand/70">
+              {weakTopicIds.length > 0
+                ? 'Practise ten questions drawn from the topics that need the most work.'
+                : 'Take another question set when you are ready and compare the result.'}
+            </p>
+          </div>
+          {weakTopicIds.length > 0 && (
+            <Button
+              variant="secondary"
+              className="h-11 shrink-0 px-5"
+              disabled={start.isPending}
+              onClick={() =>
+                start.mutate({ ...base, topicIds: weakTopicIds, count: 10, mode: 'PRACTICE' })
+              }
+            >
+              <Target className="mr-2 h-4 w-4" /> Start targeted mission
+            </Button>
+          )}
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2 border-t border-white/15 pt-4 dark:border-brand/15">
+          <Button
+            variant="outline"
+            className="h-10 border-white/30 bg-transparent px-4 text-white hover:bg-white/10 hover:text-white dark:border-brand/30 dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand"
+            disabled={start.isPending}
+            onClick={() =>
+              start.mutate({
+                ...base,
+                count: Math.max(5, attempt.totalQuestions),
+                mode: attempt.mode,
+              })
+            }
+          >
+            <RotateCcw className="mr-2 h-4 w-4" /> Reassess this subject
+          </Button>
+          <Button asChild variant="ghost" className="h-10 px-4 text-white hover:bg-white/10 hover:text-white dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand">
+            <Link href={practicePath}>Back to practice</Link>
+          </Button>
+        </div>
+      </section>
 
       <QuizReview attemptId={attempt.id} review={review} />
     </div>
