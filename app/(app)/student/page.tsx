@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, BookOpenCheck, CalendarDays, Target, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import NextActions from '@/components/quiz/NextActions';
+import RewardsStrip from '@/components/quiz/RewardsStrip';
+import WeeklyLeaderboard from '@/components/quiz/WeeklyLeaderboard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getQuizPracticeOverview, quizKeys } from '@/lib/api/quiz';
@@ -52,6 +54,8 @@ export default function StudentDashboardPage() {
         description={`Your practice plan for ${profile.externalExams.join(', ')}.`}
         action={<Button asChild variant="outline"><Link href="/student/onboarding">Edit plan</Link></Button>}
       />
+
+      <RewardsStrip studentId={null} className="mb-6" />
 
       <section className="mb-9 grid border-y border-gray-200 bg-white dark:border-border dark:bg-card sm:grid-cols-3" aria-label="Learning plan summary">
         <div className="border-b border-gray-200 p-5 dark:border-border sm:border-b-0 sm:border-r">
@@ -102,6 +106,8 @@ export default function StudentDashboardPage() {
           </div>
         </section>
       )}
+
+      <WeeklyLeaderboard studentId={null} className="mt-9" />
     </div>
   );
 }

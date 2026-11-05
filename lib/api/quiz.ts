@@ -237,7 +237,49 @@ export const quizKeys = {
     ['quiz', 'overview', studentId ?? 'self'] as const,
   progress: (studentId: string | null) =>
     ['quiz', 'progress', studentId ?? 'self'] as const,
+  rewards: (studentId: string | null) =>
+    ['quiz', 'rewards', studentId ?? 'self'] as const,
+  leaderboard: (studentId: string | null) =>
+    ['quiz', 'leaderboard', studentId ?? 'self'] as const,
 };
+
+export interface QuizLevel {
+  name: string;
+  minXp: number;
+}
+
+export interface QuizRewards {
+  xp: number;
+  weekXp: number;
+  xpToday: number;
+  dailyCapReached: boolean;
+  level: QuizLevel;
+  nextLevel: QuizLevel | null;
+  progressPercent: number;
+  streak: { current: number; best: number; activeToday: boolean };
+  rules: {
+    xpPerCorrect: number;
+    xpForCompletion: number;
+    dailyXpCap: number;
+    levels: QuizLevel[];
+  };
+}
+
+export interface QuizLeaderboard {
+  weekStart: string;
+  entries: Array<{ rank: number; name: string; xp: number; isMe: boolean }>;
+  me: { rank: number; xp: number } | null;
+}
+
+export function getQuizRewards(studentId: string | null) {
+  const query = studentId ? `?studentId=${encodeURIComponent(studentId)}` : '';
+  return apiFetch<QuizRewards>(`/quiz/rewards${query}`);
+}
+
+export function getQuizLeaderboard(studentId: string | null) {
+  const query = studentId ? `?studentId=${encodeURIComponent(studentId)}` : '';
+  return apiFetch<QuizLeaderboard>(`/quiz/leaderboard${query}`);
+}
 
 export function getQuizCatalog() {
   return apiFetch<QuizCatalog>('/quiz/catalog');

@@ -26,6 +26,8 @@ import {
   type QuizCatalogSubject,
   type QuizHistoryItem,
 } from '@/lib/api/quiz';
+import RewardsStrip from '@/components/quiz/RewardsStrip';
+import WeeklyLeaderboard from '@/components/quiz/WeeklyLeaderboard';
 import { scoreTone, toneClasses } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
 
@@ -145,6 +147,7 @@ export default function QuizHubPage() {
         }
       />
 
+      <RewardsStrip studentId={studentId} className="mb-6" />
       <PracticeLoop active={loopStep} />
       <NextActions
         studentId={studentId}
@@ -323,6 +326,8 @@ export default function QuizHubPage() {
           </div>
         </section>
       )}
+
+      <WeeklyLeaderboard studentId={studentId} className="mt-9" />
 
       {chosenSubject && (
         <StartQuizDialog

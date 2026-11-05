@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import DiagnosisCard from './DiagnosisCard';
 import PracticeLoop from './PracticeLoop';
 import QuizReview from './QuizReview';
+import RewardsStrip from './RewardsStrip';
 import { useStartQuiz } from './useStartQuiz';
 
 const WEAK_BELOW_PERCENT = 60;
@@ -108,6 +109,8 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
         </div>
 
       </div>
+
+      <RewardsStrip studentId={attempt.studentId ?? null} />
 
       <PracticeLoop active="Diagnose" />
 
