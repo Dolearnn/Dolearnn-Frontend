@@ -207,7 +207,8 @@ export default function DashboardShell({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background flex">
       {/* Sidebar — desktop */}
-      <aside className="hidden lg:flex lg:flex-col w-64 bg-brand text-white dark:bg-[hsl(215,40%,6%)] dark:border-r dark:border-white/5">
+      {/* Stays in place while the page scrolls; its own menu scrolls if it is taller than the screen. */}
+      <aside className="hidden lg:flex lg:flex-col lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto w-64 shrink-0 bg-brand text-white dark:bg-[hsl(215,40%,6%)] dark:border-r dark:border-white/5">
         <SidebarContents
           nav={nav}
           role={role}
