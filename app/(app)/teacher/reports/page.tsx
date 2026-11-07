@@ -140,7 +140,7 @@ export default function TeacherReportsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Monthly report"
-        description="Your verified teaching hours, payout estimate, attendance and cancellations."
+        description="Your verified sessions, expected pay, attendance and cancellations."
         action={
           <div className="w-48">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -169,9 +169,9 @@ export default function TeacherReportsPage() {
         />
         <StatTile
           icon={Clock}
-          label="Verified hours"
-          value={report.verifiedHours.toFixed(1)}
-          sub={`${report.verified.length} verified session${report.verified.length === 1 ? '' : 's'}`}
+          label="Verified sessions"
+          value={report.verified.length}
+          sub={`${report.verifiedHours.toFixed(1)} teaching hours`}
         />
         <StatTile
           icon={CheckCircle2}
@@ -225,7 +225,7 @@ export default function TeacherReportsPage() {
                   <th className="text-right px-4 py-3 font-medium">Sessions</th>
                   <th className="text-right px-4 py-3 font-medium">Verified</th>
                   <th className="text-right px-4 py-3 font-medium">
-                    Verified hours
+                    Hours taught
                   </th>
                 </tr>
               </thead>

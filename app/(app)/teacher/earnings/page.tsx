@@ -73,8 +73,6 @@ export default function TeacherEarningsPage() {
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const thisMonth = rows.filter((e) => e.date.startsWith(monthKey));
     const verifiedThisMonth = thisMonth.filter((e) => e.status === 'Verified');
-    const verifiedHours =
-      verifiedThisMonth.reduce((sum, e) => sum + e.durationMins, 0) / 60;
     const expected = verifiedThisMonth.reduce((sum, e) => sum + e.amount, 0);
     const pending = thisMonth
       .filter((e) => e.status !== 'Verified')
@@ -82,7 +80,7 @@ export default function TeacherEarningsPage() {
     const paid = payouts
       .filter((payout) => payout.status === 'Paid')
       .reduce((sum, payout) => sum + payout.amount, 0);
-    return { expected, pending, verifiedHours, paid };
+    return { expected, pending, verifiedSessions: verifiedThisMonth.length, paid };
   }, [rows, payouts]);
 
   if (isLoading) {
@@ -104,7 +102,7 @@ export default function TeacherEarningsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Earnings"
-        description="Monthly payout estimate based on verified teaching hours."
+        description="Your expected pay this month, based on verified sessions."
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -123,13 +121,13 @@ export default function TeacherEarningsPage() {
         />
         <StatTile
           icon={Clock}
-          label="Verified hours"
-          value={totals.verifiedHours.toFixed(1)}
-          sub="family + teacher confirmed"
+          label="Verified sessions"
+          value={totals.verifiedSessions}
+          sub="confirmed by you and the learner, note written"
         />
         <StatTile
           icon={TrendingUp}
-          label="Admin-set rate"
+          label="Your pay"
           value={`${naira(teacher.hourlyRate)} per session`}
         />
       </div>

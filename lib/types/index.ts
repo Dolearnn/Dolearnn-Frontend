@@ -27,7 +27,7 @@ export interface Child {
   id: string;
   parentId: string;
   fullName: string;
-  age: number;
+  age: number | null; // learner accounts may not have given an age
   grade: GradeLevel;
   gradeOther?: string;
   school?: string;

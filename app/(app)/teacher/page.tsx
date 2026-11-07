@@ -226,7 +226,7 @@ export default function TeacherHome() {
           icon={CalendarDays}
           label="Sessions taught"
           value={completed.length}
-          sub="from backend records"
+          sub="completed lessons"
         />
         <StatTile icon={Users} label="Active students" value={students.length} />
         <StatTile

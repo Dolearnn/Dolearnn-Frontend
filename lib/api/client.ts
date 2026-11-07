@@ -1,4 +1,4 @@
-import { getAuthToken } from '@/lib/api/auth-storage';
+import { clearAuthSession, getAuthToken } from '@/lib/api/auth-storage';
 
 const DEFAULT_API_URL =
   process.env.NODE_ENV === 'development'
@@ -15,6 +15,21 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
   }
+}
+
+// The backend's answer when a sign-in token is invalid, expired or revoked
+// (src/middleware/auth.ts). Other 401s, such as a wrong password at login, are
+// normal errors and must not sign anyone out.
+const EXPIRED_SESSION = /invalid or expired token/i;
+let signingOut = false;
+
+/** Clears the stored session and leaves for the home page (once). */
+function endExpiredSession() {
+  if (signingOut || typeof window === 'undefined') return;
+  signingOut = true;
+  clearAuthSession();
+  // A full page load also drops any cached private data from memory.
+  window.location.replace('/');
 }
 
 export async function apiFetch<T>(
@@ -44,10 +59,12 @@ export async function apiFetch<T>(
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new ApiError(
-      response.status,
-      data?.message ?? data?.error ?? 'Something went wrong',
-    );
+    const message: string = data?.message ?? data?.error ?? 'Something went wrong';
+    // Signed in, but the server no longer accepts the token: sign out.
+    if (response.status === 401 && token && EXPIRED_SESSION.test(message)) {
+      endExpiredSession();
+    }
+    throw new ApiError(response.status, message);
   }
 
   return data as T;

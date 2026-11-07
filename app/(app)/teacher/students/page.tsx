@@ -182,7 +182,8 @@ function StudentCard({
             {student.fullName}
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
-            {displayGrade(student)} - Age {student.age}
+            {displayGrade(student)}
+            {student.age ? ` - Age ${student.age}` : ''}
             {student.school ? ` - ${student.school}` : ''}
           </p>
           {avgRating !== null && (
