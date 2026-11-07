@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArrowRight, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
-import NextActions from '@/components/quiz/NextActions';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getQuizPracticeOverview, quizKeys } from '@/lib/api/quiz';
@@ -40,8 +39,6 @@ export default function StudentProgressPage() {
             <div className="border-b border-gray-200 p-5 dark:border-border sm:border-b-0 sm:border-r"><p className="text-3xl font-semibold text-gray-950 dark:text-foreground">{progress.summary.subjectsImproved}<span className="text-lg text-gray-400">/{progress.summary.subjectsCompared}</span></p><p className="mt-1 text-xs uppercase tracking-wide text-gray-500">Subjects improved</p></div>
             <div className="p-5"><p className="text-3xl font-semibold text-gray-950 dark:text-foreground">{progress.summary.topicsImproved}</p><p className="mt-1 text-xs uppercase tracking-wide text-gray-500">Topics up 10+ points</p></div>
           </section>
-
-          <NextActions studentId={null} actions={query.data?.actions ?? []} />
 
           <div className="space-y-6">
             {progress.subjects.map((subject) => {

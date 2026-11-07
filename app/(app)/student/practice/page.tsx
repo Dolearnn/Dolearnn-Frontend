@@ -5,21 +5,18 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { BookOpenCheck, ChevronRight, Target } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
-import NextActions from '@/components/quiz/NextActions';
 import PracticeLoop, { type PracticeLoopStep } from '@/components/quiz/PracticeLoop';
 import StartQuizDialog from '@/components/quiz/StartQuizDialog';
 import { useStartQuiz } from '@/components/quiz/useStartQuiz';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  getQuizCatalog,
   getQuizPracticeOverview,
   quizKeys,
   type QuizCatalogSubject,
   type QuizHistoryItem,
 } from '@/lib/api/quiz';
-import RewardsStrip from '@/components/quiz/RewardsStrip';
-import AchievementsPanel from '@/components/quiz/AchievementsPanel';
-import WeeklyLeaderboard from '@/components/quiz/WeeklyLeaderboard';
 import { scoreTone, toneClasses } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
 
@@ -64,6 +61,8 @@ function AttemptRow({ attempt, practicePath }: { attempt: QuizHistoryItem; pract
 
 export default function QuizHubPage() {
   const [examId, setExamId] = useState<string | null>(null);
+  // "plan": the exams and subjects in the learner's study plan; "all": the whole bank.
+  const [scope, setScope] = useState<'plan' | 'all'>('plan');
   const [chosenSubject, setChosenSubject] = useState<QuizCatalogSubject | null>(null);
   const practicePath = '/student/practice';
   const progressPath = '/student/progress';
@@ -77,7 +76,14 @@ export default function QuizHubPage() {
     staleTime: 30_000,
   });
 
-  const catalog = overviewQuery.data?.catalog;
+  const fullCatalogQuery = useQuery({
+    queryKey: quizKeys.catalog,
+    queryFn: getQuizCatalog,
+    enabled: scope === 'all',
+    staleTime: 5 * 60_000,
+  });
+
+  const catalog = scope === 'all' ? fullCatalogQuery.data ?? overviewQuery.data?.catalog : overviewQuery.data?.catalog;
   const activeExam = catalog?.exams.find((exam) => exam.id === examId) ?? catalog?.exams[0];
 
   const availableFor = (subjectId: string) =>
@@ -87,12 +93,15 @@ export default function QuizHubPage() {
 
   const subjects = useMemo(
     () =>
-      (catalog?.subjects ?? []).map((subject) => ({
-        subject,
-        available: availableFor(subject.id),
-      })),
+      (catalog?.subjects ?? [])
+        .map((subject) => ({
+          subject,
+          available: availableFor(subject.id),
+        }))
+        // The whole bank: only list subjects that have questions for this exam.
+        .filter((row) => scope === 'plan' || row.available > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [catalog, activeExam?.id],
+    [catalog, activeExam?.id, scope],
   );
 
   const weakTopics = (overviewQuery.data?.weak.topics ?? []).filter((topic) => topic.isWeak).slice(0, 5);
@@ -111,13 +120,9 @@ export default function QuizHubPage() {
         description="Start with an assessment, work on the gaps it finds, then return to measure the change."
       />
 
-      <RewardsStrip studentId={studentId} className="mb-6" />
+      {/* Practice is for choosing what to practise. Rewards, missions, badges and the
+          leaderboard live on the Today page; weak topics below carry their own missions. */}
       <PracticeLoop active={loopStep} />
-      <NextActions
-        studentId={studentId}
-        actions={overviewQuery.data?.actions ?? []}
-        isLoading={overviewQuery.isLoading}
-      />
 
       {(overviewQuery.data?.learningPlan?.unavailableExams.length ?? 0) > 0 && (
         <aside className="mb-8 border-l-4 border-amber-400 bg-amber-50 p-4 dark:bg-amber-500/10" aria-label="Examination content availability">
@@ -160,9 +165,33 @@ export default function QuizHubPage() {
                 {hasAttempts ? 'Choose another subject' : 'Choose your first assessment'}
               </h2>
             </div>
-            <p className="max-w-sm text-sm leading-6 text-gray-500 dark:text-muted-foreground">
-              Use all topics for a broad diagnosis, or select topics for a focused mission.
-            </p>
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              <div className="inline-flex rounded-full border border-gray-200 bg-white p-1 text-sm dark:border-border dark:bg-card" role="tablist" aria-label="Which subjects to show">
+                {([['plan', 'My plan'], ['all', 'All subjects']] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={scope === value}
+                    onClick={() => {
+                      setScope(value);
+                      setExamId(null);
+                    }}
+                    className={cn(
+                      'rounded-full px-4 py-1.5 font-medium transition-colors',
+                      scope === value
+                        ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
+                        : 'text-gray-600 hover:text-brand dark:text-muted-foreground',
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="max-w-sm text-xs leading-5 text-gray-500 dark:text-muted-foreground sm:text-right">
+                Use all topics for a broad diagnosis, or select topics for a focused mission.
+              </p>
+            </div>
           </div>
 
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -291,8 +320,6 @@ export default function QuizHubPage() {
         </section>
       )}
 
-      <AchievementsPanel studentId={studentId} className="mt-9" />
-      <WeeklyLeaderboard studentId={studentId} className="mt-9" />
 
       {chosenSubject && (
         <StartQuizDialog
