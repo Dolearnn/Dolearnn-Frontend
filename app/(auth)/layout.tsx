@@ -1,46 +1,107 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Check, Target } from 'lucide-react';
+import { Fraunces } from 'next/font/google';
+import { ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+
+// Same headline font as the landing page, so the two feel like one product.
+const serif = Fraunces({ subsets: ['latin'], variable: '--f-serif', display: 'swap', style: ['normal', 'italic'] });
+
+const loop = ['Assess', 'Diagnose', 'Practise', 'Get support', 'Reassess'];
+
+// Illustrative topic map, as on the landing page.
+const gaps = [
+  { topic: 'Probability', score: 31, tone: 'bg-red-400' },
+  { topic: 'Calculus', score: 43, tone: 'bg-amber-400' },
+  { topic: 'Trigonometry', score: 68, tone: 'bg-accent2-400' },
+  { topic: 'Algebra', score: 84, tone: 'bg-accent2-400' },
+];
+
+function Wordmark({ light = false }: { light?: boolean }) {
+  return (
+    <Link href="/" aria-label="DoLearnn home" className="inline-flex items-center gap-2.5">
+      <Image
+        src="/logo-mark.png"
+        alt=""
+        width={281}
+        height={265}
+        priority
+        className={light ? 'h-9 w-auto rounded-lg bg-white p-1' : 'h-7 w-auto'}
+      />
+      <span
+        className={`font-[family-name:var(--f-serif)] text-2xl font-semibold tracking-tight ${light ? 'text-white' : 'text-[#0b1f33] dark:text-white'}`}
+      >
+        Do<span className={`italic ${light ? 'text-accent2-400' : 'text-brand dark:text-accent2-400'}`}>Learnn</span>
+      </span>
+    </Link>
+  );
+}
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen grid lg:grid-cols-2 bg-[#f8f8f0] dark:bg-background">
-      <aside className="hidden lg:flex min-h-screen bg-[#173e32] text-white p-12 xl:p-16 flex-col justify-between">
-        <Link href="/" className="text-3xl font-bold tracking-tight">
-          do<span className="font-medium">learnn</span><span className="text-[#c1eb8c]">.</span>
-        </Link>
-        <div className="max-w-xl">
-          <p className="font-mono text-[10px] tracking-[0.13em] text-[#c1eb8c]">
-            PRACTICE → FEEDBACK → NEXT MOVE
-          </p>
-          <h2 className="mt-6 text-5xl xl:text-6xl font-bold leading-[1.02] tracking-[-0.045em]">
-            Your result should tell you what to do next.
+    <main className={`${serif.variable} min-h-screen grid lg:grid-cols-2 bg-[#f4f8fb] dark:bg-background`}>
+      <aside className="relative hidden lg:flex min-h-screen overflow-hidden bg-gradient-to-br from-[#022a49] to-brand text-white p-12 xl:p-16 flex-col justify-between">
+        {/* Soft mint glow, as on the landing page hero. */}
+        <div aria-hidden className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent2-400/20 blur-3xl" />
+
+        <Wordmark light />
+
+        <div className="relative max-w-xl">
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.14em] text-accent2-300">
+            {loop.map((step, index) => (
+              <li key={step} className="flex items-center gap-2">
+                {step}
+                {index < loop.length - 1 && <span aria-hidden className="text-white/40">→</span>}
+              </li>
+            ))}
+          </ol>
+          <h2 className="mt-6 font-[family-name:var(--f-serif)] text-5xl xl:text-6xl font-semibold leading-[1.04] tracking-[-0.03em]">
+            Know what to fix. <em className="text-accent2-300">Prove you fixed it.</em>
           </h2>
-          <p className="mt-6 max-w-lg text-sm leading-7 text-white/70">
-            Use the full practice bank, follow targeted missions and return to the same topics to see what changes.
+          <p className="mt-6 max-w-lg text-sm leading-7 text-white/75">
+            Practise exam-style questions, see the exact topics costing you marks, get the right support,
+            then reassess to see the change.
           </p>
-          <div className="mt-10 border border-white/15 bg-white/[0.04] p-6">
-            <div className="flex items-center justify-between border-b border-white/15 pb-4">
-              <span className="font-mono text-[10px] tracking-wider text-white/60">YOUR PRACTICE LOOP</span>
-              <Target className="h-5 w-5 text-[#c1eb8c]" />
-            </div>
-            <ol className="mt-5 space-y-4 text-sm">
-              <li className="flex items-center gap-3"><Check className="h-4 w-4 text-[#c1eb8c]" /> Answer exam-style questions</li>
-              <li className="flex items-center gap-3"><ArrowRight className="h-4 w-4 text-[#c1eb8c]" /> See which topics need attention</li>
-              <li className="flex items-center gap-3"><ArrowRight className="h-4 w-4 text-[#c1eb8c]" /> Start a focused learning mission</li>
-            </ol>
-          </div>
+
+          <figure className="mt-10 rounded-2xl border border-white/15 bg-white/[0.06] p-6 backdrop-blur-sm">
+            <figcaption className="flex items-center justify-between border-b border-white/15 pb-4 font-mono text-[10px] uppercase tracking-wider text-white/60">
+              Your topic map
+              <span className="rounded-full bg-accent2-400 px-2 py-0.5 text-[9px] font-semibold text-[#022a49]">Example</span>
+            </figcaption>
+            <ul className="mt-5 space-y-3 text-sm">
+              {gaps.map((row) => (
+                <li key={row.topic} className="grid grid-cols-[110px_1fr_40px] items-center gap-3">
+                  <span className="text-white/90">{row.topic}</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-white/10" aria-hidden>
+                    <span className={`block h-full rounded-full ${row.tone}`} style={{ width: `${row.score}%` }} />
+                  </span>
+                  <span className="text-right tabular-nums text-white/80">{row.score}%</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 rounded-lg bg-accent2-400/15 px-3 py-2 text-xs text-accent2-200">
+              Start with Probability: your next mission is built around it.
+            </p>
+          </figure>
         </div>
-        <Link href="/practice" className="inline-flex items-center gap-2 text-xs font-semibold underline underline-offset-4">
-          <ArrowLeft className="h-4 w-4" /> Return to the free warm-up
+
+        <Link
+          href="/practice"
+          className="relative inline-flex items-center gap-2 text-xs font-semibold text-white/90 underline underline-offset-4 hover:text-accent2-300"
+        >
+          <ArrowLeft className="h-4 w-4" /> Try a free warm-up first
         </Link>
       </aside>
+
       <section className="flex min-h-screen flex-col">
         <header className="flex w-full items-center justify-between px-6 py-4">
-          <Link href="/" className="text-xl font-bold text-brand dark:text-accent2-400 lg:hidden">
-            dolearnn.
-          </Link>
-          <Link href="/practice" className="hidden text-xs font-semibold text-brand underline underline-offset-4 lg:block dark:text-accent2-400">
+          <span className="lg:hidden">
+            <Wordmark />
+          </span>
+          <Link
+            href="/practice"
+            className="hidden text-xs font-semibold text-brand underline underline-offset-4 lg:block dark:text-accent2-400"
+          >
             Try practice first
           </Link>
           <ThemeToggle />

@@ -195,7 +195,7 @@ const team = [
 const faqs = [
   {
     q: "Who is DoLearnn built for?",
-    a: "SS2 and SS3 students and recent school leavers preparing for WAEC and UTME, starting in Lagos. We begin with Mathematics and selected high-demand subjects. Parents and schools can use DoLearnn to follow progress.",
+    a: "SS2 and SS3 students and recent school leavers preparing for WAEC and UTME. We begin with Mathematics and selected high-demand subjects. Parents and schools can use DoLearnn to follow progress.",
   },
   {
     q: "How is this different from a quiz app?",
@@ -232,7 +232,7 @@ export default function Home() {
         {/* ---------- HERO ---------- */}
         <section className={s.hero} aria-labelledby="hero-title">
           <div className={`${s.container} ${s.heroText}`}>
-            <p className={s.kicker}>For WAEC + UTME students · Lagos first</p>
+            <p className={s.kicker}>For WAEC + UTME students</p>
             <h1 id="hero-title">
               Diagnose the weakness.
               <br />
