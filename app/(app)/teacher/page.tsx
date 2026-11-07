@@ -27,6 +27,7 @@ import {
   teacherKeys,
 } from '@/lib/api/teacher';
 import type { Session } from '@/lib/types';
+import { naira } from '@/lib/money';
 
 function isSameDay(a: Date, b: Date) {
   return (
@@ -127,7 +128,7 @@ export default function TeacherHome() {
   const estimatedPay = me
     ? completed.reduce(
         (sum, session) =>
-          sum + (session.durationMins / 60) * (me.hourlyRate ?? 0),
+          sum + (me.hourlyRate ?? 0),
         0,
       )
     : 0;
@@ -230,8 +231,8 @@ export default function TeacherHome() {
         <StatTile
           icon={Wallet}
           label="Estimated pay"
-          value={`$${estimatedPay.toFixed(0)}`}
-          sub={`${me.hourlyRate}/hr`}
+          value={naira(estimatedPay)}
+          sub={`${naira(me.hourlyRate)} per session`}
         />
         <StatTile
           icon={Star}

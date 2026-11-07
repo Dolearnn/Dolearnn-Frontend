@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, DollarSign, TrendingUp, Wallet } from 'lucide-react';
+import { Banknote, Clock, TrendingUp, Wallet } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
@@ -18,6 +18,7 @@ import {
 } from '@/lib/api/payments';
 import { cn } from '@/lib/utils';
 import type { Session } from '@/lib/types';
+import { naira } from '@/lib/money';
 
 const EMPTY_SESSIONS: Session[] = [];
 const EMPTY_PAYOUTS: TeacherPayoutRecord[] = [];
@@ -57,7 +58,8 @@ export default function TeacherEarningsPage() {
           studentName: session.childName ?? 'Student',
           subject: session.subject,
           durationMins: session.durationMins,
-          amount: (session.durationMins / 60) * teacher.hourlyRate,
+          // Tutors are paid per session at their own rate.
+          amount: teacher.hourlyRate,
           status: verified ? 'Verified' : 'Pending confirmation',
         };
       })
@@ -107,14 +109,14 @@ export default function TeacherEarningsPage() {
         <StatTile
           icon={Wallet}
           label="Expected this month"
-          value={`$${totals.expected.toFixed(0)}`}
+          value={naira(totals.expected)}
           sub="verified sessions"
           accent
         />
         <StatTile
-          icon={DollarSign}
+          icon={Banknote}
           label="Paid out"
-          value={`$${totals.paid.toFixed(0)}`}
+          value={naira(totals.paid)}
           sub={`${payouts.length} payout record${payouts.length === 1 ? '' : 's'}`}
         />
         <StatTile
@@ -126,7 +128,7 @@ export default function TeacherEarningsPage() {
         <StatTile
           icon={TrendingUp}
           label="Admin-set rate"
-          value={`$${teacher.hourlyRate}/hr`}
+          value={`${naira(teacher.hourlyRate)} per session`}
         />
       </div>
 
@@ -176,7 +178,7 @@ export default function TeacherEarningsPage() {
                       {e.durationMins} min
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                      ${e.amount.toFixed(0)}
+                      {naira(e.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span
@@ -229,7 +231,7 @@ export default function TeacherEarningsPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900 dark:text-foreground">
-                    ${payout.amount.toFixed(0)}
+                    {naira(payout.amount)}
                   </p>
                   <span
                     className={cn(

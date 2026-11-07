@@ -19,6 +19,7 @@ import {
 } from '@/lib/api/teacher';
 import { cn } from '@/lib/utils';
 import type { DayOfWeek, TimeBlock } from '@/lib/types';
+import { naira } from '@/lib/money';
 
 const DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const BLOCKS: TimeBlock[] = ['Morning', 'Afternoon', 'Evening'];
@@ -198,8 +199,8 @@ export default function TeacherProfilePage() {
         <StatTile icon={Users} label="Subjects" value={me.subjects.length} />
         <StatTile
           icon={Star}
-          label="Hourly rate"
-          value={`$${me.hourlyRate}`}
+          label="Pay per session"
+          value={naira(me.hourlyRate)}
         />
       </div>
 
@@ -231,13 +232,13 @@ export default function TeacherProfilePage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="rate" className="text-xs">
-              Hourly rate (set by admin)
+              Pay per session (set by admin)
             </Label>
             <div
               id="rate"
               className="h-10 rounded-md border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-3 flex items-center text-sm font-semibold text-gray-900 dark:text-foreground"
             >
-              ${me.hourlyRate}/hr
+              {naira(me.hourlyRate)} per session
             </div>
           </div>
         </div>

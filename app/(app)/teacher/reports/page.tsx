@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  DollarSign,
+  Banknote,
   GraduationCap,
   Users,
 } from 'lucide-react';
@@ -27,6 +27,7 @@ import {
 } from '@/lib/api/teacher';
 import { cn } from '@/lib/utils';
 import { isSessionPayoutEligible, type Session } from '@/lib/types';
+import { naira } from '@/lib/money';
 
 const EMPTY_SESSIONS: Session[] = [];
 
@@ -79,7 +80,8 @@ export default function TeacherReportsPage() {
     const uniqueStudentIds = new Set(monthlySessions.map((s) => s.childId));
     const verifiedHours =
       verified.reduce((sum, session) => sum + session.durationMins, 0) / 60;
-    const expectedPayout = Math.round(verifiedHours * teacher.hourlyRate);
+    // Tutors are paid per verified session at their own rate.
+    const expectedPayout = Math.round(verified.length * teacher.hourlyRate);
     const confirmationRate =
       completed.length > 0
         ? Math.round((verified.length / completed.length) * 100)
@@ -159,10 +161,10 @@ export default function TeacherReportsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile
-          icon={DollarSign}
+          icon={Banknote}
           label="Expected payout"
-          value={`$${report.expectedPayout}`}
-          sub={`at $${teacher.hourlyRate}/hr`}
+          value={naira(report.expectedPayout)}
+          sub={`at ${naira(teacher.hourlyRate)} per session`}
           accent
         />
         <StatTile
@@ -203,9 +205,9 @@ export default function TeacherReportsPage() {
           sub="not payout eligible yet"
         />
         <StatTile
-          icon={DollarSign}
+          icon={Banknote}
           label="Rate"
-          value={`$${teacher.hourlyRate}/hr`}
+          value={`${naira(teacher.hourlyRate)} per session`}
           sub="set by admin"
         />
       </div>

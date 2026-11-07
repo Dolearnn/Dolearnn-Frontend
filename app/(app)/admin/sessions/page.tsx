@@ -56,6 +56,7 @@ import {
   type SessionBookingRequest,
   type SessionStatus,
 } from '@/lib/types';
+import { naira } from '@/lib/money';
 
 const TAB_ORDER: Array<'All' | SessionStatus> = [
   'All',
@@ -636,7 +637,7 @@ function SessionTable({
                   {session.durationMins} min
                 </td>
                 <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                  ${session.amount}
+                  {naira(session.amount)}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <StatusBadge status={session.status} />

@@ -51,6 +51,7 @@ import {
 } from '@/lib/api/payments';
 import { cn } from '@/lib/utils';
 import type { Child, Payment, StudentLessonPackage } from '@/lib/types';
+import { naira } from '@/lib/money';
 
 const EMPTY_PAYMENTS: Payment[] = [];
 const EMPTY_PARENTS: PaymentParent[] = [];
@@ -63,7 +64,7 @@ function currentMonth() {
 }
 
 function formatCurrency(value: number) {
-  return `$${value.toFixed(0)}`;
+  return naira(value);
 }
 
 export default function AdminPaymentsPage() {
@@ -323,7 +324,7 @@ export default function AdminPaymentsPage() {
                       {row.verifiedHours.toFixed(1)}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      ${row.hourlyRate}/hr
+                      {naira(row.hourlyRate)} per session
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
                       {formatCurrency(row.amount)}
@@ -639,7 +640,7 @@ function PackageRow({
           </p>
         </div>
         <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-          ${lessonPackage.amountPaid}
+          {naira(lessonPackage.amountPaid)}
         </p>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">

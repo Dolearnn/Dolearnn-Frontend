@@ -22,6 +22,7 @@ import {
 } from '@/lib/api/admin';
 import { displayGrade, displaySubject, type Child, type Session, type Teacher } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { naira } from '@/lib/money';
 
 const EMPTY_STUDENTS: Child[] = [];
 const EMPTY_SESSIONS: Session[] = [];
@@ -117,7 +118,7 @@ export default function AdminHome() {
         <StatTile
           icon={Wallet}
           label="Session value"
-          value={`$${sessionValue.toFixed(0)}`}
+          value={naira(sessionValue)}
           sub="completed classes"
         />
       </div>

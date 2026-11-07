@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   BookOpenCheck,
-  CircleDollarSign,
+  Banknote,
   GraduationCap,
   Repeat,
   TrendingUp,
@@ -13,6 +13,7 @@ import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import StatTile from '@/components/dashboard/StatTile';
 import { getImpactReport, impactKeys } from '@/lib/api/reports';
+import { naira } from '@/lib/money';
 
 const numberFormat = new Intl.NumberFormat();
 const n = (value: number) => numberFormat.format(value);
@@ -218,16 +219,16 @@ export default function AdminImpactPage() {
 
       <Section title="Revenue">
         <StatTile
-          icon={CircleDollarSign}
+          icon={Banknote}
           label="Total payments recorded"
-          value={n(revenue.totalRevenue)}
+          value={naira(revenue.totalRevenue)}
           sub={`${n(revenue.paymentCount)} payments`}
           accent
         />
         <StatTile
-          icon={CircleDollarSign}
+          icon={Banknote}
           label="Teacher payouts paid"
-          value={n(revenue.teacherPayoutsPaid)}
+          value={naira(revenue.teacherPayoutsPaid)}
         />
       </Section>
     </div>

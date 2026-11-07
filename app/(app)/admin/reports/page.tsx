@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  DollarSign,
+  Banknote,
   GraduationCap,
   TrendingUp,
   Users,
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { getAdminReport, reportKeys } from '@/lib/api/reports';
 import { cn } from '@/lib/utils';
+import { naira } from '@/lib/money';
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
@@ -92,9 +93,9 @@ export default function AdminReportsPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile
-          icon={DollarSign}
+          icon={Banknote}
           label="Revenue"
-          value={`$${report.summary.revenue.toFixed(0)}`}
+          value={naira(report.summary.revenue)}
           sub={`${report.summary.paymentCount} parent payment${report.summary.paymentCount === 1 ? '' : 's'}`}
           accent
         />
@@ -107,13 +108,13 @@ export default function AdminReportsPage() {
         <StatTile
           icon={GraduationCap}
           label="Teacher payout due"
-          value={`$${report.summary.teacherPayoutDue.toFixed(0)}`}
-          sub={`$${report.summary.paidTeacherPayout.toFixed(0)} paid`}
+          value={naira(report.summary.teacherPayoutDue)}
+          sub={`${naira(report.summary.paidTeacherPayout)} paid`}
         />
         <StatTile
           icon={TrendingUp}
           label="Gross margin"
-          value={`$${report.summary.margin.toFixed(0)}`}
+          value={naira(report.summary.margin)}
           sub="revenue minus teacher due"
         />
       </div>
@@ -185,10 +186,10 @@ export default function AdminReportsPage() {
                       {row.verifiedHours.toFixed(1)}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      ${row.hourlyRate}/hr
+                      {naira(row.hourlyRate)} per session
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                      ${row.amount.toFixed(0)}
+                      {naira(row.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span

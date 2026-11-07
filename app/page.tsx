@@ -105,9 +105,9 @@ const audiences = [
     id: "parents",
     label: "Parents",
     title: "Understand before you pay for help.",
-    text: "See where your child needs support, why a tutor is recommended and how their topic results change. Pro plans include a parent progress report.",
+    text: "Create your child's account and see where they need support, why a tutor is recommended and how their topic results change. Pro plans include a parent progress report.",
     href: "/register",
-    cta: "Start a family account",
+    cta: "Create your child's account",
   },
   {
     id: "schools",
@@ -211,7 +211,7 @@ const faqs = [
   },
   {
     q: "How does tutoring work?",
-    a: "₦10,000 per hour one-on-one, or ₦5,000 each for a shared hour, matched to your diagnosed gaps. Booking, payment and progress stay in the app.",
+    a: "₦10,000 per session, with a tutor matched to your diagnosed gaps. Request one straight from your results; Pro members get 10% off. Booking, payment and progress stay in the app.",
   },
 ];
 
@@ -400,7 +400,7 @@ export default function Home() {
                 </div>
               </dl>
               <small className={s.tileFoot}>
-                ₦10,000/hr 1-on-1 · ₦5,000 shared · tutors keep 80%
+                ₦10,000 per session · tutors keep 50%
               </small>
             </Reveal>
 
@@ -547,7 +547,7 @@ export default function Home() {
             </div>
             <div>
               <dt>Targeted tutoring</dt>
-              <dd>₦10,000/hour 1-on-1, or ₦5,000 each for a shared hour.</dd>
+              <dd>₦10,000 per session, focused on your weak topics.</dd>
             </div>
             <div>
               <dt>School packages</dt>
