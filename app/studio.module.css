@@ -1,16 +1,17 @@
 .landing {
-  --bg: #faf8f3;
-  --ink: #0c1424;
-  --night: #0a1230;
-  --blue: #2b5cff;
-  --lime: #c6f26b;
-  --green: #12a150;
+  /* Brand colours from the DoLearnn logo: navy #044272 (L) and mint #54CD98 (D). */
+  --bg: #f4f8fb;
+  --ink: #0b1f33;
+  --night: #022a49;
+  --blue: #044272;
+  --lime: #54cd98;
+  --green: #259265;
   --red: #e5484d;
-  --muted: #5b6577;
-  --line: rgba(12, 20, 36, 0.12);
+  --muted: #546579;
+  --line: rgba(11, 31, 51, 0.12);
   --card: #ffffff;
   --radius: 18px;
-  --shadow: 0 1px 2px rgba(12, 20, 36, 0.06), 0 24px 48px -24px rgba(12, 20, 36, 0.22);
+  --shadow: 0 1px 2px rgba(11, 31, 51, 0.06), 0 24px 48px -24px rgba(11, 31, 51, 0.22);
   background: var(--bg);
   color: var(--ink);
   font-size: 16px;
@@ -107,7 +108,7 @@
     backdrop-filter 0.3s;
 }
 .headerStuck {
-  background: rgba(250, 248, 243, 0.82);
+  background: rgba(244, 248, 251, 0.82);
   backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: 0 1px 0 var(--line);
 }
@@ -125,8 +126,20 @@
   letter-spacing: -0.03em;
   color: var(--ink);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
-.wordmark > span {
+/* The logo mark (navy L + mint D), shown beside the wordmark. */
+.wordmarkLogo {
+  flex: none;
+  width: 30px;
+  height: auto;
+}
+.wordmarkText {
+  white-space: nowrap;
+}
+.wordmarkText > span {
   font-style: italic;
   color: var(--blue);
 }
@@ -148,7 +161,7 @@
   transition: background-color 0.2s;
 }
 .desktopNav a:hover {
-  background: rgba(12, 20, 36, 0.07);
+  background: rgba(11, 31, 51, 0.07);
 }
 .navActions {
   display: flex;
@@ -172,7 +185,7 @@
   gap: 8px;
   padding: 10px 18px;
   border-radius: 999px;
-  background: var(--ink);
+  background: var(--blue);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -183,7 +196,7 @@
 }
 .navCta:hover,
 .primaryButton:hover {
-  background: var(--blue);
+  background: var(--night);
   transform: translateY(-1px);
 }
 .primaryButton {
@@ -261,8 +274,8 @@
   position: relative;
   padding-top: 40px;
   background:
-    radial-gradient(60% 50% at 50% 0%, rgba(43, 92, 255, 0.11), transparent 70%),
-    radial-gradient(40% 40% at 88% 18%, rgba(198, 242, 107, 0.4), transparent 70%);
+    radial-gradient(60% 50% at 50% 0%, rgba(4, 66, 114, 0.11), transparent 70%),
+    radial-gradient(40% 40% at 88% 18%, rgba(84, 205, 152, 0.4), transparent 70%);
 }
 .heroText {
   display: grid;
@@ -317,8 +330,8 @@
   border-radius: 22px;
   background: var(--card);
   box-shadow:
-    0 1px 2px rgba(12, 20, 36, 0.05),
-    0 40px 80px -30px rgba(43, 92, 255, 0.35);
+    0 1px 2px rgba(11, 31, 51, 0.05),
+    0 40px 80px -30px rgba(4, 66, 114, 0.35);
 }
 .demoBar {
   display: flex;
@@ -326,7 +339,7 @@
   gap: 7px;
   padding: 13px 18px;
   border-bottom: 1px solid var(--line);
-  background: #f4f2ec;
+  background: #edf3f7;
   font-family: var(--f-mono), monospace;
   font-size: 12px;
   color: var(--muted);
@@ -335,7 +348,7 @@
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: #d9d5c9;
+  background: #cad6e1;
 }
 .demoBar span {
   margin-left: 12px;
@@ -361,7 +374,7 @@
   gap: 4px;
   padding: 18px;
   border-right: 1px solid var(--line);
-  background: #fbfaf6;
+  background: #f8fbfd;
 }
 .demoTabs button {
   position: relative;
@@ -383,7 +396,7 @@
     color 0.2s;
 }
 .demoTabs button:hover {
-  background: rgba(12, 20, 36, 0.05);
+  background: rgba(11, 31, 51, 0.05);
 }
 .demoTabs button span {
   grid-row: 1 / 3;
@@ -407,7 +420,7 @@
 .demoTabs .tabOn {
   background: var(--card);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgba(12, 20, 36, 0.08), 0 8px 20px -12px rgba(12, 20, 36, 0.2);
+  box-shadow: 0 1px 2px rgba(11, 31, 51, 0.08), 0 8px 20px -12px rgba(11, 31, 51, 0.2);
 }
 .demoTabs .tabOn span {
   border-color: var(--blue);
@@ -535,7 +548,7 @@
   display: block;
   height: 8px;
   border-radius: 99px;
-  background: rgba(12, 20, 36, 0.08);
+  background: rgba(11, 31, 51, 0.08);
   overflow: hidden;
 }
 .rankBar i {
@@ -563,7 +576,7 @@
   align-items: center;
   padding: 12px 14px;
   border-radius: 10px;
-  background: rgba(198, 242, 107, 0.4);
+  background: rgba(84, 205, 152, 0.4);
   font-weight: 500;
   font-size: 14px;
 }
@@ -586,7 +599,7 @@
 }
 .bubbleAi {
   border-bottom-left-radius: 4px;
-  background: #f1efe8;
+  background: #e8eff5;
   animation-delay: 0.5s;
 }
 .bubbleAi b {
@@ -600,7 +613,7 @@
 }
 .bubbleAi em {
   color: var(--ink);
-  background: rgba(198, 242, 107, 0.7);
+  background: rgba(84, 205, 152, 0.7);
   padding: 0 4px;
   font-style: normal;
 }
@@ -791,7 +804,7 @@
   margin-top: 10px;
   padding: 18px;
   border-radius: 14px;
-  background: #f4f2ec;
+  background: #edf3f7;
 }
 .mission span,
 .mission small {
@@ -807,7 +820,7 @@
   flex: 1;
   height: 8px;
   border-radius: 99px;
-  background: rgba(12, 20, 36, 0.12);
+  background: rgba(11, 31, 51, 0.12);
 }
 .dots .dotOn {
   background: var(--blue);
@@ -866,7 +879,7 @@
   transform-origin: left;
 }
 .meter li:first-child i {
-  background: rgba(12, 20, 36, 0.3);
+  background: rgba(11, 31, 51, 0.3);
 }
 .meter em {
   color: var(--muted);
@@ -913,7 +926,7 @@
   background: #f3c969;
 }
 .heat i[data-level="3"] {
-  background: #69c98f;
+  background: #75d6a9;
 }
 
 /* ---------- Advantage ---------- */
@@ -970,7 +983,7 @@
   height: 26px;
   margin-right: 8px;
   border-radius: 99px;
-  background: rgba(12, 20, 36, 0.16);
+  background: rgba(11, 31, 51, 0.16);
   transform-origin: left;
   transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
 }
@@ -1342,8 +1355,8 @@
 .finalCta {
   padding-block: 128px;
   background:
-    radial-gradient(50% 70% at 20% 0%, rgba(43, 92, 255, 0.55), transparent 70%),
-    radial-gradient(40% 60% at 90% 100%, rgba(198, 242, 107, 0.25), transparent 70%),
+    radial-gradient(50% 70% at 20% 0%, rgba(4, 66, 114, 0.55), transparent 70%),
+    radial-gradient(40% 60% at 90% 100%, rgba(84, 205, 152, 0.25), transparent 70%),
     var(--night);
   color: #fff;
   text-align: center;
@@ -1373,7 +1386,7 @@
 }
 .ctaButton:hover {
   transform: translateY(-2px);
-  background: #d6f88a;
+  background: #9fe3c4;
 }
 .ctaLink {
   display: inline-flex;
@@ -1395,7 +1408,14 @@
 .footer .wordmark {
   color: #fff;
 }
-.footer .wordmark > span {
+/* On the dark footer the navy L needs a light tile behind it. */
+.footer .wordmarkLogo {
+  padding: 4px;
+  border-radius: 8px;
+  background: #fff;
+  width: 36px;
+}
+.footer .wordmarkText > span {
   color: var(--lime);
 }
 .footerTop {
@@ -1496,7 +1516,7 @@
   .mobileNav:not([hidden]) {
     display: grid;
     padding: 6px 24px 18px;
-    background: rgba(250, 248, 243, 0.98);
+    background: rgba(244, 248, 251, 0.98);
     border-top: 1px solid var(--line);
   }
   .mobileNav a {

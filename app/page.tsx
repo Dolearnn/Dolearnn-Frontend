@@ -706,8 +706,9 @@ export default function Home() {
         <div className={s.container}>
           <div className={s.footerTop}>
             <div>
-              <a href="#top" className={s.wordmark}>
-                Do<span>Learnn</span>
+              <a href="#top" className={s.wordmark} aria-label="DoLearnn, back to top">
+                <Image src="/logo-mark.png" alt="" width={281} height={265} className={s.wordmarkLogo} />
+                <span className={s.wordmarkText}>Do<span>Learnn</span></span>
               </a>
               <p>Powered by learning, driven by success.</p>
               <p className={s.location}>Lagos, Nigeria</p>
