@@ -45,7 +45,7 @@ function AttemptRow({ attempt, practicePath }: { attempt: QuizHistoryItem; pract
           {attempt.subject.name}
         </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground">
-          {attempt.mode === 'MOCK' ? 'Timed mock' : 'Practice'} · {attempt.totalQuestions} questions ·{' '}
+          {attempt.mode === 'MOCK' ? 'Exam mode' : 'Practice'} · {attempt.totalQuestions} questions ·{' '}
           {formatDate(attempt.startedAt)}
         </p>
       </div>

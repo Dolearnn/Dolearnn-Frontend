@@ -1,13 +1,15 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BadgeCheck, Clock, Minus, RotateCcw, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Clock, Minus, RotateCcw, ShieldCheck, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { QuizSubmittedView } from '@/lib/api/quiz';
 import { scoreMessage, scoreTone, toneClasses } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
 import DiagnosisCard from './DiagnosisCard';
+import { readExamRecord, type ExamRecord } from './ExamLockdown';
 import PracticeLoop from './PracticeLoop';
 import QuizReview from './QuizReview';
 import RetakeComparison from './RetakeComparison';
@@ -44,6 +46,36 @@ function ScoreRing({ percent }: { percent: number }) {
   );
 }
 
+// The exam-mode integrity record for this attempt, as kept on this device.
+function ExamIntegrity({ attemptId }: { attemptId: string }) {
+  const [record, setRecord] = useState<ExamRecord | null>(null);
+  useEffect(() => setRecord(readExamRecord(attemptId)), [attemptId]);
+  if (!record?.started) return null;
+
+  const counts = record.events.reduce<Record<string, number>>((acc, event) => {
+    acc[event.type] = (acc[event.type] ?? 0) + 1;
+    return acc;
+  }, {});
+  const labels: Record<string, string> = {
+    'left-tab': 'left the exam',
+    'left-fullscreen': 'left full screen',
+    reloaded: 'reloaded the page',
+  };
+  const detail = Object.entries(counts)
+    .map(([type, count]) => `${labels[type] ?? type} ×${count}`)
+    .join(', ');
+
+  return record.warnings === 0 ? (
+    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-accent2-100 px-3 py-1 text-xs font-medium text-brand dark:bg-accent2-500/20 dark:text-accent2-300">
+      <ShieldCheck className="h-3.5 w-3.5" /> No warnings during this exam
+    </p>
+  ) : (
+    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+      <AlertTriangle className="h-3.5 w-3.5" /> {record.warnings} {record.warnings === 1 ? 'warning' : 'warnings'}: {detail}
+    </p>
+  );
+}
+
 export default function QuizResults({ view }: { view: QuizSubmittedView }) {
   const { attempt, result, review } = view;
   const start = useStartQuiz();
@@ -67,7 +99,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5 sm:p-6">
         <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-          {attempt.mode === 'MOCK' ? 'Timed mock' : 'Practice'} · {attempt.subject.name}
+          {attempt.mode === 'MOCK' ? 'Exam mode' : 'Practice'} · {attempt.subject.name}
         </p>
         <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-5">
           <ScoreRing percent={result.scorePercent} />
@@ -78,6 +110,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
             <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
               {scoreMessage(result.scorePercent)}
             </p>
+            {attempt.mode === 'MOCK' && <ExamIntegrity attemptId={attempt.id} />}
             {result.comparison && (
               <p
                 className={cn(

@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Clock, Send } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Clock, Send } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
+import { ExamGate, ExamWarning, MAX_WARNINGS, exitFullscreen, useExamLockdown } from './ExamLockdown';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,6 +89,7 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
   const submit = useMutation({
     mutationFn: () => submitQuizAttempt(attempt.id, answers),
     onSuccess: (data) => {
+      exitFullscreen();
       try {
         window.localStorage.removeItem(storageKey);
       } catch {
@@ -135,6 +138,23 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
     submit.mutate();
   }, [remaining, restored, submit, toast]);
 
+  // Exam mode: timed mocks run full screen with anti-cheating measures.
+  const exam = attempt.mode === 'MOCK';
+  const onLimitReached = useCallback(() => {
+    toast({
+      title: 'Exam submitted',
+      description: `You reached ${MAX_WARNINGS} warnings, so your answers were submitted.`,
+      variant: 'destructive',
+    });
+    submit.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const lockdown = useExamLockdown({
+    attemptId: attempt.id,
+    active: exam && !submit.isSuccess,
+    onLimitReached,
+  });
+
   const select = (optionId: string) => {
     setAnswers((current) => ({ ...current, [question.id]: optionId }));
   };
@@ -165,15 +185,26 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
 
   if (!question) return null;
 
+  if (exam && restored && !lockdown.record.started) {
+    return (
+      <ExamGate
+        subject={attempt.subject.name}
+        questions={total}
+        minutes={attempt.timeLimitSecs ? Math.round(attempt.timeLimitSecs / 60) : null}
+        onStart={() => void lockdown.start()}
+      />
+    );
+  }
+
   const unanswered = total - answeredCount;
   const lowTime = remaining !== null && remaining <= 60;
 
-  return (
+  const content = (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-            {attempt.mode === 'MOCK' ? 'Timed mock' : 'Practice'}
+            {exam ? 'Exam mode' : 'Practice'}
           </p>
           <h1 className="text-lg font-bold text-brand dark:text-accent2-400 truncate">
             {attempt.subject.name}
@@ -334,7 +365,8 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
       </div>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        {/* Above the full-screen exam layer (z-60). */}
+        <AlertDialogContent className="z-[80]">
           <AlertDialogHeader>
             <AlertDialogTitle>Submit your quiz?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -353,6 +385,36 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+
+  if (!exam) return content;
+
+  // Exam mode covers the whole app: no sidebar, header or navigation.
+  return (
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#f4f8fb] dark:bg-background">
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-border dark:bg-card/90 sm:px-8">
+        <Logo size="sm" />
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+            lockdown.record.warnings > 0
+              ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
+              : 'bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400',
+          )}
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+          {lockdown.record.warnings}/{MAX_WARNINGS} warnings
+        </span>
+      </header>
+      <div className="px-4 py-6 sm:py-10">{content}</div>
+      {lockdown.notice && !submit.isPending && (
+        <ExamWarning
+          kind={lockdown.notice}
+          warnings={lockdown.record.warnings}
+          onResume={() => void lockdown.resume()}
+        />
+      )}
     </div>
   );
 }

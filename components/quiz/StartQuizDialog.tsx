@@ -25,7 +25,7 @@ const MIN_COUNT = 5;
 
 const modes: Array<{ value: QuizMode; title: string; hint: string }> = [
   { value: 'PRACTICE', title: 'Guided practice', hint: 'No timer. Diagnose the result and review explanations.' },
-  { value: 'MOCK', title: 'Timed mock', hint: '1 minute per question, like the real exam.' },
+  { value: 'MOCK', title: 'Exam mode', hint: 'Full screen and timed, 1 minute per question. Switching tabs is recorded.' },
 ];
 
 // Mount this with a `key` of the subject id so its choices reset for each subject.
