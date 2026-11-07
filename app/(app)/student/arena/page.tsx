@@ -279,9 +279,24 @@ export default function ArenaHubPage() {
             Your battles could not be loaded right now.
           </p>
         ) : battles.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 dark:border-border bg-white dark:bg-card p-8 text-center text-sm text-gray-500 dark:text-muted-foreground">
-            No battles yet. Start one and send the code to a friend.
-          </div>
+          // How a battle works, shown until the learner has played one.
+          <ol className="grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 text-sm sm:grid-cols-3 dark:border-border dark:bg-border">
+            {[
+              ['1', 'Start a battle', 'Pick a subject and how many questions. You play first.'],
+              ['2', 'Send the code', 'Share the 6-letter code with a friend, on WhatsApp or anywhere.'],
+              ['3', 'Compare scores', 'Your friend answers the same questions. Highest score wins, and both earn XP.'],
+            ].map(([step, title, text]) => (
+              <li key={step} className="flex gap-3 bg-white p-4 dark:bg-card">
+                <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent2-100 text-xs font-bold text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
+                  {step}
+                </span>
+                <span>
+                  <span className="block font-semibold text-gray-900 dark:text-foreground">{title}</span>
+                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-muted-foreground">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {battles.map((battle) => (

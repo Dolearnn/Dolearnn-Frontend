@@ -83,6 +83,24 @@ function IntakePageContent() {
         title="Get a tutor"
         description="Tell us what you need and we'll pair you with the right teacher."
       />
+      {/* What happens after the request, and what it costs. */}
+      <ol className="mb-5 grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 text-sm sm:grid-cols-3 dark:border-border dark:bg-border">
+        {[
+          ['1', 'Tell us your gaps', 'Subjects, weak topics and when you are free.'],
+          ['2', 'We match a tutor', 'A qualified tutor who sees your practice results.'],
+          ['3', 'Plan your lessons', '₦10,000 per 60-minute session. Pro members get 10% off.'],
+        ].map(([step, title, text]) => (
+          <li key={step} className="flex gap-3 bg-white p-4 dark:bg-card">
+            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-brand text-xs font-bold text-white dark:bg-accent2-500 dark:text-brand">
+              {step}
+            </span>
+            <span>
+              <span className="block font-semibold text-gray-900 dark:text-foreground">{title}</span>
+              <span className="mt-0.5 block text-xs text-gray-500 dark:text-muted-foreground">{text}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
       {prefill && (
         <div className="mb-4 flex items-start gap-3 rounded-xl border border-accent2-200 bg-accent2-50 dark:border-accent2-500/30 dark:bg-accent2-500/10 px-4 py-3">
           <ListChecks className="w-4 h-4 mt-0.5 shrink-0 text-brand dark:text-accent2-400" />

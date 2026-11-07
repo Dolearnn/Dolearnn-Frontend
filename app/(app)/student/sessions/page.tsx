@@ -479,25 +479,39 @@ function CalendarRequestPanel({
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <p className="font-semibold text-gray-900 dark:text-foreground">
-            Plan paid sessions
+            Plan your lessons
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-            Pick a consistent weekly 60-minute slot from the hours already paid.
+            Pick a regular weekly 60-minute slot for the sessions you have paid for.
           </p>
         </div>
         <span className="text-xs font-medium rounded-full bg-brand/10 text-brand px-3 py-1">
-          {availableSessions} hour(s) available
+          {availableSessions} {availableSessions === 1 ? 'session' : 'sessions'} available
         </span>
       </div>
 
       {assignments.length === 0 ? (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
-          Admin needs to match this student by subject before sessions can be
-          planned.
-        </p>
+        child.intake ? (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
+            We are matching you with a tutor for your subjects. Once you are matched, you can plan
+            your lessons here.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3 rounded-xl border border-accent2-200 bg-accent2-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-accent2-500/30 dark:bg-accent2-500/10">
+            <p className="text-sm text-gray-700 dark:text-foreground/90">
+              Tell us what you need help with and we will match you with a tutor.
+            </p>
+            <Link
+              href="/student/tutor"
+              className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+            >
+              Request a tutor
+            </Link>
+          </div>
+        )
       ) : availability.length === 0 ? (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
-          Update this student&apos;s availability before picking calendar days.
+          Add your available days and times in your tutor request before picking lesson days.
         </p>
       ) : (
         <div className="grid lg:grid-cols-5 gap-3">

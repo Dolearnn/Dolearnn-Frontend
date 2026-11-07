@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, CreditCard, Plus, Receipt } from 'lucide-react';
+import { CheckCircle2, CreditCard, Receipt } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
@@ -59,23 +60,22 @@ export default function FamilyPaymentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Payments"
-        description="Your plan, receipts and billing history in one place."
-        action={
-          <Button className="bg-brand hover:bg-brand-600 rounded-full" disabled>
-            <Plus className="w-4 h-4 mr-2" />
-            Recorded by admin
-          </Button>
-        }
+        description="Your tutoring sessions, receipts and billing history in one place."
       />
 
       {activePlan ? (
         <PlanCard plan={activePlan} />
       ) : (
-        <div className="bg-accent2-50 border border-accent2-100 rounded-3xl p-6 text-center">
-          <p className="text-sm font-semibold text-brand">No active plan yet</p>
-          <p className="text-xs text-gray-600 dark:text-muted-foreground mt-1">
-            Admin will record your first payment after confirmation.
-          </p>
+        <div className="flex flex-col gap-4 rounded-3xl border border-accent2-100 bg-accent2-50 p-6 sm:flex-row sm:items-center sm:justify-between dark:border-accent2-500/30 dark:bg-accent2-500/10">
+          <div>
+            <p className="text-sm font-semibold text-brand dark:text-accent2-400">No tutoring sessions paid for yet</p>
+            <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
+              Tutoring is ₦10,000 per session. Request a tutor and we will confirm your lessons and how to pay.
+            </p>
+          </div>
+          <Button asChild className="shrink-0 rounded-full">
+            <Link href="/student/tutor">Request a tutor</Link>
+          </Button>
         </div>
       )}
 
