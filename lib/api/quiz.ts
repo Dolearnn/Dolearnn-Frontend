@@ -60,7 +60,10 @@ export interface QuizAttemptSummary {
   id: string;
   mode: QuizMode;
   status: QuizAttemptStatus;
+  // For a mixed exam, the name lists every subject ("English + Physics").
   subject: { id: string; name: string };
+  // Every subject the attempt covers, in order (one entry unless mixed).
+  subjects?: Array<{ id: string; name: string }>;
   examId: string | null;
   studentId: string | null;
   totalQuestions: number;
@@ -119,6 +122,16 @@ export interface QuizResult {
   comparison: QuizComparison | null;
   // Only on a retake: the like-for-like comparison with the original attempt.
   retake?: QuizRetakeComparison | null;
+  // Only on a mixed exam: the score in each subject.
+  subjects?: QuizSubjectScore[] | null;
+}
+
+export interface QuizSubjectScore {
+  id: string;
+  name: string;
+  attempted: number;
+  correct: number;
+  scorePercent: number;
 }
 
 export interface QuizInProgressView {
@@ -149,6 +162,7 @@ export interface QuizHistoryItem {
   startedAt: string;
   submittedAt: string | null;
   subject: { id: string; name: string };
+  subjects?: Array<{ id: string; name: string }>;
 }
 
 export interface QuizWeakTopic {
@@ -230,7 +244,9 @@ export interface QuizPracticeOverview {
 }
 
 export interface StartQuizInput {
-  subjectId: string;
+  subjectId?: string;
+  // A mixed exam: several subjects, questions shared evenly and grouped by subject.
+  subjectIds?: string[];
   examId?: string;
   topicIds?: string[];
   count: number;

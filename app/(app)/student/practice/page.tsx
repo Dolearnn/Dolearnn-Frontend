@@ -3,9 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { BookOpenCheck, ChevronRight, Target } from 'lucide-react';
+import { BookOpenCheck, ChevronRight, Layers, Target } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import PracticeLoop, { type PracticeLoopStep } from '@/components/quiz/PracticeLoop';
+import MixedQuizDialog from '@/components/quiz/MixedQuizDialog';
 import StartQuizDialog from '@/components/quiz/StartQuizDialog';
 import { useStartQuiz } from '@/components/quiz/useStartQuiz';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,7 @@ export default function QuizHubPage() {
   // "plan": the exams and subjects in the learner's study plan; "all": the whole bank.
   const [scope, setScope] = useState<'plan' | 'all'>('plan');
   const [chosenSubject, setChosenSubject] = useState<QuizCatalogSubject | null>(null);
+  const [mixing, setMixing] = useState(false);
   const practicePath = '/student/practice';
   const progressPath = '/student/progress';
   const start = useStartQuiz();
@@ -189,7 +191,7 @@ export default function QuizHubPage() {
                 ))}
               </div>
               <p className="max-w-sm text-xs leading-5 text-gray-500 dark:text-muted-foreground sm:text-right">
-                Use all topics for a broad diagnosis, or select topics for a focused mission.
+                Use all topics for a broad diagnosis, select topics for a focused mission, or mix subjects for a full exam.
               </p>
             </div>
           </div>
@@ -223,6 +225,25 @@ export default function QuizHubPage() {
               </p>
             )}
           </div>
+
+          {subjects.filter((row) => row.available > 0).length >= 2 && (
+            <button
+              type="button"
+              onClick={() => setMixing(true)}
+              className="group mb-4 flex w-full items-center gap-4 border border-brand/15 bg-gradient-to-r from-accent2-50 to-white p-4 text-left transition-colors hover:border-brand/40 dark:border-border dark:from-accent2-500/10 dark:to-card"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center bg-brand text-white dark:bg-accent2-500 dark:text-brand">
+                <Layers className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-gray-900 dark:text-foreground">Mix subjects</span>
+                <span className="block text-sm text-gray-600 dark:text-muted-foreground">
+                  Build one {activeExam?.name ?? 'exam'} from several subjects and topics, like the real paper.
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 transition-colors group-hover:text-brand" />
+            </button>
+          )}
 
           <div className="grid grid-cols-1 border-y border-gray-200 dark:border-border sm:grid-cols-2 lg:grid-cols-3">
             {subjects.map(({ subject, available }) => {
@@ -320,6 +341,16 @@ export default function QuizHubPage() {
         </section>
       )}
 
+
+      {mixing && (
+        <MixedQuizDialog
+          key={activeExam?.id ?? 'any'}
+          subjects={subjects}
+          exam={activeExam}
+          studentId={studentId}
+          onClose={() => setMixing(false)}
+        />
+      )}
 
       {chosenSubject && (
         <StartQuizDialog

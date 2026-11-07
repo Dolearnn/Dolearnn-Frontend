@@ -145,10 +145,26 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
   const catalogQuery = useQuery({
     queryKey: quizKeys.catalog,
     queryFn: getQuizCatalog,
-    enabled: Boolean(attempt.examId),
+    enabled: Boolean(attempt.examId) || (attempt.subjects?.length ?? 0) > 1,
     staleTime: 5 * 60_000,
   });
   const examName = catalogQuery.data?.exams.find((item) => item.id === attempt.examId)?.name ?? null;
+
+  // A mixed exam is laid out in subject sections; tabs jump to each one.
+  const sections = useMemo(() => {
+    const subjects = attempt.subjects ?? [];
+    if (subjects.length <= 1 || !catalogQuery.data) return [];
+    const subjectOfTopic = new Map(
+      catalogQuery.data.subjects.flatMap((subject) => subject.topics.map((topic) => [topic.id, subject.id] as const)),
+    );
+    return subjects
+      .map((subject) => {
+        const indexes = questions.flatMap((item, i) => (subjectOfTopic.get(item.topicId) === subject.id ? [i] : []));
+        return { ...subject, first: indexes[0] ?? -1, last: indexes[indexes.length - 1] ?? -1, count: indexes.length };
+      })
+      .filter((section) => section.count > 0);
+  }, [attempt.subjects, catalogQuery.data, questions]);
+  const currentSection = sections.find((section) => index >= section.first && index <= section.last);
   const onLimitReached = useCallback(() => {
     toast({
       title: 'Exam submitted',
@@ -249,9 +265,40 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
         </span>
       </div>
 
+      {sections.length > 1 && (
+        <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Subjects">
+          {sections.map((section) => {
+            const active = section.id === currentSection?.id;
+            const done = questions
+              .slice(section.first, section.last + 1)
+              .filter((item) => answers[item.id] !== undefined).length;
+            return (
+              <button
+                key={section.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setIndex(section.first)}
+                className={cn(
+                  'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
+                    : 'border border-gray-200 bg-white text-gray-700 hover:border-brand/50 dark:border-border dark:bg-card dark:text-foreground',
+                )}
+              >
+                {section.name}{' '}
+                <span className={cn('tabular-nums', active ? 'opacity-80' : 'text-gray-400 dark:text-muted-foreground')}>
+                  {done}/{section.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5 sm:p-6">
         <p className="text-xs font-medium text-gray-500 dark:text-muted-foreground mb-2">
-          Question {index + 1} of {total}
+          {currentSection ? `${currentSection.name} · ` : ''}Question {index + 1} of {total}
         </p>
         <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-foreground whitespace-pre-line">
           {question.text}

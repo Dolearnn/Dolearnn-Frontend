@@ -89,8 +89,10 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
     (a, b) => a.accuracyPercent - b.accuracyPercent,
   );
 
+  const mixed = (attempt.subjects?.length ?? 0) > 1;
   const base = {
     subjectId: attempt.subject.id,
+    subjectIds: mixed ? attempt.subjects!.map((subject) => subject.id) : undefined,
     examId: attempt.examId ?? undefined,
     studentId: attempt.studentId ?? undefined,
   };
@@ -142,6 +144,18 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
           </div>
         </div>
 
+        {result.subjects && result.subjects.length > 1 && (
+          <ul className="mt-5 grid gap-2 border-t border-gray-100 pt-4 dark:border-border sm:grid-cols-2" aria-label="Score by subject">
+            {result.subjects.map((subject) => (
+              <li key={subject.id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-white/5">
+                <span className="truncate text-sm font-medium text-gray-900 dark:text-foreground">{subject.name}</span>
+                <span className={cn('shrink-0 text-sm font-semibold tabular-nums', toneClasses[scoreTone(subject.scorePercent)].text)}>
+                  {subject.correct}/{subject.attempted} · {subject.scorePercent}%
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {result.retake && <RetakeComparison retake={result.retake} />}
@@ -237,7 +251,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
               })
             }
           >
-            <RotateCcw className="mr-2 h-4 w-4" /> Reassess this subject
+            <RotateCcw className="mr-2 h-4 w-4" /> {mixed ? 'Take this mix again' : 'Reassess this subject'}
           </Button>
           <Button asChild variant="ghost" className="h-10 px-4 text-white hover:bg-white/10 hover:text-white dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand">
             <Link href={practicePath}>Back to practice</Link>
