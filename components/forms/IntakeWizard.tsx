@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState, type MouseEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -208,15 +208,15 @@ export default function IntakeWizard({
       queryClient.invalidateQueries({ queryKey: familyKeys.students });
       queryClient.invalidateQueries({ queryKey: familyKeys.student(childId) });
       toast({
-        title: 'Intake submitted',
-        description: 'Admin can now review this student for matching.',
+        title: 'Tutor request sent',
+        description: 'We will match you with a tutor and let you know.',
       });
       router.push('/student/sessions');
       router.refresh();
     },
     onError: (error) => {
       toast({
-        title: 'Could not submit intake',
+        title: 'Could not send your request',
         description:
           error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive',
@@ -253,11 +253,24 @@ export default function IntakeWizard({
     mutation.mutate(intake);
   };
 
+  // The request is only sent by a deliberate press on the Send button. A click
+  // that started elsewhere (a dropdown option closing over the button, or the
+  // Next button turning into Send under the pointer) must not send it.
+  const sendPressStarted = useRef(false);
+  const handleSendClick = (event: MouseEvent<HTMLButtonElement>) => {
+    const fromKeyboard = event.detail === 0;
+    const deliberate = fromKeyboard || sendPressStarted.current;
+    sendPressStarted.current = false;
+    if (!deliberate) return;
+    void form.handleSubmit(onSubmit)();
+  };
+
   return (
     <div className="space-y-6">
       <Stepper current={step} />
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Never submits on its own (e.g. Enter in a field); only the Send button sends. */}
+        <form onSubmit={(event) => event.preventDefault()} className="space-y-6">
           {step === 0 && <StepA form={form} />}
           {step === 1 && <StepB form={form} />}
           {step === 2 && <StepAvailability form={form} />}
@@ -273,6 +286,7 @@ export default function IntakeWizard({
             </Button>
             {step < steps.length - 1 ? (
               <Button
+                key="next"
                 type="button"
                 onClick={next}
                 className="bg-brand hover:bg-brand-600 rounded-full"
@@ -281,11 +295,16 @@ export default function IntakeWizard({
               </Button>
             ) : (
               <Button
-                type="submit"
+                key="send"
+                type="button"
                 disabled={mutation.isPending}
+                onPointerDown={() => {
+                  sendPressStarted.current = true;
+                }}
+                onClick={handleSendClick}
                 className="bg-brand hover:bg-brand-600 rounded-full"
               >
-                {mutation.isPending ? 'Submitting...' : 'Submit intake'}
+                {mutation.isPending ? 'Sending...' : 'Send tutor request'}
               </Button>
             )}
           </div>
