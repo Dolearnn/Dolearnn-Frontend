@@ -6,12 +6,12 @@ const apiOrigin = (() => {
       process.env.NEXT_PUBLIC_API_URL ||
         (process.env.NODE_ENV === 'development'
           ? 'http://localhost:4000/api'
-          : 'https://dolearnn-backend.onrender.com/api'),
+          : 'https://dolearnn-backend-oi4r.onrender.com/api'),
     ).origin;
   } catch {
     return process.env.NODE_ENV === 'development'
       ? 'http://localhost:4000'
-      : 'https://dolearnn-backend.onrender.com';
+      : 'https://dolearnn-backend-oi4r.onrender.com';
   }
 })();
 

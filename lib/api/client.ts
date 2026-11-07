@@ -3,7 +3,7 @@ import { getAuthToken } from '@/lib/api/auth-storage';
 const DEFAULT_API_URL =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:4000/api'
-    : 'https://dolearnn-backend.onrender.com/api';
+    : 'https://dolearnn-backend-oi4r.onrender.com/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || DEFAULT_API_URL;
 
