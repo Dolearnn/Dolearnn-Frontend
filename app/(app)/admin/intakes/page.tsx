@@ -68,21 +68,25 @@ import {
   type Teacher,
   type TimeBlock,
 } from '@/lib/types';
+import {
+  BUDGET_TIERS,
+  DEFAULT_BUDGET,
+  GRADE_LEVELS,
+  LEARNING_GOALS as CATALOG_LEARNING_GOALS,
+  TUTORING_SUBJECTS,
+} from '@/lib/catalog';
+import { naira } from '@/lib/money';
 
 type Filter = 'All' | 'Pending' | 'Matched';
-const GRADES: GradeLevel[] = ['Primary', 'JSS', 'SSS', 'College Year 1', 'College Year 2', 'College Year 3', 'College Year 4', 'Other'];
-const SUBJECTS = ['Maths', 'English', 'Science', 'Coding', 'Music', 'French', 'SAT', 'Other'];
+// Option lists come from lib/catalog so every form offers the same choices.
+const GRADES: GradeLevel[] = GRADE_LEVELS;
+const SUBJECTS: readonly string[] = TUTORING_SUBJECTS;
 const DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TIME_BLOCKS: TimeBlock[] = ['Morning', 'Afternoon', 'Evening'];
-const LEARNING_GOALS: LearningGoal[] = [
-  'Exam prep',
-  'Catch up with school',
-  'Learn a new skill',
-  'General improvement',
-];
+const LEARNING_GOALS: LearningGoal[] = CATALOG_LEARNING_GOALS;
 const CURRENT_LEVELS: CurrentLevel[] = ['Struggling', 'Average', 'Above average'];
 const GENDER_PREFS: GenderPreference[] = ['No preference', 'Female', 'Male'];
-const BUDGETS: BudgetTier[] = ['Under $20', '$20–$35', '$35–$50', '$50+'];
+const BUDGETS: BudgetTier[] = BUDGET_TIERS;
 const TIMEZONES = [
   'UTC',
   'Africa/Lagos',
@@ -115,8 +119,8 @@ type StudentForm = {
 const emptyStudentForm: StudentForm = {
   parentId: '',
   fullName: '',
-  age: '10',
-  grade: 'Primary',
+  age: '16',
+  grade: 'SS3',
   gradeOther: '',
   school: '',
   subjects: [],
@@ -129,7 +133,7 @@ const emptyStudentForm: StudentForm = {
   preferredSchedule: {},
   timezone: 'Africa/Lagos',
   sessionsPerWeek: '1',
-  budget: '$20–$35',
+  budget: DEFAULT_BUDGET,
 };
 
 export default function AdminIntakesPage() {
@@ -1115,7 +1119,7 @@ function SuggestionRow({
           {teacher.name}
         </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-          Star {teacher.rating.toFixed(1)} - ${teacher.hourlyRate}/hr -{' '}
+          Star {teacher.rating.toFixed(1)} - {naira(teacher.hourlyRate)} per session -{' '}
           {teacher.totalSessions} sessions
         </p>
       </div>

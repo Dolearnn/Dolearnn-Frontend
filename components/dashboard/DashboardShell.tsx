@@ -59,23 +59,16 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-const familyNav: NavItem[] = [
-  { label: 'Home', href: '/family', icon: Home },
-  { label: 'Practice', href: '/family/quiz', icon: ListChecks },
-  { label: 'Arena', href: '/family/arena', icon: Swords },
-  { label: 'Progress', href: '/family/progress', icon: TrendingUp },
-  { label: 'Learning', href: '/family/learning', icon: BookOpen },
-  { label: 'My Children', href: '/family/children', icon: Users },
-  { label: 'Sessions', href: '/family/sessions', icon: Calendar },
-  { label: 'Payments', href: '/family/payments', icon: CreditCard },
-  { label: 'Reports', href: '/family/reports', icon: ChartNoAxesColumnIncreasing },
-  { label: 'Notifications', href: '/family/notifications', icon: Bell },
-];
-
+// One account type for learners: practice, Arena, tutoring and payments together.
 const studentNav: NavItem[] = [
   { label: 'Today', href: '/student', icon: Home },
   { label: 'Practice', href: '/student/practice', icon: ListChecks },
+  { label: 'Arena', href: '/student/arena', icon: Swords },
   { label: 'Progress', href: '/student/progress', icon: TrendingUp },
+  { label: 'Get a tutor', href: '/student/tutor', icon: GraduationCap },
+  { label: 'Sessions', href: '/student/sessions', icon: Calendar },
+  { label: 'Payments', href: '/student/payments', icon: CreditCard },
+  { label: 'Reports', href: '/student/reports', icon: ChartNoAxesColumnIncreasing },
   { label: 'Notifications', href: '/student/notifications', icon: Bell },
 ];
 
@@ -104,13 +97,12 @@ const adminNav: NavItem[] = [
   { label: 'Notifications', href: '/admin/notifications', icon: Bell },
 ];
 
-type Role = 'student' | 'family' | 'teacher' | 'admin';
+type Role = 'student' | 'teacher' | 'admin';
 
 function roleFromPath(path: string): Role {
   if (path.startsWith('/teacher')) return 'teacher';
   if (path.startsWith('/admin')) return 'admin';
-  if (path.startsWith('/student')) return 'student';
-  return 'family';
+  return 'student';
 }
 
 function navForRole(role: Role): NavItem[] {
@@ -119,10 +111,8 @@ function navForRole(role: Role): NavItem[] {
       return teacherNav;
     case 'admin':
       return adminNav;
-    case 'student':
-      return studentNav;
     default:
-      return familyNav;
+      return studentNav;
   }
 }
 
@@ -130,13 +120,12 @@ function roleForAuthUser(user: AuthUser | null): Role | null {
   if (!user) return null;
   if (user.role === 'ADMIN') return 'admin';
   if (user.role === 'TEACHER') return 'teacher';
-  if (user.role === 'STUDENT') return 'student';
-  return 'family';
+  // Learners, and older parent accounts, share the learner workspace.
+  return 'student';
 }
 
 const roleLabel: Record<Role, string> = {
   student: 'Learner',
-  family: 'Family',
   teacher: 'Teacher',
   admin: 'Admin',
 };

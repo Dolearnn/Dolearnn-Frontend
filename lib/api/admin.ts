@@ -190,13 +190,10 @@ const genderToApi: Record<GenderPreference, string> = {
 };
 
 const gradeToApi: Record<GradeLevel, string> = {
-  Primary: 'PRIMARY',
-  JSS: 'JSS',
-  SSS: 'SSS',
-  'College Year 1': 'COLLEGE_YEAR_1',
-  'College Year 2': 'COLLEGE_YEAR_2',
-  'College Year 3': 'COLLEGE_YEAR_3',
-  'College Year 4': 'COLLEGE_YEAR_4',
+  SS1: 'SS1',
+  SS2: 'SS2',
+  SS3: 'SS3',
+  'School leaver': 'SCHOOL_LEAVER',
   Other: 'OTHER',
 };
 

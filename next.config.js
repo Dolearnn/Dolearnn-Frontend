@@ -16,8 +16,8 @@ const apiOrigin = (() => {
 })();
 
 const csp = [
-  "default-src 'self'",
-  "base-uri 'self'",
+  "default-src 'self'",   
+  "base-uri 'self'",  
   "frame-ancestors 'none'",
   "object-src 'none'",
   "img-src 'self' data: blob: https:",
@@ -32,6 +32,19 @@ const csp = [
 const nextConfig = {
   images: { unoptimized: true },
   outputFileTracingRoot: path.join(__dirname),
+  // The parent workspace (/family) merged into the single learner account.
+  // Old links (bookmarks, emails, shared Arena codes) land on the same page there.
+  async redirects() {
+    return [
+      { source: '/family/quiz/:path*', destination: '/student/practice/:path*', permanent: true },
+      { source: '/family/quiz', destination: '/student/practice', permanent: true },
+      { source: '/family/children/:path*', destination: '/student/tutor', permanent: true },
+      { source: '/family/children', destination: '/student/tutor', permanent: true },
+      { source: '/family/learning', destination: '/student', permanent: true },
+      { source: '/family/:path*', destination: '/student/:path*', permanent: true },
+      { source: '/family', destination: '/student', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

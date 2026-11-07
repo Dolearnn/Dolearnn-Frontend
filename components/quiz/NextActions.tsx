@@ -131,8 +131,8 @@ export default function NextActions({
 }) {
   const pathname = usePathname();
   const studentWorkspace = pathname.startsWith('/student');
-  const practicePath = studentWorkspace ? '/student/practice' : '/family/quiz';
-  const progressPath = studentWorkspace ? '/student/progress' : '/family/progress';
+  const practicePath = '/student/practice';
+  const progressPath = '/student/progress';
   const query = useQuery({
     queryKey: quizKeys.nextActions(studentId),
     queryFn: () => getQuizNextActions(studentId),

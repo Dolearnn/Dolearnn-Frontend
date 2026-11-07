@@ -22,16 +22,8 @@ const STAGES: Array<{ value: LearnerStage; label: string }> = [
   { value: 'OTHER', label: 'Another stage' },
 ];
 
-const COMMON_EXAMS = [
-  'WAEC',
-  'NECO',
-  'JAMB UTME',
-  'NABTEB',
-  'GCE',
-  'Cambridge IGCSE',
-  'SAT',
-  'IELTS',
-];
+// Nigerian senior-secondary exams only (WAEC + JAMB UTME first).
+const COMMON_EXAMS = ['WAEC', 'JAMB UTME', 'NECO', 'GCE', 'NABTEB'];
 
 export default function StudentOnboardingPage() {
   const router = useRouter();

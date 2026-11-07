@@ -10,6 +10,7 @@ import { familyKeys, listFamilySessions } from '@/lib/api/family';
 import { listFamilyPayments, paymentKeys } from '@/lib/api/payments';
 import { cn } from '@/lib/utils';
 import type { Payment, Session } from '@/lib/types';
+import { naira } from '@/lib/money';
 
 const EMPTY_PAYMENTS: Payment[] = [];
 const EMPTY_SESSIONS: Session[] = [];
@@ -82,7 +83,7 @@ export default function FamilyPaymentsPage() {
         <SummaryTile
           icon={CreditCard}
           label="Lifetime spent"
-          value={`$${totalSpent.toFixed(0)}`}
+          value={naira(totalSpent)}
         />
         <SummaryTile
           icon={CheckCircle2}
@@ -154,7 +155,7 @@ function PlanCard({ plan }: { plan: Payment }) {
         <div className="flex items-baseline gap-3 flex-wrap">
           <h2 className="text-2xl lg:text-3xl font-bold">{plan.plan}</h2>
           <span className="text-sm text-white/70">
-            {plan.gateway} - ${plan.amount}
+            {plan.gateway} - {naira(plan.amount)}
           </span>
         </div>
         <p className="text-white/80 text-sm">
@@ -223,7 +224,7 @@ function ReceiptTable({ sessions }: { sessions: Session[] }) {
                 {s.teacherName ?? 'Teacher'}
               </td>
               <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                ${s.amount}
+                {naira(s.amount)}
               </td>
             </tr>
           ))}
@@ -251,7 +252,7 @@ function PurchaseRow({ payment }: { payment: Payment }) {
       </div>
       <div className="text-right">
         <p className="font-semibold text-gray-900 dark:text-foreground">
-          ${payment.amount}
+          {naira(payment.amount)}
         </p>
         <p
           className={cn(

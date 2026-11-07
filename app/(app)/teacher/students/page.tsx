@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ComponentType } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Flame, Target, Users } from 'lucide-react';
+import { AlertTriangle, BookOpen, ClipboardCheck, Sparkles, Target, Users } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { StarRating } from '@/components/ui/star-rating';
 import {
@@ -11,18 +11,19 @@ import {
   listTeacherSessions,
   listTeacherStudents,
   teacherKeys,
+  type LearningSummary,
+  type TeacherStudent,
 } from '@/lib/api/teacher';
 import { cn } from '@/lib/utils';
 import {
   displayGrade,
   displaySchedule,
   displaySubject,
-  type Child,
   type Session,
   type SessionNote,
 } from '@/lib/types';
 
-const EMPTY_STUDENTS: Child[] = [];
+const EMPTY_STUDENTS: TeacherStudent[] = [];
 const EMPTY_SESSIONS: Session[] = [];
 const EMPTY_NOTES: SessionNote[] = [];
 
@@ -151,10 +152,11 @@ function StudentCard({
   sessions,
   notes,
 }: {
-  student: Child;
+  student: TeacherStudent;
   sessions: Session[];
   notes: SessionNote[];
 }) {
+  const summary = student.learningSummary;
   const completed = sessions.filter((s) => s.status === 'Completed').length;
   const upcoming = sessions
     .filter((s) => s.status === 'Upcoming')
@@ -215,12 +217,19 @@ function StudentCard({
       <div className="grid grid-cols-3 gap-2 text-center">
         <Stat icon={BookOpen} label="Sessions" value={completed} />
         <Stat
-          icon={Flame}
-          label="Streak"
-          value={`${student.streak.current}w`}
+          icon={ClipboardCheck}
+          label="Quizzes"
+          value={summary?.practisedQuizzes ?? 0}
         />
-        <Stat label="Badges" value={student.badges.length} />
+        <Stat
+          icon={AlertTriangle}
+          label="Weak topics"
+          value={summary?.weakTopics.length ?? 0}
+        />
       </div>
+
+      <LearningSummaryPanel summary={summary} />
+
 
       {student.intake && (
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-border space-y-2 text-xs">
@@ -282,6 +291,112 @@ function StudentCard({
           - {upcoming.subject}
         </div>
       )}
+    </div>
+  );
+}
+
+// Before-class brief: where the student is struggling, from their practice
+// quizzes, so the lesson can start on the right topic.
+function LearningSummaryPanel({ summary }: { summary: LearningSummary | null }) {
+  const hasData =
+    summary &&
+    (summary.weakTopics.length > 0 ||
+      summary.strongTopics.length > 0 ||
+      summary.recentAttempts.length > 0);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <Sparkles className="w-4 h-4 text-brand" />
+        <p className="text-xs font-semibold text-gray-900 dark:text-foreground">
+          Before class: learning summary
+        </p>
+      </div>
+
+      {!hasData ? (
+        <p className="text-xs text-gray-500 dark:text-muted-foreground">
+          No practice data yet. Once the student takes a practice quiz, their weak
+          topics will appear here.
+        </p>
+      ) : (
+        <div className="space-y-3 text-xs">
+          {summary.weakTopics.length > 0 && (
+            <TopicList
+              title="Focus on"
+              tone="weak"
+              topics={summary.weakTopics}
+            />
+          )}
+          {summary.strongTopics.length > 0 && (
+            <TopicList
+              title="Already strong"
+              tone="strong"
+              topics={summary.strongTopics}
+            />
+          )}
+          {summary.recentAttempts.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground mb-1">
+                Latest practice
+              </p>
+              <ul className="space-y-0.5">
+                {summary.recentAttempts.map((attempt) => (
+                  <li
+                    key={`${attempt.subject}-${attempt.submittedAt}`}
+                    className="flex justify-between gap-2 text-gray-700 dark:text-foreground/90"
+                  >
+                    <span className="truncate">
+                      {attempt.subject}
+                      {attempt.isRetake ? ' (reassessment)' : ''}
+                    </span>
+                    <span className="shrink-0 tabular-nums">
+                      {attempt.scorePercent}% ·{' '}
+                      {new Date(attempt.submittedAt).toLocaleDateString(undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopicList({
+  title,
+  tone,
+  topics,
+}: {
+  title: string;
+  tone: 'weak' | 'strong';
+  topics: LearningSummary['weakTopics'];
+}) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground mb-1">
+        {title}
+      </p>
+      <ul className="flex flex-wrap gap-1.5">
+        {topics.map((topic) => (
+          <li
+            key={`${topic.subject}-${topic.name}`}
+            title={`${topic.subject}: ${topic.answered} questions answered`}
+            className={cn(
+              'rounded-full px-2 py-0.5 tabular-nums',
+              tone === 'weak'
+                ? 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300'
+                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+            )}
+          >
+            {topic.name} · {topic.accuracyPercent}%
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

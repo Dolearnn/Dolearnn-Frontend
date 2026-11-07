@@ -1,14 +1,6 @@
 export type Role = 'parent' | 'student' | 'teacher' | 'admin';
 
-export type GradeLevel =
-  | 'Primary'
-  | 'JSS'
-  | 'SSS'
-  | 'College Year 1'
-  | 'College Year 2'
-  | 'College Year 3'
-  | 'College Year 4'
-  | 'Other';
+export type GradeLevel = 'SS1' | 'SS2' | 'SS3' | 'School leaver' | 'Other';
 
 export type LearningGoal =
   | 'Exam prep'
@@ -20,7 +12,7 @@ export type CurrentLevel = 'Struggling' | 'Average' | 'Above average';
 export type GenderPreference = 'No preference' | 'Male' | 'Female';
 export type TimeBlock = 'Morning' | 'Afternoon' | 'Evening';
 export type DayOfWeek = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
-export type BudgetTier = 'Under $20' | '$20–$35' | '$35–$50' | '$50+';
+export type BudgetTier = 'Under ₦5,000' | '₦5,000–₦10,000' | '₦10,000–₦20,000' | '₦20,000+';
 
 export interface Parent {
   id: string;

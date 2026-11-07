@@ -40,7 +40,8 @@ export function dashboardPathForRole(role: AuthUser['role']) {
   if (role === 'ADMIN') return '/admin';
   if (role === 'TEACHER') return '/teacher';
   if (role === 'STUDENT') return '/student';
-  return '/family';
+  // Older parent accounts use the same learner workspace.
+  return '/student';
 }
 
 function storeSession(response: AuthResponse): AuthSession {

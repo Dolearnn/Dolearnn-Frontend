@@ -28,6 +28,7 @@ import {
 } from '@/lib/api/arena';
 import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 import { getQuizCatalog, quizKeys } from '@/lib/api/quiz';
+import { useLearnerBase } from '@/lib/learner-paths';
 import { cn } from '@/lib/utils';
 
 const SELF = 'self';
@@ -43,10 +44,11 @@ const RESULT_LABEL: Record<ArenaResult, { text: string; className: string }> = {
 };
 
 function BattleRow({ battle }: { battle: ArenaBattleListItem }) {
+  const base = useLearnerBase();
   const label = RESULT_LABEL[battle.result];
   return (
     <Link
-      href={`/family/arena/${battle.code}`}
+      href={`${base}/arena/${battle.code}`}
       className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-border bg-white dark:bg-card px-4 py-3 hover:border-brand transition-colors"
     >
       <div className="min-w-0">
@@ -68,6 +70,7 @@ function BattleRow({ battle }: { battle: ArenaBattleListItem }) {
 }
 
 export default function ArenaHubPage() {
+  const base = useLearnerBase();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -85,6 +88,7 @@ export default function ArenaHubPage() {
   const studentsQuery = useQuery({
     queryKey: familyKeys.students,
     queryFn: listFamilyStudents,
+    enabled: false,
   });
   const battlesQuery = useQuery({
     queryKey: arenaKeys.mine,
@@ -109,7 +113,7 @@ export default function ArenaHubPage() {
         questions: view.questions,
       });
       void queryClient.invalidateQueries({ queryKey: arenaKeys.mine });
-      router.push(`/family/arena/${view.code}`);
+      router.push(`${base}/arena/${view.code}`);
     },
     onError: (error) => {
       toast({
@@ -123,7 +127,7 @@ export default function ArenaHubPage() {
   function handleJoin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const clean = cleanBattleCode(code);
-    if (clean.length === 6) router.push(`/family/arena/${clean}`);
+    if (clean.length === 6) router.push(`${base}/arena/${clean}`);
   }
 
   const battles = battlesQuery.data?.battles ?? [];

@@ -17,7 +17,7 @@ export function useStartQuiz() {
     mutationFn: startQuizAttempt,
     onSuccess: (view) => {
       queryClient.setQueryData(quizKeys.attempt(view.attempt.id), view);
-      const base = pathname.startsWith('/student') ? '/student/practice' : '/family/quiz';
+      const base = '/student/practice';
       router.push(`${base}/attempt/${view.attempt.id}`);
     },
     onError: (error) => {

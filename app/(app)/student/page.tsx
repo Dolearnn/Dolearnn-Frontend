@@ -8,6 +8,7 @@ import { ArrowRight, BookOpenCheck, CalendarDays, Target, TrendingUp } from 'luc
 import PageHeader from '@/components/dashboard/PageHeader';
 import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
+import AchievementsPanel from '@/components/quiz/AchievementsPanel';
 import WeeklyLeaderboard from '@/components/quiz/WeeklyLeaderboard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -107,6 +108,7 @@ export default function StudentDashboardPage() {
         </section>
       )}
 
+      <AchievementsPanel studentId={null} className="mt-9" />
       <WeeklyLeaderboard studentId={null} className="mt-9" />
     </div>
   );

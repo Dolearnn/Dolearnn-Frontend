@@ -17,9 +17,9 @@ export default async function RegisterPage({
       <p className="mb-6 text-sm text-gray-600 dark:text-muted-foreground">
         {fromPractice
           ? 'Create a free learner account to use the full question bank and track progress over time.'
-          : 'Create a learner account for yourself, or a parent account to support someone else.'}
+          : 'One account for practice, the Arena, tutoring and progress. Parents can sign up on behalf of their child.'}
       </p>
-      <RegisterForm nextPath="/family/children/new" />
+      <RegisterForm />
       <p className="mt-6 text-sm text-gray-600 dark:text-muted-foreground">
         Have an account?{' '}
         <Link

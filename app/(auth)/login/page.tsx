@@ -7,7 +7,7 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  const nextPath = next === 'practice' ? '/family/quiz' : undefined;
+  const nextPath = next === 'practice' ? '/student/practice' : undefined;
 
   return (
     <div className="bg-white dark:bg-card rounded-2xl shadow-sm p-8 border border-gray-100 dark:border-border">

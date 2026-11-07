@@ -1,23 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { ListChecks } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import IntakeWizard from '@/components/forms/IntakeWizard';
-import { familyKeys, getFamilyStudent } from '@/lib/api/family';
+import { TUTORING_SUBJECTS } from '@/lib/catalog';
+import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 
-const WIZARD_SUBJECTS = [
-  'Maths',
-  'English',
-  'Science',
-  'Coding',
-  'Music',
-  'French',
-  'SAT',
-  'Other',
-] as const;
+const WIZARD_SUBJECTS = TUTORING_SUBJECTS;
 type WizardSubject = (typeof WIZARD_SUBJECTS)[number];
 
 const LEVELS = ['Struggling', 'Average', 'Above average'] as const;
@@ -26,13 +18,15 @@ function isWizardSubject(value: string | null): value is WizardSubject {
   return WIZARD_SUBJECTS.includes(value as WizardSubject);
 }
 
+// Your tutoring request. Your account has one learner profile, created for you
+// automatically the first time you open this page.
 function IntakePageContent() {
-  const params = useParams<{ id: string }>();
   const search = useSearchParams();
-  const { data: child, isLoading, isError, error } = useQuery({
-    queryKey: familyKeys.student(params.id),
-    queryFn: () => getFamilyStudent(params.id),
+  const { data: profiles, isLoading, isError, error } = useQuery({
+    queryKey: familyKeys.students,
+    queryFn: listFamilyStudents,
   });
+  const child = profiles?.[0];
 
   if (isLoading) {
     return (
@@ -45,7 +39,7 @@ function IntakePageContent() {
   if (isError) {
     return (
       <p className="text-sm text-red-600">
-        {error instanceof Error ? error.message : 'Could not load student.'}
+        {error instanceof Error ? error.message : 'Could not load your profile.'}
       </p>
     );
   }
@@ -53,7 +47,7 @@ function IntakePageContent() {
   if (!child) {
     return (
       <p className="text-sm text-gray-700 dark:text-foreground/90">
-        Child not found.
+        We could not set up your tutoring profile. Please refresh the page.
       </p>
     );
   }
@@ -86,8 +80,8 @@ function IntakePageContent() {
   return (
     <div className="max-w-3xl">
       <PageHeader
-        title={`Intake for ${child.fullName}`}
-        description="Tell us what they need - we'll pair them with the right teacher."
+        title="Get a tutor"
+        description="Tell us what you need and we'll pair you with the right teacher."
       />
       {prefill && (
         <div className="mb-4 flex items-start gap-3 rounded-xl border border-accent2-200 bg-accent2-50 dark:border-accent2-500/30 dark:bg-accent2-500/10 px-4 py-3">
@@ -105,7 +99,7 @@ function IntakePageContent() {
   );
 }
 
-export default function IntakePage() {
+export default function TutorPage() {
   return (
     <Suspense
       fallback={

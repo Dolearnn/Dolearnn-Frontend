@@ -91,7 +91,7 @@ export default function GuestPractice() {
 
   useEffect(() => {
     const user = getAuthUser();
-    setPracticePath(user ? (user.role === 'STUDENT' ? '/student/practice' : '/family/quiz') : null);
+    setPracticePath(user ? '/student/practice' : null);
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {

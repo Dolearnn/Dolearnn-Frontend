@@ -257,6 +257,8 @@ export const quizKeys = {
     ['quiz', 'rewards', studentId ?? 'self'] as const,
   leaderboard: (studentId: string | null) =>
     ['quiz', 'leaderboard', studentId ?? 'self'] as const,
+  achievements: (studentId: string | null) =>
+    ['quiz', 'achievements', studentId ?? 'self'] as const,
 };
 
 export interface QuizLevel {
@@ -285,6 +287,45 @@ export interface QuizLeaderboard {
   weekStart: string;
   entries: Array<{ rank: number; name: string; xp: number; isMe: boolean }>;
   me: { rank: number; xp: number } | null;
+  /** Whether this learner's name is hidden from everyone else. */
+  hidden: boolean;
+}
+
+export interface QuizBadge {
+  id: string;
+  name: string;
+  description: string;
+  current: number;
+  target: number;
+  earned: boolean;
+}
+
+export interface QuizMission {
+  id: string;
+  title: string;
+  detail: string;
+  current: number;
+  target: number;
+  done: boolean;
+  action: 'practice' | 'reassess' | 'arena';
+}
+
+export interface QuizAchievements {
+  weekStart: string;
+  badges: QuizBadge[];
+  missions: QuizMission[];
+}
+
+export function getQuizAchievements(studentId: string | null) {
+  const query = studentId ? `?studentId=${encodeURIComponent(studentId)}` : '';
+  return apiFetch<QuizAchievements>(`/quiz/achievements${query}`);
+}
+
+export function setLeaderboardPrivacy(studentId: string | null, hidden: boolean) {
+  return apiFetch<{ hidden: boolean }>('/quiz/leaderboard/privacy', {
+    method: 'PATCH',
+    body: JSON.stringify(studentId ? { hidden, studentId } : { hidden }),
+  });
 }
 
 export function getQuizRewards(studentId: string | null) {

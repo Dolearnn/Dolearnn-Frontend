@@ -29,23 +29,25 @@ import { ApiError } from '@/lib/api/client';
 import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 import { getQuizAttempt, isSubmittedView, quizKeys } from '@/lib/api/quiz';
 import { formatClock, scoreTone, toneClasses } from '@/lib/quiz';
+import { attemptReviewPath, useLearnerBase, type LearnerBase } from '@/lib/learner-paths';
 import { cn } from '@/lib/utils';
 
 const SELF = 'self';
 // While waiting for the rival, check every so often. Paused when the tab is hidden.
 const WAIT_POLL_MS = 20_000;
 
-function shareMessage(code: string, subject: string) {
-  const link = `${window.location.origin}/family/arena/${code}`;
+function shareMessage(code: string, subject: string, base: LearnerBase) {
+  const link = `${window.location.origin}${base}/arena/${code}`;
   return `Join my DoLearnn ${subject} battle! Code: ${code}\n${link}`;
 }
 
 function CodeCard({ code, subject }: { code: string; subject: string }) {
+  const base = useLearnerBase();
   const [copied, setCopied] = useState(false);
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(shareMessage(code, subject));
+      await navigator.clipboard.writeText(shareMessage(code, subject, base));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -64,7 +66,7 @@ function CodeCard({ code, subject }: { code: string; subject: string }) {
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         <Button asChild className="h-10 px-4 rounded-xl">
           <a
-            href={`https://wa.me/?text=${encodeURIComponent(shareMessage(code, subject))}`}
+            href={`https://wa.me/?text=${encodeURIComponent(shareMessage(code, subject, base))}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -134,6 +136,7 @@ function PlayerCard({
 }
 
 function BattleResult({ battle }: { battle: ArenaBattle }) {
+  const base = useLearnerBase();
   const { challenge, entries, outcome } = battle;
   const first = entries.find((entry) => entry.slot === 1);
   const second = entries.find((entry) => entry.slot === 2);
@@ -185,11 +188,11 @@ function BattleResult({ battle }: { battle: ArenaBattle }) {
       <div className="flex flex-wrap justify-center gap-2">
         {myFirstAttempt && (
           <Button asChild variant="outline" className="h-10 px-4 rounded-xl">
-            <Link href={`/family/quiz/attempt/${myFirstAttempt}`}>Review my answers</Link>
+            <Link href={attemptReviewPath(base, myFirstAttempt)}>Review my answers</Link>
           </Button>
         )}
         <Button asChild className="h-10 px-4 rounded-xl">
-          <Link href="/family/arena">
+          <Link href={`${base}/arena`}>
             <Swords className="w-4 h-4 mr-2" /> New battle
           </Link>
         </Button>
@@ -200,6 +203,7 @@ function BattleResult({ battle }: { battle: ArenaBattle }) {
 
 // Plays one of your own games. When it is submitted, the battle refreshes.
 function PlayEntry({ code, attemptId }: { code: string; attemptId: string }) {
+  const base = useLearnerBase();
   const queryClient = useQueryClient();
   const attemptQuery = useQuery({
     queryKey: quizKeys.attempt(attemptId),
@@ -227,7 +231,7 @@ function PlayEntry({ code, attemptId }: { code: string; attemptId: string }) {
           {attemptQuery.error instanceof Error ? attemptQuery.error.message : 'Please try again.'}
         </p>
         <Button asChild className="h-10 px-5 rounded-xl">
-          <Link href="/family/arena">Back to Arena</Link>
+          <Link href={`${base}/arena`}>Back to Arena</Link>
         </Button>
       </div>
     );
@@ -241,6 +245,7 @@ function PlayEntry({ code, attemptId }: { code: string; attemptId: string }) {
 }
 
 function JoinPanel({ battle, code }: { battle: ArenaBattle; code: string }) {
+  const base = useLearnerBase();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [learner, setLearner] = useState<string>(SELF);
@@ -248,6 +253,7 @@ function JoinPanel({ battle, code }: { battle: ArenaBattle; code: string }) {
   const studentsQuery = useQuery({
     queryKey: familyKeys.students,
     queryFn: listFamilyStudents,
+    enabled: false,
   });
   const children = studentsQuery.data ?? [];
   const { challenge, entries } = battle;
@@ -325,6 +331,7 @@ function JoinPanel({ battle, code }: { battle: ArenaBattle; code: string }) {
 }
 
 export default function BattlePage() {
+  const base = useLearnerBase();
   const params = useParams<{ code: string }>();
   const code = cleanBattleCode(params.code ?? '');
 
@@ -356,7 +363,7 @@ export default function BattlePage() {
           {battleQuery.error instanceof Error ? battleQuery.error.message : 'Check the code and try again.'}
         </p>
         <Button asChild className="h-10 px-5 rounded-xl">
-          <Link href="/family/arena">Back to Arena</Link>
+          <Link href={`${base}/arena`}>Back to Arena</Link>
         </Button>
       </div>
     );

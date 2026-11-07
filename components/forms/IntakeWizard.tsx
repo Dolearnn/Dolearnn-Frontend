@@ -32,18 +32,10 @@ import {
   saveFamilyStudentIntake,
 } from '@/lib/api/family';
 import { cn } from '@/lib/utils';
+import { BUDGET_TIERS, DEFAULT_BUDGET, TUTORING_SUBJECTS } from '@/lib/catalog';
 import type { DayOfWeek, IntakeForm, PreferredSchedule, TimeBlock } from '@/lib/types';
 
-const SUBJECTS = [
-  'Maths',
-  'English',
-  'Science',
-  'Coding',
-  'Music',
-  'French',
-  'SAT',
-  'Other',
-] as const;
+const SUBJECTS = TUTORING_SUBJECTS;
 
 const DAYS: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TIME_BLOCKS: TimeBlock[] = ['Morning', 'Afternoon', 'Evening'];
@@ -68,25 +60,11 @@ const schema = z
   .object({
     subjects: z
       .array(
-        z.enum([
-          'Maths',
-          'English',
-          'Science',
-          'Coding',
-          'Music',
-          'French',
-          'SAT',
-          'Other',
-        ]),
+        z.enum(TUTORING_SUBJECTS),
       )
-      .min(1, 'Pick at least one subject or skill'),
+      .min(1, 'Pick at least one subject'),
     subjectOther: z.string().optional(),
-    learningGoal: z.enum([
-      'Exam prep',
-      'Catch up with school',
-      'Learn a new skill',
-      'General improvement',
-    ]),
+    learningGoal: z.enum(['Exam prep', 'Catch up with school', 'General improvement']),
     currentLevel: z.enum(['Struggling', 'Average', 'Above average']),
     specificTopics: z.string().optional(),
     teacherGenderPref: z.enum(['No preference', 'Male', 'Female']),
@@ -98,7 +76,7 @@ const schema = z
       }),
     timezone: z.enum(TIMEZONES),
     sessionsPerWeek: z.enum(['1', '2', '3', 'Flexible']),
-    budget: z.enum(['Under $20', '$20–$35', '$35–$50', '$50+']),
+    budget: z.enum(['Under ₦5,000', '₦5,000–₦10,000', '₦10,000–₦20,000', '₦20,000+']),
   })
   .refine(
     (v) =>
@@ -132,9 +110,9 @@ function defaultsFromIntake(initial?: IntakeForm): Values {
       teacherGenderPref: 'No preference',
       specialNotes: '',
       preferredSchedule: {},
-      timezone: 'UTC',
+      timezone: 'Africa/Lagos',
       sessionsPerWeek: '1',
-      budget: '$20–$35',
+      budget: DEFAULT_BUDGET,
     };
   }
 
@@ -163,7 +141,9 @@ function defaultsFromIntake(initial?: IntakeForm): Values {
   return {
     subjects,
     subjectOther: initial.subjectOther ?? '',
-    learningGoal: initial.learningGoal,
+    // 'Learn a new skill' is no longer offered; older intakes fall back to general improvement.
+    learningGoal:
+      initial.learningGoal === 'Learn a new skill' ? 'General improvement' : initial.learningGoal,
     currentLevel: initial.currentLevel,
     specificTopics: initial.specificTopics ?? '',
     teacherGenderPref: initial.teacherGenderPref,
@@ -171,7 +151,7 @@ function defaultsFromIntake(initial?: IntakeForm): Values {
     preferredSchedule: initial.preferredSchedule ?? {},
     timezone,
     sessionsPerWeek,
-    budget: initial.budget,
+    budget: (BUDGET_TIERS as string[]).includes(initial.budget) ? initial.budget : DEFAULT_BUDGET,
   };
 }
 
@@ -231,7 +211,7 @@ export default function IntakeWizard({
         title: 'Intake submitted',
         description: 'Admin can now review this student for matching.',
       });
-      router.push('/family');
+      router.push('/student/sessions');
       router.refresh();
     },
     onError: (error) => {
@@ -666,10 +646,11 @@ function StepAvailability({ form }: { form: FormApi }) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Under $20">Under $20</SelectItem>
-                  <SelectItem value="$20–$35">$20–$35</SelectItem>
-                  <SelectItem value="$35–$50">$35–$50</SelectItem>
-                  <SelectItem value="$50+">$50+</SelectItem>
+                  {BUDGET_TIERS.map((tier) => (
+                    <SelectItem key={tier} value={tier}>
+                      {tier}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -836,10 +817,11 @@ function StepC({ form }: { form: FormApi }) {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="Under $20">Under $20</SelectItem>
-                <SelectItem value="$20–$35">$20–$35</SelectItem>
-                <SelectItem value="$35–$50">$35–$50</SelectItem>
-                <SelectItem value="$50+">$50+</SelectItem>
+                {BUDGET_TIERS.map((tier) => (
+                  <SelectItem key={tier} value={tier}>
+                    {tier}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />

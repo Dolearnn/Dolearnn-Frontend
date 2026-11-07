@@ -1,8 +1,10 @@
 import type { ApiCurrentLevel, QuizTutoringPrefill } from '@/lib/api/quiz';
 import type { CurrentLevel } from '@/lib/types';
 
-// The intake wizard only accepts this fixed list of subjects.
-export type IntakeSubject = 'Maths' | 'English' | 'Science' | 'Other';
+import type { TutoringSubject } from '@/lib/catalog';
+
+// The intake wizard only accepts the fixed list in lib/catalog.
+export type IntakeSubject = TutoringSubject;
 
 export interface IntakePrefill {
   subject: IntakeSubject;
@@ -17,39 +19,33 @@ const levelFromApi: Record<ApiCurrentLevel, CurrentLevel> = {
   ABOVE_AVERAGE: 'Above average',
 };
 
-const SCIENCE_SUBJECTS = ['physics', 'chemistry', 'biology', 'science'];
-
 // Maps a quiz subject (e.g. "Physics") onto the intake wizard's subject list.
 export function intakeSubjectFor(quizSubject: string): {
   subject: IntakeSubject;
   subjectOther?: string;
 } {
   const name = quizSubject.trim().toLowerCase();
+  if (name.includes('further math')) return { subject: 'Further Maths' };
   if (name.includes('math')) return { subject: 'Maths' };
   if (name.includes('english')) return { subject: 'English' };
-  if (SCIENCE_SUBJECTS.some((science) => name.includes(science))) {
-    return { subject: 'Science' };
-  }
+  if (name.includes('physics')) return { subject: 'Physics' };
+  if (name.includes('chemistry')) return { subject: 'Chemistry' };
+  if (name.includes('biology')) return { subject: 'Biology' };
   return { subject: 'Other', subjectOther: quizSubject };
 }
 
 export function toIntakePrefill(prefill: QuizTutoringPrefill): IntakePrefill {
   const { subject, subjectOther } = intakeSubjectFor(prefill.subject);
-  // Science covers several quiz subjects, so keep the specific one in the topics.
-  const topics =
-    subject === 'Science'
-      ? `${prefill.subject}: ${prefill.specificTopics}`
-      : prefill.specificTopics;
 
   return {
     subject,
     subjectOther,
-    topics,
+    topics: prefill.specificTopics,
     level: levelFromApi[prefill.currentLevel] ?? 'Average',
   };
 }
 
-export function intakeHref(childId: string, prefill: QuizTutoringPrefill) {
+export function intakeHref(prefill: QuizTutoringPrefill) {
   const mapped = toIntakePrefill(prefill);
   const params = new URLSearchParams({
     from: 'quiz',
@@ -58,17 +54,7 @@ export function intakeHref(childId: string, prefill: QuizTutoringPrefill) {
     level: mapped.level,
   });
   if (mapped.subjectOther) params.set('other', mapped.subjectOther);
-  return `/family/children/${childId}/intake?${params.toString()}`;
-}
-
-// Families cannot create student profiles themselves (admin does), so a learner
-// with no profile is sent to admin with the quiz findings already written out.
-export function adminRequestMessage(prefill: QuizTutoringPrefill) {
-  return [
-    'Hello DoLearn, I would like a tutor.',
-    `Subject: ${prefill.subject}`,
-    `Weak topics from my practice quiz: ${prefill.specificTopics}`,
-  ].join('\n');
+  return `/student/tutor?${params.toString()}`;
 }
 
 export function scoreTone(percent: number) {

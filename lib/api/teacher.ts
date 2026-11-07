@@ -234,9 +234,37 @@ export async function updateTeacherProfile(input: UpdateTeacherProfileInput) {
   return mapProfile(response.profile);
 }
 
-export async function listTeacherStudents() {
-  const response = await apiFetch<{ students: ApiStudent[] }>('/teacher/students');
-  return response.students.map((student) => mapStudent(student as never));
+// What the student struggles with, from their practice quizzes (see backend
+// teacher-insights.ts). Shown to the tutor before class.
+export interface LearningSummaryTopic {
+  name: string;
+  subject: string;
+  accuracyPercent: number;
+  answered: number;
+}
+
+export interface LearningSummary {
+  weakTopics: LearningSummaryTopic[];
+  strongTopics: LearningSummaryTopic[];
+  recentAttempts: {
+    subject: string;
+    scorePercent: number;
+    submittedAt: string;
+    isRetake: boolean;
+  }[];
+  practisedQuizzes: number;
+}
+
+export type TeacherStudent = Child & { learningSummary: LearningSummary | null };
+
+export async function listTeacherStudents(): Promise<TeacherStudent[]> {
+  const response = await apiFetch<{
+    students: (ApiStudent & { learningSummary?: LearningSummary | null })[];
+  }>('/teacher/students');
+  return response.students.map((student) => ({
+    ...mapStudent(student as never),
+    learningSummary: student.learningSummary ?? null,
+  }));
 }
 
 export async function listTeacherSessions() {

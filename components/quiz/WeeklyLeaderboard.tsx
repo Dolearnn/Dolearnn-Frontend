@@ -1,9 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { Medal } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { EyeOff, Medal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getQuizLeaderboard, quizKeys } from '@/lib/api/quiz';
+import { Switch } from '@/components/ui/switch';
+import { getQuizLeaderboard, quizKeys, setLeaderboardPrivacy, type QuizLeaderboard } from '@/lib/api/quiz';
 import { cn } from '@/lib/utils';
 
 const MEDAL_COLOURS = ['text-amber-500', 'text-slate-400', 'text-orange-700'];
@@ -20,6 +21,16 @@ export default function WeeklyLeaderboard({
     queryKey: quizKeys.leaderboard(studentId),
     queryFn: () => getQuizLeaderboard(studentId),
     staleTime: 60_000,
+  });
+
+  const queryClient = useQueryClient();
+  const privacy = useMutation({
+    mutationFn: (hidden: boolean) => setLeaderboardPrivacy(studentId, hidden),
+    onSuccess: ({ hidden }) => {
+      queryClient.setQueryData<QuizLeaderboard>(quizKeys.leaderboard(studentId), (current) =>
+        current ? { ...current, hidden } : current,
+      );
+    },
   });
 
   if (isLoading) return <Skeleton className={cn('h-64 w-full rounded-2xl', className)} />;
@@ -43,9 +54,9 @@ export default function WeeklyLeaderboard({
         </p>
       ) : (
         <ol className="mt-4 divide-y divide-gray-100 dark:divide-border">
-          {data.entries.map((entry) => (
+          {data.entries.map((entry, index) => (
             <li
-              key={`${entry.rank}-${entry.name}-${entry.xp}`}
+              key={`${index}-${entry.rank}`}
               className={cn(
                 'flex items-center gap-3 py-2.5 text-sm',
                 entry.isMe && '-mx-2 rounded-lg bg-brand/5 px-2 font-semibold',
@@ -60,7 +71,11 @@ export default function WeeklyLeaderboard({
               </span>
               <span className="flex-1 text-gray-900 dark:text-foreground">
                 {entry.name}
-                {entry.isMe && <span className="ml-2 text-xs font-normal text-brand dark:text-accent2-400">(you)</span>}
+                {entry.isMe && (
+                  <span className="ml-2 text-xs font-normal text-brand dark:text-accent2-400">
+                    {data.hidden ? '(you, hidden from others)' : '(you)'}
+                  </span>
+                )}
               </span>
               <span className="tabular-nums text-gray-700 dark:text-foreground/90">{entry.xp.toLocaleString()} XP</span>
             </li>
@@ -74,6 +89,30 @@ export default function WeeklyLeaderboard({
             ? `You are #${data.me.rank} with ${data.me.xp.toLocaleString()} XP this week.`
             : 'Finish a quiz this week to appear on the leaderboard.'}
         </p>
+      )}
+
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-gray-100 pt-3 dark:border-border">
+        <label
+          htmlFor={`leaderboard-hide-${studentId ?? 'self'}`}
+          className="flex items-center gap-2 text-sm text-gray-700 dark:text-foreground/90"
+        >
+          <EyeOff className="h-4 w-4 text-gray-400 dark:text-muted-foreground" aria-hidden />
+          <span>
+            Hide {studentId ? 'this learner’s' : 'my'} name
+            <span className="block text-xs text-gray-500 dark:text-muted-foreground">
+              Others see “Hidden learner”. Your rank and XP still count.
+            </span>
+          </span>
+        </label>
+        <Switch
+          id={`leaderboard-hide-${studentId ?? 'self'}`}
+          checked={privacy.isPending ? Boolean(privacy.variables) : data.hidden}
+          disabled={privacy.isPending}
+          onCheckedChange={(checked) => privacy.mutate(checked)}
+        />
+      </div>
+      {privacy.isError && (
+        <p className="mt-2 text-xs text-red-600">Could not save that setting. Please try again.</p>
       )}
     </section>
   );

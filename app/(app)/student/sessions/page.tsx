@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarCheck2, CalendarX2 } from 'lucide-react';
-import ChildSwitcher from '@/components/dashboard/ChildSwitcher';
 import FeedbackCard from '@/components/dashboard/FeedbackCard';
 import PageHeader from '@/components/dashboard/PageHeader';
 import SessionRow from '@/components/dashboard/SessionRow';
@@ -74,10 +73,9 @@ function timeIsInBlock(time: string, block: TimeBlock) {
   return minutes >= range.start && minutes < range.end;
 }
 
-export default function FamilySessionsPage() {
+export default function SessionsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   const studentsQuery = useQuery({
     queryKey: familyKeys.students,
@@ -100,14 +98,8 @@ export default function FamilySessionsPage() {
     queryFn: listFamilyBookingRequests,
   });
 
-  const children = useMemo(() => studentsQuery.data ?? [], [studentsQuery.data]);
-  const active = useMemo(
-    () =>
-      children.find((child) => child.id === activeId) ??
-      children[0] ??
-      null,
-    [children, activeId],
-  );
+  // A learner account has exactly one tutoring profile: their own.
+  const active = studentsQuery.data?.[0] ?? null;
 
   const invalidateSessions = () => {
     queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
@@ -282,14 +274,14 @@ export default function FamilySessionsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Sessions"
-          description="Every lesson for your family - past, present and upcoming."
+          description="All your lessons - past, present and upcoming."
         />
         <EmptyState
-          title="No student profile yet"
-          hint="Admin creates student profiles after payment confirmation, then sessions can be planned here."
+          title="Your tutoring profile is not ready"
+          hint="Request a tutor first; your lessons will then be planned here."
         />
         <a href={`mailto:${ADMIN_EMAIL}`} className="text-sm font-medium text-brand">
-          Contact admin to activate the family profile
+          Contact us if this does not clear
         </a>
       </div>
     );
@@ -299,13 +291,7 @@ export default function FamilySessionsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Sessions"
-        description="Every lesson for your family - past, present and upcoming."
-      />
-
-      <ChildSwitcher
-        students={children}
-        activeId={active.id}
-        onChange={setActiveId}
+        description="All your lessons - past, present and upcoming."
       />
 
       <CalendarRequestPanel
@@ -769,12 +755,12 @@ function SessionProposalCard({
                 </Select>
               ) : (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
-                  This student has no saved availability yet.
+                  You have not saved your availability yet.
                 </p>
               )}
               <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                If the time you want is not listed, update the child&apos;s
-                availability first.
+                If the time you want is not listed, update your availability
+                first.
               </p>
               {selectedTimeBlock && (
                 <div className="space-y-2">
@@ -801,7 +787,7 @@ function SessionProposalCard({
                 </div>
               )}
               <Link
-                href={`/family/children/${child.id}/intake`}
+                href="/student/tutor"
                 className="text-xs font-semibold text-brand"
               >
                 Update availability

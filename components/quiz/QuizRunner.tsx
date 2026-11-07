@@ -100,6 +100,7 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
       void queryClient.invalidateQueries({ queryKey: ['quiz', 'next-actions'] });
       void queryClient.invalidateQueries({ queryKey: ['quiz', 'rewards'] });
       void queryClient.invalidateQueries({ queryKey: ['quiz', 'leaderboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['quiz', 'achievements'] });
       window.scrollTo({ top: 0 });
     },
     onError: (error) => {

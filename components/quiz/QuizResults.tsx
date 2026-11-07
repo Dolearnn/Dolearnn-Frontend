@@ -48,7 +48,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
   const { attempt, result, review } = view;
   const start = useStartQuiz();
   const pathname = usePathname();
-  const practicePath = pathname.startsWith('/student') ? '/student/practice' : '/family/quiz';
+  const practicePath = '/student/practice';
 
   const weakTopicIds = result.topics
     .filter((topic) => topic.accuracyPercent < WEAK_BELOW_PERCENT)

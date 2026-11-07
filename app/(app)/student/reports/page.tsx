@@ -7,8 +7,6 @@ import {
   Calendar,
   CheckCircle2,
   CreditCard,
-  PauseCircle,
-  Users,
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import StatTile from '@/components/dashboard/StatTile';
@@ -20,15 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  familyKeys,
-  listFamilySessions,
-  listFamilyStudents,
-} from '@/lib/api/family';
+import { familyKeys, listFamilySessions } from '@/lib/api/family';
 import { cn } from '@/lib/utils';
-import { isSessionPayoutEligible, type Child, type Session } from '@/lib/types';
+import { isSessionPayoutEligible, type Session } from '@/lib/types';
+import { naira } from '@/lib/money';
 
-const EMPTY_CHILDREN: Child[] = [];
 const EMPTY_SESSIONS: Session[] = [];
 
 function monthKey(date: string) {
@@ -42,19 +36,14 @@ function monthLabel(key: string) {
   });
 }
 
-export default function FamilyReportsPage() {
-  const childrenQuery = useQuery({
-    queryKey: familyKeys.students,
-    queryFn: listFamilyStudents,
-  });
+export default function ReportsPage() {
   const sessionsQuery = useQuery({
     queryKey: familyKeys.sessions,
     queryFn: listFamilySessions,
   });
-  const children = childrenQuery.data ?? EMPTY_CHILDREN;
   const allSessions = sessionsQuery.data ?? EMPTY_SESSIONS;
-  const isLoading = childrenQuery.isLoading || sessionsQuery.isLoading;
-  const isError = childrenQuery.isError || sessionsQuery.isError;
+  const isLoading = sessionsQuery.isLoading;
+  const isError = sessionsQuery.isError;
 
   const monthOptions = useMemo(() => {
     const keys = new Set<string>([new Date().toISOString().slice(0, 7)]);
@@ -81,21 +70,6 @@ export default function FamilyReportsPage() {
     );
     const cancellations = monthlySessions.filter((s) => s.cancellation);
     const sessionValue = completed.reduce((sum, session) => sum + session.amount, 0);
-    const byChild = children.map((child) => {
-      const childSessions = monthlySessions.filter((s) => s.childId === child.id);
-      const childCompleted = childSessions.filter((s) => s.status === 'Completed');
-      const childVerified = childCompleted.filter((s) =>
-        isSessionPayoutEligible(s.attendance),
-      );
-      const childCancelled = childSessions.filter((s) => s.status === 'Cancelled');
-      return {
-        child,
-        sessions: childSessions.length,
-        completed: childCompleted.length,
-        verified: childVerified.length,
-        cancelled: childCancelled.length,
-      };
-    });
     const feedback = completed
       .filter((session) => session.note)
       .slice(0, 4);
@@ -109,11 +83,9 @@ export default function FamilyReportsPage() {
       awaitingConfirmation,
       cancellations,
       sessionValue,
-      byChild,
       feedback,
-      pausedChildren: children.filter((child) => child.status === 'Deactivated'),
     };
-  }, [allSessions, children, selectedMonth]);
+  }, [allSessions, selectedMonth]);
 
   if (isLoading) {
     return <PageShellSkeleton />;
@@ -124,7 +96,7 @@ export default function FamilyReportsPage() {
       <div className="space-y-6">
         <PageHeader title="Monthly report" description="" />
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-          We could not load your family report right now. Please try again.
+          We could not load your report right now. Please try again.
         </div>
       </div>
     );
@@ -134,7 +106,7 @@ export default function FamilyReportsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Monthly report"
-        description="Your family's lessons, confirmations and child activity."
+        description="Your lessons and confirmations this month."
         action={
           <div className="w-48">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -169,8 +141,8 @@ export default function FamilyReportsPage() {
         <StatTile
           icon={CreditCard}
           label="Session value"
-          value={`$${report.sessionValue.toFixed(0)}`}
-          sub="payments endpoint pending"
+          value={naira(report.sessionValue)}
+          sub="completed lessons"
         />
         <StatTile
           icon={CheckCircle2}
@@ -180,13 +152,7 @@ export default function FamilyReportsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile
-          icon={Users}
-          label="Children"
-          value={children.length}
-          sub={`${report.pausedChildren.length} paused`}
-        />
+      <div className="grid grid-cols-2 gap-4">
         <StatTile
           icon={CreditCard}
           label="Total sessions"
@@ -199,85 +165,7 @@ export default function FamilyReportsPage() {
           value={report.cancellations.length}
           sub={`${report.cancelled.length} approved`}
         />
-        <StatTile
-          icon={PauseCircle}
-          label="Paused students"
-          value={report.pausedChildren.length}
-        />
       </div>
-
-      <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
-          Child activity
-        </h2>
-        <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[680px]">
-              <thead className="bg-gray-50 dark:bg-background text-xs text-gray-500 dark:text-muted-foreground uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium">Student</th>
-                  <th className="text-right px-4 py-3 font-medium">Sessions</th>
-                  <th className="text-right px-4 py-3 font-medium">Completed</th>
-                  <th className="text-right px-4 py-3 font-medium">Verified</th>
-                  <th className="text-right px-4 py-3 font-medium">Cancelled</th>
-                  <th className="text-right px-4 py-3 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {report.byChild.map((row) => (
-                  <tr
-                    key={row.child.id}
-                    className="hover:bg-gray-50 dark:hover:bg-white/5"
-                  >
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-gray-900 dark:text-foreground">
-                        {row.child.fullName}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                        {row.child.school ?? 'No school listed'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.sessions}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.completed}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.verified}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.cancelled}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={cn(
-                          'text-[11px] font-medium px-2 py-0.5 rounded-full',
-                          row.child.status === 'Deactivated'
-                            ? 'bg-amber-50 text-amber-700'
-                            : 'bg-accent2-50 text-accent2-700',
-                        )}
-                      >
-                        {row.child.status === 'Deactivated' ? 'Paused' : 'Active'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {report.byChild.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-4 py-8 text-center text-sm text-gray-500 dark:text-muted-foreground"
-                    >
-                      No children yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
 
       <section className="grid lg:grid-cols-2 gap-4">
         <ReportList

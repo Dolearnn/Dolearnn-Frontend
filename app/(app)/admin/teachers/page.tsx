@@ -56,18 +56,10 @@ import {
 } from '@/lib/api/admin';
 import { TIMEZONES } from '@/lib/timezones';
 import { cn } from '@/lib/utils';
+import { TEACHER_SUBJECTS } from '@/lib/catalog';
 import type { Child, Teacher } from '@/lib/types';
 
-const SUBJECTS = [
-  'Maths',
-  'English',
-  'Science',
-  'Coding',
-  'Music',
-  'French',
-  'SAT',
-  'Further Maths',
-];
+const SUBJECTS: readonly string[] = TEACHER_SUBJECTS;
 
 type AddTeacherForm = {
   firstName: string;
@@ -89,7 +81,8 @@ const emptyTeacherForm: AddTeacherForm = {
   gender: '',
   subjects: [],
   qualifications: '',
-  hourlyRate: '0',
+  // Tutors keep 50% of the ₦10,000 session price by default.
+  hourlyRate: '5000',
   defaultPassword: 'Teacher12345',
 };
 
@@ -579,10 +572,10 @@ function TeacherCard({
         <Stat label="Upcoming" value={teacher.upcomingCount ?? 0} />
         <div className="rounded-xl bg-gray-50 p-2 dark:bg-background">
           <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
-            Rate
+            Pay / session
           </p>
           <div className="mt-1 flex items-center justify-center gap-1">
-            <span className="text-xs text-gray-500">$</span>
+            <span className="text-xs text-gray-500">₦</span>
             <Input
               type="number"
               min={0}
@@ -762,7 +755,8 @@ function AddTeacherDialog({
             <Input
               value={form.hourlyRate}
               onChange={(event) => patch({ hourlyRate: event.target.value })}
-              placeholder="Hourly rate"
+              placeholder="Tutor pay per session (₦)"
+              aria-label="Tutor pay per session in naira"
               type="number"
               min={0}
             />
