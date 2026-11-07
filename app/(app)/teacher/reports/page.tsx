@@ -26,7 +26,7 @@ import {
   teacherKeys,
 } from '@/lib/api/teacher';
 import { cn } from '@/lib/utils';
-import { isSessionPayoutEligible, type Session } from '@/lib/types';
+import { isSessionPayable, isSessionPayoutEligible, type Session } from '@/lib/types';
 import { naira } from '@/lib/money';
 
 const EMPTY_SESSIONS: Session[] = [];
@@ -80,8 +80,8 @@ export default function TeacherReportsPage() {
     const uniqueStudentIds = new Set(monthlySessions.map((s) => s.childId));
     const verifiedHours =
       verified.reduce((sum, session) => sum + session.durationMins, 0) / 60;
-    // Tutors are paid per verified session at their own rate.
-    const expectedPayout = Math.round(verified.length * teacher.hourlyRate);
+    // Tutors are paid per verified session that has its note, at their own rate.
+    const expectedPayout = Math.round(verified.filter(isSessionPayable).length * teacher.hourlyRate);
     const confirmationRate =
       completed.length > 0
         ? Math.round((verified.length / completed.length) * 100)

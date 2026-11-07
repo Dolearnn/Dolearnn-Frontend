@@ -26,7 +26,7 @@ import {
   requestTeacherSessionCancellation,
   teacherKeys,
 } from '@/lib/api/teacher';
-import type { Session } from '@/lib/types';
+import { isSessionPayable, type Session } from '@/lib/types';
 import { naira } from '@/lib/money';
 
 function isSameDay(a: Date, b: Date) {
@@ -125,8 +125,9 @@ export default function TeacherHome() {
   );
   const nextSession: Session | undefined = todays[0] ?? upcoming[0];
   const completed = sessions.filter((s) => s.status === 'Completed');
+  // Only sessions that are confirmed and have their note count towards pay.
   const estimatedPay = me
-    ? completed.reduce(
+    ? completed.filter(isSessionPayable).reduce(
         (sum, session) =>
           sum + (me.hourlyRate ?? 0),
         0,

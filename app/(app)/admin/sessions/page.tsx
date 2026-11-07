@@ -50,7 +50,7 @@ import {
 import { formatInTimeZone, TIMEZONES, zonedDateTimeToUtcIso } from '@/lib/timezones';
 import { cn } from '@/lib/utils';
 import {
-  isSessionPayoutEligible,
+  isSessionPayable,
   type Child,
   type Session,
   type SessionBookingRequest,
@@ -630,7 +630,7 @@ function SessionTable({
                 </td>
                 <td className="px-4 py-3">
                   <PayoutBadge
-                    eligible={isSessionPayoutEligible(session.attendance)}
+                    eligible={isSessionPayable(session)}
                   />
                 </td>
                 <td className="px-4 py-3 text-right text-gray-500 dark:text-muted-foreground">

@@ -275,10 +275,18 @@ export interface StudentLessonPackage extends LessonPackageCredit {
   createdAt: string;
 }
 
+/** Both sides confirmed the lesson happened (or it was confirmed automatically after 24 hours). */
 export function isSessionPayoutEligible(
   attendance?: SessionAttendance,
 ): boolean {
   return !!attendance?.teacherConfirmedAt && !!attendance?.familyConfirmedAt;
+}
+
+/** Counts towards the tutor's pay: attendance confirmed AND the session note written. */
+export function isSessionPayable(
+  session: Pick<Session, 'attendance' | 'note' | 'noteId'>,
+): boolean {
+  return isSessionPayoutEligible(session.attendance) && Boolean(session.note || session.noteId);
 }
 
 export type Performance = 'Excellent' | 'Good' | 'Needs Work';

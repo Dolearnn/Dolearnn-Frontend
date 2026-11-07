@@ -52,6 +52,7 @@ export default function TeacherEarningsPage() {
         const teacherConfirmed = Boolean(session.attendance?.teacherConfirmedAt);
         const familyConfirmed = Boolean(session.attendance?.familyConfirmedAt);
         const verified = teacherConfirmed && familyConfirmed;
+        const hasNote = Boolean(session.note || session.noteId);
         return {
           sessionId: session.id,
           date: session.startsAt,
@@ -60,7 +61,8 @@ export default function TeacherEarningsPage() {
           durationMins: session.durationMins,
           // Tutors are paid per session at their own rate.
           amount: teacher.hourlyRate,
-          status: verified ? 'Verified' : 'Pending confirmation',
+          // Paid once attendance is confirmed and the session note is written.
+          status: !verified ? 'Pending confirmation' : hasNote ? 'Verified' : 'Note needed',
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
