@@ -245,7 +245,8 @@ export interface CreateTeacherInput {
   subjects: string[];
   qualifications: string[];
   hourlyRate: number;
-  defaultPassword: string;
+  // Optional: leave empty and the tutor sets their own password from the invite email.
+  defaultPassword?: string;
 }
 
 export async function listAdminTeachers() {
@@ -315,15 +316,23 @@ export async function listAdminTeachersPage(
 }
 
 export async function createAdminTeacher(input: CreateTeacherInput) {
-  const response = await apiFetch<{ teacher: ApiTeacher }>('/admin/teachers', {
+  const response = await apiFetch<{ teacher: ApiTeacher; inviteSent?: boolean }>('/admin/teachers', {
     method: 'POST',
     body: JSON.stringify({
       ...input,
+      defaultPassword: input.defaultPassword || undefined,
       timezone: input.timezone,
       gender: input.gender === 'Male' ? 'MALE' : 'FEMALE',
     }),
   });
-  return mapTeacher(response.teacher);
+  return { teacher: mapTeacher(response.teacher), inviteSent: response.inviteSent ?? false };
+}
+
+/** Emails the tutor a fresh link to set their password. */
+export function resendAdminTeacherInvite(teacherId: string) {
+  return apiFetch<{ inviteSent: boolean }>(`/admin/teachers/${teacherId}/invite`, {
+    method: 'POST',
+  });
 }
 
 export async function updateAdminTeacherRate(

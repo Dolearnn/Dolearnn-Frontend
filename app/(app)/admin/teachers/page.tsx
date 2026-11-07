@@ -51,6 +51,7 @@ import {
   createAdminTeacher,
   listAdminStudents,
   listAdminTeachersPage,
+  resendAdminTeacherInvite,
   terminateAdminTeacher,
   updateAdminTeacherRate,
 } from '@/lib/api/admin';
@@ -83,7 +84,8 @@ const emptyTeacherForm: AddTeacherForm = {
   qualifications: '',
   // Tutors keep 50% of the ₦10,000 session price by default.
   hourlyRate: '5000',
-  defaultPassword: 'Teacher12345',
+  // Empty: the tutor sets their own password from the invite email.
+  defaultPassword: '',
 };
 
 export default function AdminTeachersPage() {
@@ -134,11 +136,22 @@ export default function AdminTeachersPage() {
 
   const createMutation = useMutation({
     mutationFn: createAdminTeacher,
-    onSuccess: async () => {
+    onSuccess: async ({ teacher, inviteSent }) => {
       await invalidateAdmin();
       setTeacherForm(emptyTeacherForm);
       setAddOpen(false);
-      toast({ title: 'Teacher added' });
+      toast(
+        inviteSent
+          ? {
+              title: 'Tutor added',
+              description: `An invite to set their password was emailed to ${teacher.email}.`,
+            }
+          : {
+              title: 'Tutor added, but the invite email failed',
+              description: 'Use "Resend invite" on their card, or share their sign-in details yourself.',
+              variant: 'destructive',
+            },
+      );
     },
     onError: (error) => {
       toast({
@@ -197,6 +210,20 @@ export default function AdminTeachersPage() {
     },
   });
 
+  const inviteMutation = useMutation({
+    mutationFn: (teacherId: string) => resendAdminTeacherInvite(teacherId),
+    onSuccess: () => {
+      toast({ title: 'Invite sent', description: 'The tutor has a new link to set their password.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not send the invite',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const assignMutation = useMutation({
     mutationFn: ({ childId, teacherId }: { childId: string; teacherId: string }) =>
       assignAdminTeacherToStudent(childId, teacherId),
@@ -241,7 +268,9 @@ export default function AdminTeachersPage() {
     teacherForm.gender &&
     teacherForm.subjects.length > 0 &&
     teacherForm.qualifications.trim() &&
-    teacherForm.defaultPassword.trim().length >= 8;
+    // Optional; if given it must be at least 8 characters.
+    (teacherForm.defaultPassword.trim().length === 0 ||
+      teacherForm.defaultPassword.trim().length >= 8);
 
   const addTeacher = () => {
     if (!canAddTeacher) return;
@@ -258,7 +287,7 @@ export default function AdminTeachersPage() {
         .map((qualification) => qualification.trim())
         .filter(Boolean),
       hourlyRate: Number(teacherForm.hourlyRate) || 0,
-      defaultPassword: teacherForm.defaultPassword.trim(),
+      defaultPassword: teacherForm.defaultPassword.trim() || undefined,
     });
   };
 
@@ -369,6 +398,8 @@ export default function AdminTeachersPage() {
                 key={teacher.id}
                 teacher={teacher}
                 savingRate={rateMutation.isPending}
+                sendingInvite={inviteMutation.isPending && inviteMutation.variables === teacher.id}
+                onResendInvite={() => inviteMutation.mutate(teacher.id)}
                 onTerminate={() => setTerminateTarget(teacher)}
                 onRateSave={(rate) =>
                   rateMutation.mutate({
@@ -482,11 +513,15 @@ export default function AdminTeachersPage() {
 function TeacherCard({
   teacher,
   savingRate,
+  sendingInvite,
+  onResendInvite,
   onTerminate,
   onRateSave,
 }: {
   teacher: Teacher;
   savingRate: boolean;
+  sendingInvite: boolean;
+  onResendInvite: () => void;
   onTerminate: () => void;
   onRateSave: (hourlyRate: number) => void;
 }) {
@@ -622,15 +657,28 @@ function TeacherCard({
           })}
         </span>
         {!isTerminated && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full text-red-600 hover:text-red-700"
-            onClick={onTerminate}
-          >
-            <UserX className="mr-1 h-3.5 w-3.5" />
-            Terminate
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={sendingInvite}
+              onClick={onResendInvite}
+              title="Email the tutor a new link to set their password"
+            >
+              <Mail className="mr-1 h-3.5 w-3.5" />
+              {sendingInvite ? 'Sending...' : 'Resend invite'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full text-red-600 hover:text-red-700"
+              onClick={onTerminate}
+            >
+              <UserX className="mr-1 h-3.5 w-3.5" />
+              Terminate
+            </Button>
+          </div>
         )}
       </div>
     </div>
@@ -765,7 +813,8 @@ function AddTeacherDialog({
               onChange={(event) =>
                 patch({ defaultPassword: event.target.value })
               }
-              placeholder="Default password"
+              placeholder="Starting password (optional)"
+              aria-label="Starting password, optional. Leave empty to email an invite link"
               type="text"
             />
           </div>
