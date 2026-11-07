@@ -349,7 +349,7 @@ function SidebarContents({
         })}
       </nav>
       <div className="p-4 border-t border-white/10 text-xs text-white/50">
-        DoLearn MVP · v0.1
+        DoLearnn MVP · v0.1
       </div>
     </>
   );

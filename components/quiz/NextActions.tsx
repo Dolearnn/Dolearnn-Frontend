@@ -181,24 +181,13 @@ export default function NextActions({
         )}
       </div>
 
+      {/* One tutor card: why it is suggested, plus the pre-filled request. */}
       {supportActions.map((action) =>
         action.tutoring ? (
-          <div key={action.id} className="mt-5 border-l-2 border-amber-400 pl-4 sm:pl-5">
-            <div className="mb-3 flex items-start gap-3">
-              <GraduationCap className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">
-                  After repeated practice
-                </p>
-                <h3 className="mt-1 font-semibold text-gray-950 dark:text-foreground">
-                  {action.title}
-                </h3>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600 dark:text-muted-foreground">
-                  {action.reason}
-                </p>
-              </div>
-            </div>
+          <div key={action.id} className="mt-5">
             <TutoringCta
+              title={action.title}
+              reason={action.reason}
               prefill={action.tutoring.prefill}
               weakTopics={action.tutoring.weakTopics}
             />

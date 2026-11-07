@@ -1,23 +1,38 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BookOpenCheck, CalendarDays, Target, TrendingUp } from 'lucide-react';
-import PageHeader from '@/components/dashboard/PageHeader';
+import { ArrowRight, BookOpenCheck, CalendarDays, Pencil, Target } from 'lucide-react';
 import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
 import AchievementsPanel from '@/components/quiz/AchievementsPanel';
 import WeeklyLeaderboard from '@/components/quiz/WeeklyLeaderboard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAuthUser } from '@/lib/api/auth-storage';
 import { getQuizPracticeOverview, quizKeys } from '@/lib/api/quiz';
 import { getLearnerProfile, studentKeys } from '@/lib/api/student';
 
 function daysUntil(iso: string | null) {
   if (!iso) return null;
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+}
+
+function greeting(hour: number) {
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function Chip({ icon: Icon, children }: { icon: typeof Target; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 dark:border-border dark:bg-card dark:text-foreground/90">
+      <Icon className="h-3.5 w-3.5 text-brand dark:text-accent2-400" aria-hidden />
+      {children}
+    </span>
+  );
 }
 
 export default function StudentDashboardPage() {
@@ -29,6 +44,13 @@ export default function StudentDashboardPage() {
     enabled: profileQuery.data?.onboardingCompleted === true,
     staleTime: 30_000,
   });
+  // Set on the client so the greeting matches the learner's own clock.
+  const [hello, setHello] = useState('Welcome back');
+  const [firstName, setFirstName] = useState('');
+  useEffect(() => {
+    setHello(greeting(new Date().getHours()));
+    setFirstName(getAuthUser()?.name?.split(' ')[0] ?? '');
+  }, []);
 
   useEffect(() => {
     if (profileQuery.data && !profileQuery.data.onboardingCompleted) {
@@ -47,37 +69,40 @@ export default function StudentDashboardPage() {
   const profile = profileQuery.data;
   const progress = overviewQuery.data?.progress;
   const examDays = daysUntil(profile.examDate);
+  const sessions = progress?.totalAttempts ?? 0;
 
   return (
     <div className="max-w-5xl">
-      <PageHeader
-        title="Today"
-        description={`Your practice plan for ${profile.externalExams.join(', ')}.`}
-        action={<Button asChild variant="outline"><Link href="/student/onboarding">Edit plan</Link></Button>}
-      />
-
-      <RewardsStrip studentId={null} className="mb-6" />
-
-      <section className="mb-9 grid border-y border-gray-200 bg-white dark:border-border dark:bg-card sm:grid-cols-3" aria-label="Learning plan summary">
-        <div className="border-b border-gray-200 p-5 dark:border-border sm:border-b-0 sm:border-r">
-          <Target className="h-5 w-5 text-brand dark:text-accent2-400" />
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-muted-foreground">Preparing for</p>
-          <p className="mt-1 font-semibold text-gray-950 dark:text-foreground">{profile.externalExams.join(' · ')}</p>
+      {/* Greeting and plan at a glance. */}
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-brand dark:text-accent2-400">
+            {hello}{firstName ? `, ${firstName}` : ''}
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
+            {sessions > 0
+              ? `${sessions} practice ${sessions === 1 ? 'session' : 'sessions'} so far. Here is what to do next.`
+              : 'Start with a short assessment and we will map your topics.'}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Chip icon={Target}>{profile.externalExams.join(' · ') || 'No exam chosen'}</Chip>
+            <Chip icon={CalendarDays}>
+              {examDays === null ? 'No exam date' : examDays === 0 ? 'Exam today' : `${examDays} days to your exam`}
+            </Chip>
+            {profile.subjects.length > 0 && (
+              <Chip icon={BookOpenCheck}>{profile.subjects.map((subject) => subject.name).join(' · ')}</Chip>
+            )}
+          </div>
         </div>
-        <div className="border-b border-gray-200 p-5 dark:border-border sm:border-b-0 sm:border-r">
-          <BookOpenCheck className="h-5 w-5 text-brand dark:text-accent2-400" />
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-muted-foreground">Focus subjects</p>
-          <p className="mt-1 font-semibold text-gray-950 dark:text-foreground">{profile.subjects.map((subject) => subject.name).join(' · ')}</p>
-        </div>
-        <div className="p-5">
-          <CalendarDays className="h-5 w-5 text-brand dark:text-accent2-400" />
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-muted-foreground">Nearest exam</p>
-          <p className="mt-1 font-semibold text-gray-950 dark:text-foreground">{examDays === null ? 'No date set' : examDays === 0 ? 'Today' : `${examDays} days away`}</p>
-        </div>
-      </section>
+        <Button asChild variant="outline" size="sm" className="self-start rounded-full sm:self-auto">
+          <Link href="/student/onboarding"><Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit plan</Link>
+        </Button>
+      </header>
 
-      {profile.guestBaseline && (progress?.totalAttempts ?? 0) === 0 && (
-        <section className="mb-9 border-l-4 border-accent2-500 bg-accent2-50 p-5 dark:bg-accent2-500/10">
+      <RewardsStrip studentId={null} className="mb-8" />
+
+      {profile.guestBaseline && sessions === 0 && (
+        <section className="mb-9 rounded-2xl border border-accent2-200 bg-accent2-50 p-5 dark:border-accent2-500/30 dark:bg-accent2-500/10">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">Your warm-up signal</p>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -95,21 +120,8 @@ export default function StudentDashboardPage() {
 
       <NextActions studentId={null} actions={overviewQuery.data?.actions ?? []} isLoading={overviewQuery.isLoading} />
 
-      {(progress?.totalAttempts ?? 0) > 0 && (
-        <section className="border-t border-gray-200 pt-6 dark:border-border">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-muted-foreground">Evidence of progress</p>
-              <h2 className="mt-1 text-xl font-semibold text-gray-950 dark:text-foreground">{progress?.totalAttempts} completed practice {progress?.totalAttempts === 1 ? 'session' : 'sessions'}</h2>
-              <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">{progress?.summary.topicsImproved} topics have improved by at least ten points.</p>
-            </div>
-            <Button asChild variant="outline"><Link href="/student/progress"><TrendingUp className="mr-2 h-4 w-4" />View progress</Link></Button>
-          </div>
-        </section>
-      )}
-
-      <AchievementsPanel studentId={null} className="mt-9" />
-      <WeeklyLeaderboard studentId={null} className="mt-9" />
+      <AchievementsPanel studentId={null} className="mt-2" />
+      <WeeklyLeaderboard studentId={null} className="mt-8" />
     </div>
   );
 }

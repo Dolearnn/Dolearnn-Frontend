@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Flame, Sparkles, Trophy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getQuizRewards, quizKeys } from '@/lib/api/quiz';
+import ShareStreak from './ShareStreak';
 import { cn } from '@/lib/utils';
 
 /**
@@ -63,8 +64,11 @@ export default function RewardsStrip({
       </div>
 
       <div className="bg-white p-4 dark:bg-card">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-          <Flame className={cn('h-4 w-4', streak.current > 0 ? 'text-orange-500' : 'text-gray-400')} /> Streak
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
+            <Flame className={cn('h-4 w-4', streak.current > 0 ? 'text-orange-500' : 'text-gray-400')} /> Streak
+          </div>
+          {streak.current > 0 && <ShareStreak days={streak.current} level={level.name} xp={data.xp} />}
         </div>
         <p className="mt-1 text-lg font-semibold text-gray-950 dark:text-foreground">
           {streak.current} {streak.current === 1 ? 'day' : 'days'}

@@ -11,9 +11,14 @@ import { intakeHref } from '@/lib/quiz';
 export default function TutoringCta({
   prefill,
   weakTopics,
+  title = 'Get a tutor for your weak spots',
+  reason,
 }: {
   prefill: QuizTutoringPrefill;
   weakTopics: Array<{ topicId: string; name: string; accuracyPercent: number }>;
+  title?: string;
+  /** Why a tutor is suggested (e.g. "stayed below 60% across 2 quizzes"). */
+  reason?: string;
 }) {
   return (
     <div className="rounded-2xl border border-accent2-200 bg-accent2-50 dark:border-accent2-500/30 dark:bg-accent2-500/10 p-5">
@@ -23,8 +28,11 @@ export default function TutoringCta({
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold text-gray-900 dark:text-foreground">
-            Get a tutor for your weak spots
+            {title}
           </h3>
+          {reason && (
+            <p className="text-sm text-gray-600 dark:text-muted-foreground mt-1">{reason}</p>
+          )}
           <p className="text-sm text-gray-600 dark:text-muted-foreground mt-1">
             A one-to-one tutor can go through{' '}
             <span className="font-medium text-gray-900 dark:text-foreground">
