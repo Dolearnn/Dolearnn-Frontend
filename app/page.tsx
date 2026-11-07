@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Montserrat } from 'next/font/google';
+import { montserrat } from '@/lib/fonts';
 import {
   ArrowRight,
   BarChart3,
@@ -19,7 +19,6 @@ import { Logo } from '@/components/brand/Logo';
 import { LandingNav, NewsletterForm } from '@/components/landing/LandingNav';
 import { Reveal } from '@/components/Home/Motion';
 
-const display = Montserrat({ subsets: ['latin'], weight: ['600', '700', '800'], display: 'swap', variable: '--font-display' });
 
 export const metadata: Metadata = {
   title: 'DoLearnn: Know what to fix. Prove you fixed it.',
@@ -180,7 +179,7 @@ function SectionHead({ kicker, title, text, center = true }: { kicker: string; t
 
 export default function Home() {
   return (
-    <div className={`${display.variable} min-h-screen overflow-x-hidden bg-white text-slate-800`}>
+    <div className={`${montserrat.variable} min-h-screen overflow-x-hidden bg-white text-slate-800`}>
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2">
         Skip to content
       </a>

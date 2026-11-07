@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Montserrat } from 'next/font/google';
+import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 
 /*
@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils';
  *   tone="light"  white wordmark, for dark backgrounds; the mark sits on a
  *                 small white tile so its navy L stays visible
  */
-const montserrat = Montserrat({ subsets: ['latin'], weight: ['700'], display: 'swap' });
 
 const sizes = {
   sm: { mark: 'h-6', text: 'text-lg', gap: 'gap-2', tile: 'p-0.5 rounded-md' },

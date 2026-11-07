@@ -1,23 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Fraunces, Manrope } from 'next/font/google';
+import { frauncesPractice as display, manrope as body } from '@/lib/fonts';
 import { ArrowLeft } from 'lucide-react';
 import GuestPractice from '@/components/practice/GuestPractice';
 import styles from './practice.module.css';
 import { Logo } from '@/components/brand/Logo';
 
-// Same headline font as the landing page.
-const display = Fraunces({
-  subsets: ['latin'],
-  variable: '--practice-display',
-  display: 'swap',
-});
-
-const body = Manrope({
-  subsets: ['latin'],
-  variable: '--practice-body',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Try Mathematics practice — DoLearnn',

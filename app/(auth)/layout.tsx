@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { Fraunces } from 'next/font/google';
+import { frauncesAuth as serif } from '@/lib/fonts';
 import { ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 // Same headline font as the landing page, so the two feel like one product.
-const serif = Fraunces({ subsets: ['latin'], variable: '--f-serif', display: 'swap', style: ['normal', 'italic'] });
 
 const loop = ['Assess', 'Diagnose', 'Practise', 'Get support', 'Reassess'];
 
