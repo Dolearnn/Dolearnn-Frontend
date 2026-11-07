@@ -440,7 +440,7 @@ function BookingRequestsPanel({
           Calendar requests
         </p>
         <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
-          Families picked consistent paid slots. Review and create the 60-minute
+          Learners picked regular paid slots. Review and create the 60-minute
           sessions.
         </p>
       </div>
@@ -565,7 +565,7 @@ function SessionTable({
               <th className="px-4 py-3 text-left font-medium">Meeting link</th>
               <th className="px-4 py-3 text-left font-medium">Request</th>
               <th className="px-4 py-3 text-left font-medium">Teacher confirm</th>
-              <th className="px-4 py-3 text-left font-medium">Family</th>
+              <th className="px-4 py-3 text-left font-medium">Learner</th>
               <th className="px-4 py-3 text-left font-medium">Payout</th>
               <th className="px-4 py-3 text-right font-medium">Duration</th>
               <th className="px-4 py-3 text-right font-medium">Amount</th>

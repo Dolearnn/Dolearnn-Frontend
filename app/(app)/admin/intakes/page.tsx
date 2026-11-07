@@ -201,7 +201,7 @@ export default function AdminIntakesPage() {
       setPaymentStudent(student);
       toast({
         title: 'Student created',
-        description: 'Record parent payment is ready with this parent and student.',
+        description: 'You can now record a payment for this learner.',
       });
     },
     onError: (error) => {
@@ -287,7 +287,7 @@ export default function AdminIntakesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Intakes"
-        description="Review new family enquiries and assign the right teacher."
+        description="Review new tutor requests and assign the right tutor."
         action={
           <Button
             className="rounded-full bg-brand hover:bg-brand-600"
@@ -439,7 +439,7 @@ export default function AdminIntakesPage() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create student for parent</DialogTitle>
+            <DialogTitle>Add a learner profile to an account</DialogTitle>
           </DialogHeader>
           <div className="space-y-5">
             <Select
@@ -449,7 +449,7 @@ export default function AdminIntakesPage() {
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select parent" />
+                <SelectValue placeholder="Select account" />
               </SelectTrigger>
               <SelectContent>
                 {(parentsQuery.data ?? []).map((parent) => (

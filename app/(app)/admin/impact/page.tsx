@@ -77,7 +77,7 @@ export default function AdminImpactPage() {
       />
 
       <Section title="Reach">
-        <StatTile icon={Users} label="Families registered" value={n(people.families)} />
+        <StatTile icon={Users} label="Accounts registered" value={n(people.families)} />
         <StatTile icon={Users} label="Learner profiles" value={n(people.learnerProfiles)} />
         <StatTile icon={GraduationCap} label="Active teachers" value={n(people.activeTeachers)} />
         <StatTile
@@ -89,7 +89,7 @@ export default function AdminImpactPage() {
 
       <Section
         title="Engagement"
-        note="A learner is a child profile a parent quizzed for, or the account itself."
+        note="A learner is a learner account (older parent accounts count each child profile)."
       >
         <StatTile
           icon={BookOpenCheck}

@@ -212,7 +212,7 @@ export default function AdminPaymentsPage() {
         kind: 'in',
         date: payment.createdAt,
         amount: payment.amount,
-        label: `${payment.plan} - ${parent?.name ?? 'Parent'}`,
+        label: `${payment.plan} - ${parent?.name ?? 'Learner'}`,
         sub: `${payment.gateway} - ${payment.sessionsUsed}/${payment.sessionsIncluded} used`,
       });
     }
@@ -394,7 +394,7 @@ export default function AdminPaymentsPage() {
                   setPackageSearch(event.target.value);
                   setPackagesPage(1);
                 }}
-                placeholder="Search parent, student or subject"
+                placeholder="Search learner or subject"
                 className="rounded-full pl-9"
               />
             </div>
@@ -483,7 +483,7 @@ export default function AdminPaymentsPage() {
                 setLedgerSearch(event.target.value);
                 setPaymentsPage(1);
               }}
-              placeholder="Search parent name or email"
+              placeholder="Search name or email"
               className="rounded-full pl-9"
             />
           </div>
@@ -633,7 +633,7 @@ function PackageRow({
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-            {lessonPackage.parentName ?? 'Parent'}
+            {lessonPackage.parentName ?? 'Learner'}
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
             {lessonPackage.childName ?? 'Student'} - {lessonPackage.subject}

@@ -96,7 +96,7 @@ export default function AdminReportsPage() {
           icon={Banknote}
           label="Revenue"
           value={naira(report.summary.revenue)}
-          sub={`${report.summary.paymentCount} parent payment${report.summary.paymentCount === 1 ? '' : 's'}`}
+          sub={`${report.summary.paymentCount} payment${report.summary.paymentCount === 1 ? '' : 's'}`}
           accent
         />
         <StatTile
