@@ -1,771 +1,541 @@
-import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { Fraunces, JetBrains_Mono } from "next/font/google";
-import { ArrowDown, ArrowUpRight, Check, Swords } from "lucide-react";
-import { StudioNav, StudioNewsletter } from "@/components/Home/StudioNav";
-import { LoopDemo } from "@/components/Home/LoopDemo";
-import { CountUp, Reveal } from "@/components/Home/Motion";
-import s from "./studio.module.css";
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Montserrat } from 'next/font/google';
+import {
+  ArrowRight,
+  BarChart3,
+  Check,
+  Flame,
+  GraduationCap,
+  MessageCircle,
+  School,
+  ShieldCheck,
+  Swords,
+  Target,
+  Users,
+} from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
+import { LandingNav, NewsletterForm } from '@/components/landing/LandingNav';
+import { Reveal } from '@/components/Home/Motion';
 
-const serif = Fraunces({
-  subsets: ["latin"],
-  variable: "--f-serif",
-  display: "swap",
-  style: ["normal", "italic"],
-});
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--f-mono",
-  display: "swap",
-});
+const display = Montserrat({ subsets: ['latin'], weight: ['600', '700', '800'], display: 'swap', variable: '--font-display' });
 
 export const metadata: Metadata = {
-  title: "DoLearnn — Diagnose the weakness. Prove the improvement.",
+  title: 'DoLearnn: Know what to fix. Prove you fixed it.',
   description:
-    "DoLearnn is a data-driven learning platform for WAEC and UTME students. It combines diagnosis, targeted practice, AI and human support, and reassessment in one measurable loop.",
+    'Exam practice for JAMB, WAEC, NECO, Post-UTME, IGCSE and SAT. DoLearnn finds the topics holding you back, gives you practice and a tutor when you need one, and tests you again so you can see the improvement.',
   openGraph: {
-    title: "DoLearnn — Diagnose the weakness. Prove the improvement.",
-    description:
-      "Find the topics holding you back, get the right support, and prove the improvement with reassessment.",
-    images: ["/logo.png"],
+    title: 'DoLearnn: Know what to fix. Prove you fixed it.',
+    description: 'Find the topics holding you back, get the right support, and prove the improvement.',
+    images: ['/logo.png'],
   },
 };
 
-const whatsapp = `https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "2349057638887").replace(/\D/g, "")}?text=${encodeURIComponent("Hi DoLearnn! I would like to know more about learning and tutor support.")}`;
-const trial =
-  process.env.NEXT_PUBLIC_TRIAL_FORM_URL ??
-  "https://forms.gle/SYjkRgS1Y5JoD43v7";
+const whatsapp = `https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '2349057638887').replace(/\D/g, '')}?text=${encodeURIComponent('Hi DoLearnn! I would like to know more about learning and tutor support.')}`;
+const trial = process.env.NEXT_PUBLIC_TRIAL_FORM_URL ?? 'https://forms.gle/SYjkRgS1Y5JoD43v7';
 
-const problems = [
-  ["Weak diagnosis", "Scores rarely tell you which topics are the problem."],
-  [
-    "Generic support",
-    "Families buy help before they understand the exact gap.",
-  ],
-  [
-    "No proof loop",
-    "Tutoring outcomes are rarely measured with a structured re-test.",
-  ],
+const exams = ['JAMB UTME', 'WAEC', 'NECO', 'Post-UTME', 'IGCSE / GCSE', 'SAT'];
+const subjects = [
+  'Mathematics', 'English', 'Physics', 'Chemistry', 'Biology', 'Economics', 'Government', 'Literature',
+  'Accounting', 'Commerce', 'Geography', 'CRS', 'IRS', 'Further Maths', 'Agric', 'Civic Education',
+  'Yoruba', 'French', 'Music', 'Computer Studies',
 ];
 
-const stages = ["Score", "Diagnosis", "Support", "Proof"];
-const ladder = [
-  { name: "Free CBT apps", note: "Practice + scores", from: 1, to: 1 },
+const steps = [
   {
-    name: "Video & content platforms",
-    note: "Lessons + practice",
-    from: 1,
-    to: 1,
+    n: '01',
+    title: 'Take a short test',
+    text: 'Pick your exam and subject. A quick quiz shows where you stand today.',
+    tone: 'bg-[#EAF2FB]',
   },
   {
-    name: "Tutor marketplaces",
-    note: "Help, without the data",
-    from: 3,
-    to: 3,
+    n: '02',
+    title: 'See your weak topics',
+    text: 'Your results become a ranked list of the topics costing you marks.',
+    tone: 'bg-accent2-50',
   },
-  { name: "DoLearnn", note: "The whole loop", from: 1, to: 4, us: true },
-];
-
-const advantages = [
-  [
-    "Diagnostic intelligence",
-    "Results become a ranked map of your weakest topics.",
-  ],
-  [
-    "Context-aware AI",
-    "Support uses your diagnosis, attempts and progress history.",
-  ],
-  ["Human escalation", "A matched tutor sees where you are struggling."],
-  [
-    "Reassessment + proof",
-    "You are tested again, so the change can be measured.",
-  ],
-];
-
-const classGrid = [
-  [3, 2, 1, 3, 2],
-  [2, 1, 1, 3, 3],
-  [3, 3, 1, 2, 2],
-  [2, 1, 2, 3, 3],
-  [3, 2, 1, 2, 3],
-  [3, 3, 2, 3, 2],
+  {
+    n: '03',
+    title: 'Practise or get a tutor',
+    text: 'Daily missions target those topics. Need more help? A tutor sees your results first.',
+    tone: 'bg-[#FFF4E5]',
+  },
+  {
+    n: '04',
+    title: 'Test again, see the change',
+    text: 'Retake the topic and watch the score move. That is your proof.',
+    tone: 'bg-[#F3EEFF]',
+  },
 ];
 
 const audiences = [
   {
-    id: "students",
-    label: "Students",
-    title: "Know exactly what to fix next.",
-    text: "SS2 / SS3 students and recent school leavers preparing for WAEC and UTME. Mathematics first, with selected high-demand subjects alongside.",
-    href: "/practice",
-    cta: "Try a free warm-up",
+    icon: GraduationCap,
+    title: 'Students',
+    text: 'SS1 to SS3 and school leavers. Practise free every day and know exactly what to fix next.',
+    href: '/register',
+    cta: 'Start free',
   },
   {
-    id: "parents",
-    label: "Parents",
-    title: "Understand before you pay for help.",
-    text: "Create your child's account and see where they need support, why a tutor is recommended and how their topic results change. Pro plans include a parent progress report.",
-    href: "/register",
-    cta: "Create your child's account",
+    icon: Users,
+    title: 'Parents',
+    text: 'Sign up on behalf of your child. See their weak topics, why a tutor helps and how their scores change.',
+    href: '/register',
+    cta: 'Create an account',
   },
   {
-    id: "schools",
-    label: "Schools",
-    title: "See where the whole class struggles.",
-    text: "Class-wide diagnostics, progress dashboards, parent reporting and competition hosting: ₦900,000 a year.",
+    icon: School,
+    title: 'Schools',
+    text: 'Class-wide diagnostics, progress dashboards, parent reports and competitions: ₦900,000 a year.',
     href: trial,
-    cta: "Ask about a pilot",
+    cta: 'Ask about a pilot',
     external: true,
   },
 ];
 
 const plans = [
   {
-    name: "Free",
-    price: "₦0",
-    unit: "forever",
-    tagline: "Learn the loop",
-    features: [
-      "1 full diagnostic per month",
-      "3 practice missions per day",
-      "15 AI Study Coach messages per day",
-      "Basic progress view",
-    ],
+    name: 'Free',
+    price: '₦0',
+    unit: 'forever',
+    tagline: 'Start practising today',
+    features: ['1 full diagnostic per month', '3 practice missions per day', '15 AI Study Coach messages per day', 'Basic progress view'],
   },
   {
-    name: "Plus",
-    price: "₦2,500",
-    unit: "per month",
-    tagline: "For daily exam prep",
+    name: 'Plus',
+    price: '₦2,500',
+    unit: 'per month',
+    tagline: 'For daily exam prep',
     popular: true,
-    features: [
-      "Unlimited diagnostics and practice",
-      "150 AI Coach messages per day",
-      "Full topic-gap report",
-      "Weekly reassessment",
-    ],
+    features: ['Unlimited diagnostics and practice', '150 AI Coach messages per day', 'Full topic-gap report', 'Weekly reassessment'],
   },
   {
-    name: "Pro",
-    price: "₦4,500",
-    unit: "per month",
-    tagline: "For the final push",
-    dark: true,
-    features: [
-      "Everything in Plus",
-      "Unlimited AI Coach (fair use)",
-      "Timed WAEC / UTME mock exams",
-      "Parent progress report",
-      "10% off tutoring + priority booking",
-    ],
+    name: 'Pro',
+    price: '₦4,500',
+    unit: 'per month',
+    tagline: 'For the final push',
+    features: ['Everything in Plus', 'Unlimited AI Coach (fair use)', 'Timed WAEC / UTME mock exams', 'Parent progress report', '10% off tutoring + priority booking'],
   },
 ];
 
-const team = [
-  {
-    name: "Adeola David",
-    role: "Founder & CEO",
-    bg: "Software engineer at Accion Microfinance Bank. 400 Level Systems Engineering, University of Lagos.",
-    image: "/team/david.jpg",
-  },
-  {
-    name: "Peter Opeyemi",
-    role: "Co-Founder & CTO",
-    bg: "Senior product engineer at EventPadi, a platform serving 100,000+ ticket buyers and 4,000 events.",
-    image: "/team/peter.jpg",
-  },
-  // {
-  //   name: "Samuel Abdulkareem",
-  //   role: "Head of Product",
-  //   bg: "Qoray Mobility and Energies. Leads product strategy and partnerships.",
-  // },
-  // {
-  //   name: "Israel Adedokun",
-  //   role: "Finance & Strategy",
-  //   bg: "Financial advisor at Andersen. Budgets, pricing and unit economics.",
-  // },
-  // {
-  //   name: "Dolapo Abraham",
-  //   role: "Academic Director",
-  //   bg: "Mechanical Engineering graduate, University of Lagos (top 10, 2025/26). Four years of teaching.",
-  // },
+const extras = [
+  ['Exam Season Pass', '₦12,000 for 3 months of Pro, timed to WAEC and UTME.'],
+  ['Tutoring', '₦10,000 per session, focused on your weak topics.'],
+  ['Schools', '₦900,000 a year: diagnostics, dashboards and parent reports.'],
 ];
 
 const faqs = [
   {
-    q: "Who is DoLearnn built for?",
-    a: "SS2 and SS3 students and recent school leavers preparing for WAEC and UTME. We begin with Mathematics and selected high-demand subjects. Parents and schools can use DoLearnn to follow progress.",
+    q: 'Who is DoLearnn for?',
+    a: 'Secondary school students and recent school leavers preparing for JAMB UTME, WAEC, NECO, Post-UTME, IGCSE / GCSE or SAT. Parents can sign up on behalf of their child, and schools can use DoLearnn for whole classes.',
   },
   {
-    q: "How is this different from a quiz app?",
-    a: "A quiz gives you a score. DoLearnn ranks your weak topics, builds targeted practice, brings in AI or a human tutor when needed, then tests you again so the improvement can be measured.",
+    q: 'How is this different from a quiz app?',
+    a: 'A quiz gives you a score. DoLearnn ranks your weak topics, gives you practice on exactly those topics, brings in a tutor when you need one, then tests you again so you can see the improvement.',
   },
   {
-    q: "Does AI replace the tutor?",
-    a: "No. AI is part of the intervention, not the whole of it. When AI is not enough, a matched tutor receives your diagnosis and progress history so the lesson starts from evidence.",
+    q: 'Are these real past questions?',
+    a: 'They are original questions written in the style and syllabus of each exam, so you practise the same topics and difficulty without copied papers.',
   },
   {
-    q: "Is it really free to start?",
-    a: "Yes. Every learner gets a monthly diagnostic, daily practice missions and a capped AI Study Coach at no cost. Paid plans lift the limits when you need more.",
+    q: 'What is exam mode?',
+    a: 'A timed mock that fills the whole screen like the real CBT. Leaving the screen is recorded, so your score reflects what you can really do.',
   },
   {
-    q: "How does tutoring work?",
-    a: "₦10,000 per session, with a tutor matched to your diagnosed gaps. Request one straight from your results; Pro members get 10% off. Booking, payment and progress stay in the app.",
+    q: 'Is it really free?',
+    a: 'Yes. Every learner gets a monthly diagnostic, daily practice missions and a capped AI Study Coach at no cost. Paid plans lift the limits when you need more.',
+  },
+  {
+    q: 'How does tutoring work?',
+    a: '₦10,000 per session with a tutor matched to your weak topics. Request one from your results; the tutor sees your diagnosis before the first lesson. Pro members get 10% off.',
   },
 ];
 
+function Shot({ src, alt, width, height, className = '', priority = false }: { src: string; alt: string; width: number; height: number; className?: string; priority?: boolean }) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      priority={priority}
+      sizes="(min-width: 1024px) 640px, 100vw"
+      className={`h-auto w-full rounded-2xl border border-slate-200/70 bg-white shadow-[0_24px_60px_-24px_rgba(4,66,114,0.35)] ${className}`}
+    />
+  );
+}
+
+function SectionHead({ kicker, title, text, center = true }: { kicker: string; title: React.ReactNode; text?: string; center?: boolean }) {
+  return (
+    <div className={center ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'}>
+      <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent2-600">{kicker}</p>
+      <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold leading-tight tracking-tight text-brand-700 sm:text-4xl">
+        {title}
+      </h2>
+      {text && <p className="mt-4 text-lg leading-relaxed text-slate-600">{text}</p>}
+    </div>
+  );
+}
+
 export default function Home() {
   return (
-    <div
-      className={`${s.landing} ${serif.variable} ${mono.variable}`}
-      id="top"
-    >
+    <div className={`${display.variable} min-h-screen overflow-x-hidden bg-white text-slate-800`}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2">
+        Skip to content
+      </a>
       <noscript>
         <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
       </noscript>
-      <a href="#main-content" className={s.skipLink}>
-        Skip to content
-      </a>
-      <StudioNav />
-      <main id="main-content">
-        {/* ---------- HERO ---------- */}
-        <section className={s.hero} aria-labelledby="hero-title">
-          <div className={`${s.container} ${s.heroText}`}>
-            <p className={s.kicker}>For WAEC + UTME students</p>
-            <h1 id="hero-title">
-              Diagnose the weakness.
-              <br />
-              Match the right support.
-              <br />
-              <em>Prove the improvement.</em>
-            </h1>
-            <p className={s.lead}>
-              DoLearnn finds the exact topics costing you marks, matches the
-              right practice, AI and tutor support, then tests you again to
-              prove it worked.
-            </p>
-            <div className={s.actions}>
-              <Link className={s.primaryButton} href="/practice">
-                Try free Mathematics practice <ArrowUpRight size={18} />
-              </Link>
-              <a className={s.textLink} href="#loop">
-                Watch the loop <ArrowDown size={15} />
-              </a>
-            </div>
-          </div>
-          <div id="loop" className={`${s.container} ${s.heroDemo}`}>
-            <LoopDemo />
-          </div>
-        </section>
 
-        {/* ---------- MARKET STRIP ---------- */}
-        <section className={s.container} aria-label="Market context">
-          <dl className={s.strip}>
-            <div>
-              <dt>UTME registrations, 2026 (JAMB)</dt>
-              <dd>
-                <CountUp to={2243816} duration={1800} />
-              </dd>
-            </div>
-            <div>
-              <dt>UTME registrations in Lagos, the largest state</dt>
-              <dd>
-                <CountUp to={381814} duration={1600} />
-              </dd>
-            </div>
-            <div>
-              <dt>Where we start</dt>
-              <dd>SS2 / SS3</dd>
-            </div>
-          </dl>
-        </section>
+      <div className="relative">
+        {/* Soft brand glow behind the hero */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[720px] bg-[radial-gradient(60%_60%_at_15%_10%,#DDF5EA_0%,transparent_60%),radial-gradient(55%_55%_at_90%_0%,#DCE8F5_0%,transparent_65%)]" />
+        <div className="relative">
+          <LandingNav />
+        </div>
 
-        {/* ---------- PROBLEM ---------- */}
-        <section
-          id="problem"
-          className={`${s.container} ${s.problem}`}
-          aria-labelledby="problem-title"
-        >
-          <Reveal>
-            <p className={s.label}>The problem</p>
-            <h2 id="problem-title" className={s.manifesto}>
-              Students practise, get a score, and{" "}
-              <em>still don’t know what to fix next.</em> The opportunity isn’t
-              more practice. It’s better direction and{" "}
-              <mark>measurable improvement.</mark>
-            </h2>
-          </Reveal>
-          <ol className={s.problemRow}>
-            {problems.map(([title, text], index) => (
-              <Reveal as="li" key={title} delay={index * 110}>
-                <span>0{index + 1}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </Reveal>
-            ))}
-          </ol>
-        </section>
+        <main id="main-content" className="relative">
+          {/* ---------- HERO ---------- */}
+          <section className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 lg:pb-24 lg:pt-16" aria-labelledby="hero-title">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="inline-flex items-center gap-2 rounded-full border border-accent2-200 bg-white/80 px-3 py-1 text-sm font-medium text-brand">
+                <span className="h-2 w-2 rounded-full bg-accent2-400" /> JAMB · WAEC · NECO<span className="hidden sm:inline"> · Post-UTME · IGCSE · SAT</span><span className="sm:hidden"> and more</span>
+              </p>
+              <h1 id="hero-title" className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-brand-700 sm:text-6xl">
+                Know what to fix.{' '}
+                <span className="relative whitespace-nowrap text-accent2-500">
+                  Prove you fixed it.
+                </span>
+              </h1>
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
+                DoLearnn finds the exact topics costing you marks, gives you daily practice and a tutor when you need one, then tests you again so you can see the improvement.
+              </p>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Link href="/register" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand/20 transition hover:bg-brand-700 sm:w-auto">
+                  Start practising free <ArrowRight className="h-5 w-5" />
+                </Link>
+                <Link href="/practice" className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-white px-7 py-3.5 text-base font-semibold text-brand transition hover:border-brand sm:w-auto">
+                  Try a free quiz
+                </Link>
+              </div>
+              <p className="mt-4 text-sm text-slate-500">No card needed. Parents can sign up for their child.</p>
+            </div>
 
-        {/* ---------- MODULES (BENTO) ---------- */}
-        <section
-          id="modules"
-          className={`${s.container} ${s.modules}`}
-          aria-labelledby="modules-title"
-        >
-          <Reveal className={s.sectionHead}>
-            <p className={s.label}>Inside the product</p>
-            <h2 id="modules-title">
-              Every part is built around <em>your data.</em>
-            </h2>
-            <p>
-              DoLearnn remembers your diagnosed gaps, interventions and
-              outcomes, so the next recommendation is based on evidence, not a
-              blank chat.
-            </p>
-          </Reveal>
-          <div className={s.bento}>
-            <Reveal className={`${s.tile} ${s.t2}`}>
-              <p className={s.tileLabel}>Practise</p>
-              <h3>Missions built around your gap</h3>
-              <div className={s.mission}>
-                <b>Probability mission</b>
-                <span>8 questions · 15 minutes</span>
-                <div className={s.dots} aria-hidden="true">
-                  {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
-                    <i key={n} className={n < 3 ? s.dotOn : ""} />
-                  ))}
-                </div>
-                <small>3 of 8 done</small>
+            <Reveal className="relative mx-auto mt-14 max-w-5xl">
+              <Shot src="/landing/today.webp" alt="The DoLearnn Today page with a streak, daily missions and the next topic to practise" width={2000} height={1250} priority />
+              <div className="absolute -bottom-10 -right-2 hidden w-44 rotate-3 sm:block lg:-right-12 lg:w-56">
+                <Image src="/landing/share-card.webp" alt="A streak card a learner can share" width={664} height={830} className="h-auto w-full rounded-2xl shadow-2xl ring-4 ring-white" />
+              </div>
+              <div className="absolute -left-3 top-10 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-200 md:flex lg:-left-10">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-50 text-orange-500"><Flame className="h-5 w-5" /></span>
+                <span className="text-left text-sm"><strong className="block text-brand-700">Daily streaks</strong><span className="text-slate-500">Share them with friends</span></span>
               </div>
             </Reveal>
+          </section>
+        </main>
+      </div>
 
-            <Reveal className={`${s.tile} ${s.t2}`} delay={100}>
-              <p className={s.tileLabel}>Compete</p>
-              <h3>Arena: turn practice into a rivalry</h3>
-              <div className={s.arena}>
-                <div>
-                  <span>Ada</span>
-                  <strong>7</strong>
-                </div>
-                <Swords size={22} />
-                <div>
-                  <strong>5</strong>
-                  <span>Tobi</span>
-                </div>
-              </div>
-              <small className={s.tileFoot}>
-                1v1 battle · question 12 of 15
-              </small>
-            </Reveal>
-
-            <Reveal className={`${s.tile} ${s.t2}`} delay={200}>
-              <p className={s.tileLabel}>AI Study Coach</p>
-              <h3>Free to try. More when you need it.</h3>
-              <ul className={s.meter}>
-                <li>
-                  <span>Free</span>
-                  <i style={{ width: "10%" }} />
-                  <em>15 / day</em>
-                </li>
-                <li>
-                  <span>Plus</span>
-                  <i style={{ width: "55%" }} />
-                  <em>150 / day</em>
-                </li>
-                <li>
-                  <span>Pro</span>
-                  <i style={{ width: "100%" }} />
-                  <em>Unlimited*</em>
-                </li>
-              </ul>
-              <small className={s.tileFoot}>*Fair use applies</small>
-            </Reveal>
-
-            <Reveal className={`${s.tile} ${s.t3} ${s.tileDark}`}>
-              <p className={s.tileLabel}>Human support</p>
-              <h3>A tutor who starts with your data</h3>
-              <dl className={s.brief}>
-                <div>
-                  <dt>Focus topic</dt>
-                  <dd>Probability</dd>
-                </div>
-                <div>
-                  <dt>Needs attention</dt>
-                  <dd>Counting all possible outcomes</dd>
-                </div>
-                <div>
-                  <dt>Suggested goal</dt>
-                  <dd>Build a sample space, then solve alone</dd>
-                </div>
-              </dl>
-              <small className={s.tileFoot}>
-                ₦10,000 per session · tutors keep 50%
-              </small>
-            </Reveal>
-
-            <Reveal className={`${s.tile} ${s.t3}`} delay={120}>
-              <p className={s.tileLabel}>For schools</p>
-              <h3>See which topics the whole class is failing</h3>
-              <div className={s.heat} aria-hidden="true">
-                {classGrid.flat().map((level, index) => (
-                  <i key={index} data-level={level} />
-                ))}
-              </div>
-              <small className={s.tileFoot}>
-                Class diagnostics · illustrative data
-              </small>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ---------- ADVANTAGE ---------- */}
-        <section
-          id="advantage"
-          className={`${s.container} ${s.advantage}`}
-          aria-labelledby="adv-title"
-        >
-          <Reveal className={s.sectionHead}>
-            <p className={s.label}>Why DoLearnn</p>
-            <h2 id="adv-title">
-              Others stop at the score. <em>We close the loop.</em>
-            </h2>
-          </Reveal>
-          <Reveal className={s.ladder}>
-            <div className={s.ladderHead} aria-hidden="true">
-              <span />
-              {stages.map((stage) => (
-                <b key={stage}>{stage}</b>
-              ))}
-            </div>
-            {ladder.map((row) => (
-              <div
-                key={row.name}
-                className={`${s.ladderRow} ${row.us ? s.ladderUs : ""}`}
-              >
-                <div className={s.ladderName}>
-                  <strong>{row.name}</strong>
-                  <small>{row.note}</small>
-                </div>
-                <div className={s.ladderTrack}>
-                  <i
-                    style={{
-                      gridColumn: `${row.from} / ${row.to + 1}`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </Reveal>
-          <ul className={s.advList}>
-            {advantages.map(([title, text], index) => (
-              <Reveal as="li" key={title} delay={index * 90}>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </Reveal>
+      {/* ---------- EXAMS STRIP ---------- */}
+      <section id="exams" className="border-y border-slate-100 bg-slate-50/70 py-12" aria-labelledby="exams-title">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 id="exams-title" className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Practise for</h2>
+          <ul className="mt-6 flex flex-wrap justify-center gap-3">
+            {exams.map((exam) => (
+              <li key={exam} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 font-[family-name:var(--font-display)] text-base font-bold text-brand-700 shadow-sm">
+                {exam}
+              </li>
             ))}
           </ul>
-        </section>
-
-        {/* ---------- AUDIENCES ---------- */}
-        <section className={s.audiences} aria-label="Who DoLearnn is for">
-          <div className={`${s.container} ${s.audGrid}`}>
-            {audiences.map((item, index) => (
-              <Reveal
-                as="article"
-                key={item.id}
-                id={item.id}
-                delay={index * 110}
-              >
-                <p className={s.audLabel}>{item.label}</p>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-                {item.external ? (
-                  <a
-                    className={s.audLink}
-                    href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {item.cta} <ArrowUpRight size={16} />
-                  </a>
-                ) : (
-                  <Link className={s.audLink} href={item.href}>
-                    {item.cta} <ArrowUpRight size={16} />
-                  </Link>
-                )}
-              </Reveal>
+          <ul className="mx-auto mt-6 flex max-w-4xl flex-wrap justify-center gap-2" aria-label="Subjects">
+            {subjects.map((subject) => (
+              <li key={subject} className="rounded-full bg-white px-3 py-1 text-sm text-slate-600 ring-1 ring-slate-200">{subject}</li>
             ))}
-          </div>
-        </section>
-
-        {/* ---------- PRICING ---------- */}
-        <section
-          id="pricing"
-          className={`${s.container} ${s.pricing}`}
-          aria-labelledby="pricing-title"
-        >
-          <Reveal className={s.sectionHead}>
-            <p className={s.label}>Pricing</p>
-            <h2 id="pricing-title">
-              Free to start. Cheap to upgrade. <em>Priced for students.</em>
-            </h2>
-            <p>
-              Limits are reached at the moment of need, mid-topic or in exam
-              week, which is when an upgrade helps most.
-            </p>
-          </Reveal>
-          <div className={s.planGrid}>
-            {plans.map((plan, index) => (
-              <Reveal key={plan.name} delay={index * 110}>
-                <article
-                  className={`${s.plan} ${plan.dark ? s.planDark : ""} ${plan.popular ? s.planPopular : ""}`}
-                >
-                  {plan.popular && (
-                    <span className={s.popular}>Most popular</span>
-                  )}
-                  <h3>{plan.name}</h3>
-                  <p className={s.price}>
-                    {plan.price} <small>{plan.unit}</small>
-                  </p>
-                  <p className={s.tagline}>{plan.tagline}</p>
-                  <ul>
-                    {plan.features.map((feature) => (
-                      <li key={feature}>
-                        <Check size={16} strokeWidth={2.5} /> {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              </Reveal>
-            ))}
-          </div>
-          <Reveal as="dl" className={s.extras}>
-            <div>
-              <dt>Exam Season Pass</dt>
-              <dd>₦12,000 for 3 months of Pro, timed to WAEC and UTME.</dd>
-            </div>
-            <div>
-              <dt>Targeted tutoring</dt>
-              <dd>₦10,000 per session, focused on your weak topics.</dd>
-            </div>
-            <div>
-              <dt>School packages</dt>
-              <dd>₦900,000/year: diagnostics, dashboards, parent reports.</dd>
-            </div>
-          </Reveal>
-        </section>
-
-        {/* ---------- PROOF ---------- */}
-        <section
-          id="proof"
-          className={`${s.container} ${s.proof}`}
-          aria-labelledby="proof-title"
-        >
-          <Reveal className={s.sectionHead}>
-            <p className={s.label}>Traction</p>
-            <h2 id="proof-title">
-              Early demand exists <em>before</em> we’ve scaled.
-            </h2>
-          </Reveal>
-          <ul className={s.bigNumbers}>
-            <Reveal as="li">
-              <strong>
-                <CountUp to={15} />
-              </strong>
-              <span>students in the free pilot</span>
-            </Reveal>
-            <Reveal as="li" delay={120}>
-              <strong>
-                <CountUp to={4} />
-              </strong>
-              <span>students tutored</span>
-            </Reveal>
-            <Reveal as="li" delay={240}>
-              <strong>
-                <CountUp to={2} />
-              </strong>
-              <span>
-                schools in conversation: Temperance College and Divine Grace
-                Private School
-              </span>
-            </Reveal>
+            <li className="rounded-full px-3 py-1 text-sm font-medium text-accent2-600">and more</li>
           </ul>
-        </section>
+        </div>
+      </section>
 
-        {/* ---------- TEAM ---------- */}
-        <section
-          id="team"
-          className={`${s.container} ${s.team}`}
-          aria-labelledby="team-title"
-        >
-          <Reveal className={s.sectionHead}>
-            <p className={s.label}>The team</p>
-            <h2 id="team-title">
-              Engineering, product, teaching and finance, <em>in one team.</em>
-            </h2>
-          </Reveal>
-          <ul className={s.teamGrid}>
-            {team.map((member, index) => (
-              <Reveal as="li" key={member.name} delay={index * 80}>
-                <Image
-                  className={s.teamPhoto}
-                  src={member.image}
-                  alt={member.name}
-                  width={144}
-                  height={144}
-                  sizes="144px"
-                />
-                <h3>{member.name}</h3>
-                <small>{member.role}</small>
-                {/* <p>{member.bg}</p> */}
-              </Reveal>
-            ))}
-          </ul>
-        </section>
+      {/* ---------- STATEMENT ---------- */}
+      <section className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 lg:py-28" aria-label="Why DoLearnn">
+        <Reveal>
+          <p className="font-[family-name:var(--font-display)] text-2xl font-bold leading-snug tracking-tight text-brand-700 sm:text-4xl">
+            A score tells you <span className="text-slate-400">how you did.</span> DoLearnn tells you <span className="text-accent2-500">what to do next</span>, and shows you when it worked.
+          </p>
+        </Reveal>
+      </section>
 
-        {/* ---------- GOALS ---------- */}
-        <section className={s.goals} aria-labelledby="goals-title">
-          <div className={s.container}>
-            <Reveal className={s.sectionHead}>
-              <p className={s.labelLight}>Year 1 goals</p>
-              <h2 id="goals-title">
-                Free diagnosis for every learner.{" "}
-                <em>Real income for tutors.</em>
-              </h2>
+      {/* ---------- HOW IT WORKS ---------- */}
+      <section id="how-it-works" className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:pb-28" aria-labelledby="how-title">
+        <SectionHead kicker="How it works" title={<span id="how-title">Four steps. One simple loop.</span>} />
+        <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step, index) => (
+            <Reveal as="li" key={step.n} delay={index * 90} className={`flex flex-col rounded-3xl ${step.tone} p-6`}>
+              <span className="font-[family-name:var(--font-display)] text-sm font-bold text-brand/50">{step.n}</span>
+              <h3 className="mt-6 font-[family-name:var(--font-display)] text-xl font-bold text-brand-700">{step.title}</h3>
+              <p className="mt-2 leading-relaxed text-slate-600">{step.text}</p>
             </Reveal>
-            <ul className={s.goalList}>
-              <Reveal as="li">
-                <strong>
-                  <CountUp to={5000} suffix="+" />
-                </strong>
-                <span>learners get a free topic diagnosis</span>
-              </Reveal>
-              <Reveal as="li" delay={120}>
-                <strong>
-                  <CountUp to={50} />
-                </strong>
-                <span>planned jobs and income opportunities</span>
-              </Reveal>
-              <Reveal as="li" delay={240}>
-                <strong>Class-level</strong>
-                <span>insight into where students struggle</span>
-              </Reveal>
-            </ul>
-            <p className={s.fine}>These are goals, not results to date.</p>
-          </div>
-        </section>
+          ))}
+        </ol>
+        <Reveal className="mt-10">
+          <Shot src="/landing/topics.webp" alt="Topics to strengthen, ranked from weakest to strongest" width={2000} height={477} />
+        </Reveal>
+      </section>
 
-        {/* ---------- FAQ ---------- */}
-        <section
-          id="questions"
-          className={`${s.container} ${s.faq}`}
-          aria-labelledby="questions-title"
-        >
-          <div>
-            <p className={s.label}>Questions</p>
-            <h2 id="questions-title">Before you make a move.</h2>
-          </div>
-          <div className={s.faqList}>
-            {faqs.map((item) => (
-              <details key={item.q}>
-                <summary>
-                  {item.q}
-                  <span aria-hidden="true">+</span>
-                </summary>
-                <p>{item.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        {/* ---------- CTA ---------- */}
-        <section className={s.finalCta}>
-          <div className={s.container}>
-            <h2>
-              Stop guessing what to study <em>next.</em>
+      {/* ---------- FEATURES ---------- */}
+      <section id="features" className="bg-brand-700 py-20 text-white lg:py-28" aria-labelledby="features-title">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-accent2-300">Built for exam season</p>
+            <h2 id="features-title" className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-tight sm:text-4xl">
+              Everything you need, in one place.
             </h2>
-            <div className={s.actions}>
-              <Link href="/practice" className={s.ctaButton}>
-                Start with free practice <ArrowUpRight size={19} />
-              </Link>
-              <a
-                href={whatsapp}
-                target="_blank"
-                rel="noreferrer"
-                className={s.ctaLink}
-              >
-                Talk to the DoLearnn team <ArrowUpRight size={16} />
-              </a>
-            </div>
           </div>
-        </section>
-      </main>
 
-      <footer className={s.footer}>
-        <div className={s.container}>
-          <div className={s.footerTop}>
-            <div>
-              <a href="#top" className={s.wordmark} aria-label="DoLearnn, back to top">
-                <Logo tone="light" size="lg" />
-              </a>
-              <p>Powered by learning, driven by success.</p>
-              <p className={s.location}>Lagos, Nigeria</p>
-            </div>
-            <nav aria-label="Footer learning links">
-              <strong>Explore</strong>
-              <Link href="/practice">Try practice</Link>
-              <a href="#loop">The loop</a>
-              <a href="#pricing">Pricing</a>
-              <a href="#parents">For parents</a>
-              <a href="#schools">For schools</a>
-            </nav>
-            <nav aria-label="Footer support links">
-              <strong>Stay connected</strong>
-              <a href={whatsapp} target="_blank" rel="noreferrer">
-                WhatsApp us <ArrowUpRight size={13} />
-              </a>
-              <a
-                href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "dolearnnn@gmail.com"}`}
-              >
-                Contact the team
-              </a>
-              <Link href="/login">Student & teacher login</Link>
-              <a
-                href={
-                  process.env.NEXT_PUBLIC_INSTAGRAM_URL ??
-                  "https://instagram.com/dolearnn"
-                }
-                target="_blank"
-                rel="noreferrer"
-              >
-                Instagram <ArrowUpRight size={13} />
-              </a>
-              <a
-                href={
-                  process.env.NEXT_PUBLIC_LINKEDIN_URL ??
-                  "https://linkedin.com/company/dolearnn"
-                }
-                target="_blank"
-                rel="noreferrer"
-              >
-                LinkedIn <ArrowUpRight size={13} />
-              </a>
-            </nav>
-            <StudioNewsletter />
-          </div>
-          <div className={s.footerBottom}>
-            <span>
-              © {new Date().getFullYear()} DoLearnn. All rights reserved.
-            </span>
-            <span>
-              Diagnose the weakness. Match the right support. Prove the
-              improvement.
-            </span>
+          <div className="mt-16 space-y-20 lg:space-y-28">
+            <Feature
+              icon={ShieldCheck}
+              kicker="Exam mode"
+              title="Feels like the real CBT."
+              text="Timed mocks fill the whole screen with the exam name at the top. Leaving the screen is recorded, so your score shows what you can really do on the day."
+              points={['Full screen, one question at a time', 'Timer and question map', 'Honest scores you can trust']}
+              image={{ src: '/landing/exam.webp', alt: 'Exam mode running a JAMB UTME Mathematics mock', width: 2000, height: 1250 }}
+            />
+            <Feature
+              reverse
+              icon={Flame}
+              kicker="Streaks, missions and badges"
+              title="Show up daily. Share your streak."
+              text="Three short missions a day keep you moving. Earn badges, climb the weekly leaderboard (or hide your name) and share a streak card that says which exam you are preparing for."
+              points={['Daily missions on your weak topics', 'Badges for real progress', 'Share to WhatsApp in one tap']}
+              image={{ src: '/landing/missions.webp', alt: 'Daily missions and progress', width: 1100, height: 948 }}
+              narrow
+            />
+            <Feature
+              icon={Swords}
+              kicker="Arena"
+              title="Practise with friends."
+              text="Start a battle, send your friend the code and answer the same questions. Best score wins."
+              points={['Same questions for both of you', 'Invite with a battle code', 'See who won and by how much']}
+              image={{ src: '/landing/arena.webp', alt: 'The Arena page for quiz battles', width: 2000, height: 1014 }}
+            />
+            <Feature
+              reverse
+              icon={Target}
+              kicker="Tutors who come prepared"
+              title="Help that starts from your results."
+              text="Request a tutor in a few taps. Before the first lesson your tutor sees your weak topics and recent scores, so no time is wasted. ₦10,000 per session."
+              points={['Matched to your weak topics', 'Session notes after every lesson', 'Progress reports for parents']}
+              image={{ src: '/landing/tutor-summary.webp', alt: 'A tutor’s summary of a learner’s weak topics', width: 1104, height: 617 }}
+              narrow
+            />
           </div>
         </div>
+      </section>
+
+      {/* ---------- AUDIENCES ---------- */}
+      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:py-28" aria-labelledby="who-title">
+        <SectionHead kicker="Who it’s for" title={<span id="who-title">One account. Everyone on the same page.</span>} />
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {audiences.map((item, index) => (
+            <Reveal as="article" key={item.title} delay={index * 90} className="flex flex-col rounded-3xl border border-slate-200 p-7 transition hover:border-accent2-300 hover:shadow-lg">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent2-50 text-accent2-600"><item.icon className="h-6 w-6" /></span>
+              <h3 className="mt-5 font-[family-name:var(--font-display)] text-xl font-bold text-brand-700">{item.title}</h3>
+              <p className="mt-2 flex-1 leading-relaxed text-slate-600">{item.text}</p>
+              {item.external ? (
+                <a href={item.href} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-1.5 font-semibold text-brand hover:text-accent2-600">
+                  {item.cta} <ArrowRight className="h-4 w-4" />
+                </a>
+              ) : (
+                <Link href={item.href} className="mt-6 inline-flex items-center gap-1.5 font-semibold text-brand hover:text-accent2-600">
+                  {item.cta} <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
+            </Reveal>
+          ))}
+        </div>
+
+        {/* Real traction only */}
+        <Reveal className="mt-14 grid gap-6 rounded-3xl bg-slate-50 p-8 sm:grid-cols-3">
+          <Stat value="15" label="students in our free pilot" />
+          <Stat value="4" label="students tutored so far" />
+          <Stat value="2" label="schools in conversation" />
+        </Reveal>
+      </section>
+
+      {/* ---------- PRICING ---------- */}
+      <section id="pricing" className="bg-slate-50/70 py-20 lg:py-28" aria-labelledby="pricing-title">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHead kicker="Pricing" title={<span id="pricing-title">Free to start. Priced for students.</span>} text="Upgrade only when you need more practice or the final push before your exam." />
+          <div className="mt-12 grid gap-5 lg:grid-cols-3">
+            {plans.map((plan, index) => (
+              <Reveal
+                as="article"
+                key={plan.name}
+                delay={index * 90}
+                className={`relative flex flex-col rounded-3xl p-7 ${plan.popular ? 'bg-brand text-white shadow-2xl shadow-brand/25 lg:-my-3 lg:py-10' : 'border border-slate-200 bg-white'}`}
+              >
+                {plan.popular && (
+                  <span className="absolute -top-3 left-7 rounded-full bg-accent2-400 px-3 py-1 text-xs font-bold text-brand-700">Most popular</span>
+                )}
+                <h3 className={`font-[family-name:var(--font-display)] text-lg font-bold ${plan.popular ? 'text-white' : 'text-brand-700'}`}>{plan.name}</h3>
+                <p className={`mt-1 text-sm ${plan.popular ? 'text-white/70' : 'text-slate-500'}`}>{plan.tagline}</p>
+                <p className="mt-5">
+                  <span className="font-[family-name:var(--font-display)] text-4xl font-extrabold">{plan.price}</span>{' '}
+                  <span className={plan.popular ? 'text-white/70' : 'text-slate-500'}>{plan.unit}</span>
+                </p>
+                <ul className="mt-6 flex-1 space-y-3">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex gap-2.5 text-sm">
+                      <Check className={`mt-0.5 h-4 w-4 shrink-0 ${plan.popular ? 'text-accent2-300' : 'text-accent2-500'}`} strokeWidth={3} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/register"
+                  className={`mt-8 rounded-full py-3 text-center font-semibold transition ${plan.popular ? 'bg-accent2-400 text-brand-700 hover:bg-accent2-300' : 'border border-slate-300 text-brand hover:border-brand'}`}
+                >
+                  {plan.name === 'Free' ? 'Start free' : `Get ${plan.name}`}
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+          <dl className="mt-10 grid gap-4 sm:grid-cols-3">
+            {extras.map(([title, text]) => (
+              <div key={title} className="rounded-2xl border border-slate-200 bg-white p-5">
+                <dt className="font-semibold text-brand-700">{title}</dt>
+                <dd className="mt-1 text-sm text-slate-600">{text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ---------- FAQ ---------- */}
+      <section id="faq" className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:py-28" aria-labelledby="faq-title">
+        <SectionHead kicker="FAQ" title={<span id="faq-title">Questions, answered.</span>} />
+        <div className="mt-10 divide-y divide-slate-200 rounded-3xl border border-slate-200">
+          {faqs.map((item) => (
+            <details key={item.q} className="group px-6 py-5 [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-brand-700">
+                {item.q}
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-100 text-lg leading-none text-brand transition group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-3 leading-relaxed text-slate-600">{item.a}</p>
+            </details>
+          ))}
+        </div>
+        <p className="mt-6 text-center text-slate-600">
+          Still unsure?{' '}
+          <a href={whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-brand hover:text-accent2-600">
+            <MessageCircle className="h-4 w-4" /> Chat with us on WhatsApp
+          </a>
+        </p>
+      </section>
+
+      {/* ---------- FINAL CTA ---------- */}
+      <section className="px-4 pb-20 sm:px-6">
+        <Reveal className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent2-400 to-accent2-500 px-6 py-16 text-center sm:px-12">
+          <div aria-hidden className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/15" />
+          <div aria-hidden className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-brand/10" />
+          <BarChart3 className="relative mx-auto h-10 w-10 text-brand-700" />
+          <h2 className="relative mt-4 font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-tight text-brand-700 sm:text-5xl">
+            Your next score starts today.
+          </h2>
+          <p className="relative mx-auto mt-4 max-w-xl text-lg text-brand-700/80">Take a free quiz, see your weak topics and get a plan in minutes.</p>
+          <Link href="/register" className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-700">
+            Create your free account <ArrowRight className="h-5 w-5" />
+          </Link>
+        </Reveal>
+      </section>
+
+      {/* ---------- FOOTER ---------- */}
+      <footer className="bg-brand-800 text-white">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
+          <div>
+            <Logo tone="light" size="md" />
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">Know what to fix. Prove you fixed it. Exam practice, diagnosis and tutoring in one place.</p>
+            <p className="mt-6 text-sm font-semibold">Get study tips and exam updates</p>
+            <NewsletterForm />
+          </div>
+          <nav aria-label="Product" className="text-sm">
+            <p className="font-semibold">Product</p>
+            <ul className="mt-4 space-y-2.5 text-white/70">
+              <li><a href="#how-it-works" className="hover:text-white">How it works</a></li>
+              <li><a href="#features" className="hover:text-white">Features</a></li>
+              <li><a href="#pricing" className="hover:text-white">Pricing</a></li>
+              <li><Link href="/practice" className="hover:text-white">Free quiz</Link></li>
+            </ul>
+          </nav>
+          <nav aria-label="Account" className="text-sm">
+            <p className="font-semibold">Get started</p>
+            <ul className="mt-4 space-y-2.5 text-white/70">
+              <li><Link href="/register" className="hover:text-white">Create account</Link></li>
+              <li><Link href="/login" className="hover:text-white">Log in</Link></li>
+              <li><a href={trial} target="_blank" rel="noreferrer" className="hover:text-white">For schools</a></li>
+              <li><a href={whatsapp} target="_blank" rel="noreferrer" className="hover:text-white">WhatsApp</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div className="border-t border-white/10">
+          <p className="mx-auto max-w-6xl px-4 py-6 text-xs text-white/50 sm:px-6">© {new Date().getFullYear()} DoLearnn. All rights reserved.</p>
+        </div>
       </footer>
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="text-center">
+      <p className="font-[family-name:var(--font-display)] text-5xl font-extrabold text-brand">{value}</p>
+      <p className="mt-1 text-slate-600">{label}</p>
+    </div>
+  );
+}
+
+function Feature({
+  icon: Icon,
+  kicker,
+  title,
+  text,
+  points,
+  image,
+  reverse = false,
+  narrow = false,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  kicker: string;
+  title: string;
+  text: string;
+  points: string[];
+  image: { src: string; alt: string; width: number; height: number };
+  reverse?: boolean;
+  narrow?: boolean;
+}) {
+  return (
+    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+      <Reveal className={reverse ? 'lg:order-2' : ''}>
+        <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-accent2-300">
+          <Icon className="h-4 w-4" /> {kicker}
+        </span>
+        <h3 className="mt-5 font-[family-name:var(--font-display)] text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h3>
+        <p className="mt-4 text-lg leading-relaxed text-white/75">{text}</p>
+        <ul className="mt-6 space-y-3">
+          {points.map((point) => (
+            <li key={point} className="flex items-center gap-3 text-white/90">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-accent2-400/20"><Check className="h-3.5 w-3.5 text-accent2-300" strokeWidth={3} /></span>
+              {point}
+            </li>
+          ))}
+        </ul>
+      </Reveal>
+      <Reveal className={`${reverse ? 'lg:order-1' : ''} ${narrow ? 'mx-auto w-full max-w-md' : ''}`}>
+        <div className="rounded-3xl bg-white/5 p-3 ring-1 ring-white/10 sm:p-4">
+          <Image src={image.src} alt={image.alt} width={image.width} height={image.height} sizes="(min-width: 1024px) 560px, 100vw" className="h-auto w-full rounded-2xl" />
+        </div>
+      </Reveal>
     </div>
   );
 }
