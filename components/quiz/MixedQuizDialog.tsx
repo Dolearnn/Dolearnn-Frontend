@@ -27,7 +27,7 @@ const modes: Array<{ value: QuizMode; title: string; hint: string }> = [
 /**
  * Build one exam from several subjects (e.g. JAMB: English + three subjects),
  * optionally narrowing any subject to chosen topics. Questions are shared
- * evenly and grouped by subject.
+ * evenly and grouped by subject. 
  */
 export default function MixedQuizDialog({
   subjects,
