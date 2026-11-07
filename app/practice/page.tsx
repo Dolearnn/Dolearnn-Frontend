@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Bricolage_Grotesque, Manrope } from 'next/font/google';
+import { Fraunces, Manrope } from 'next/font/google';
 import { ArrowLeft } from 'lucide-react';
 import GuestPractice from '@/components/practice/GuestPractice';
 import styles from './practice.module.css';
+import { Logo } from '@/components/brand/Logo';
 
-const display = Bricolage_Grotesque({
+// Same headline font as the landing page.
+const display = Fraunces({
   subsets: ['latin'],
   variable: '--practice-display',
   display: 'swap',
@@ -29,7 +31,7 @@ export default function PracticePage() {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <Link href="/" className={styles.wordmark} aria-label="DoLearnn home">
-            do<span>learnn</span><i>.</i>
+            <Logo size="md" />
           </Link>
           <Link href="/" className={styles.backLink}>
             <ArrowLeft size={16} /> Back to DoLearnn

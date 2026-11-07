@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Fraunces } from 'next/font/google';
 import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 // Same headline font as the landing page, so the two feel like one product.
@@ -19,20 +19,8 @@ const gaps = [
 
 function Wordmark({ light = false }: { light?: boolean }) {
   return (
-    <Link href="/" aria-label="DoLearnn home" className="inline-flex items-center gap-2.5">
-      <Image
-        src="/logo-mark.png"
-        alt=""
-        width={281}
-        height={265}
-        priority
-        className={light ? 'h-9 w-auto rounded-lg bg-white p-1' : 'h-7 w-auto'}
-      />
-      <span
-        className={`font-[family-name:var(--f-serif)] text-2xl font-semibold tracking-tight ${light ? 'text-white' : 'text-[#0b1f33] dark:text-white'}`}
-      >
-        Do<span className={`italic ${light ? 'text-accent2-400' : 'text-brand dark:text-accent2-400'}`}>Learnn</span>
-      </span>
+    <Link href="/" aria-label="DoLearnn home" className="inline-flex">
+      <Logo tone={light ? 'light' : 'brand'} size={light ? 'lg' : 'md'} />
     </Link>
   );
 }

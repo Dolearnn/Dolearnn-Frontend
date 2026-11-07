@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Menu, X } from "lucide-react";
 import { subscribeNewsletter } from "@/lib/api/public";
 import s from "@/app/studio.module.css";
+import { Logo } from '@/components/brand/Logo';
 
 const navigation = [
   { href: "#loop", label: "The loop" },
@@ -43,8 +43,7 @@ export function StudioNav() {
     <header className={`${s.header} ${stuck ? s.headerStuck : ""}`}>
       <div className={`${s.container} ${s.navBar}`}>
         <Link href="/" aria-label="DoLearnn home" className={s.wordmark}>
-          <Image src="/logo-mark.png" alt="" width={281} height={265} className={s.wordmarkLogo} priority />
-          <span className={s.wordmarkText}>Do<span>Learnn</span></span>
+          <Logo size="md" />
         </Link>
         <nav aria-label="Main navigation" className={s.desktopNav}>
           {navigation.map((item) => (

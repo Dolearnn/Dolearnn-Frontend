@@ -130,19 +130,6 @@
   align-items: center;
   gap: 10px;
 }
-/* The logo mark (navy L + mint D), shown beside the wordmark. */
-.wordmarkLogo {
-  flex: none;
-  width: 30px;
-  height: auto;
-}
-.wordmarkText {
-  white-space: nowrap;
-}
-.wordmarkText > span {
-  font-style: italic;
-  color: var(--blue);
-}
 .desktopNav {
   display: flex;
   gap: 6px;
@@ -1407,16 +1394,6 @@
 }
 .footer .wordmark {
   color: #fff;
-}
-/* On the dark footer the navy L needs a light tile behind it. */
-.footer .wordmarkLogo {
-  padding: 4px;
-  border-radius: 8px;
-  background: #fff;
-  width: 36px;
-}
-.footer .wordmarkText > span {
-  color: var(--lime);
 }
 .footerTop {
   display: grid;

@@ -45,6 +45,7 @@ import {
   listNotifications,
   notificationKeys,
 } from '@/lib/api/notifications';
+import { Logo } from '@/components/brand/Logo';
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -296,8 +297,8 @@ function SidebarContents({
   return (
     <>
       <div className="px-6 py-6 border-b border-white/10">
-        <Link href="/" className="text-xl font-bold">
-          DoLearn
+        <Link href="/" aria-label="DoLearnn home" className="inline-block">
+          <Logo tone="light" size="sm" />
         </Link>
         <p className="text-xs text-white/60 mt-1 capitalize">{role} workspace</p>
       </div>

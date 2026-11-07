@@ -7,6 +7,7 @@ import { StudioNav, StudioNewsletter } from "@/components/Home/StudioNav";
 import { LoopDemo } from "@/components/Home/LoopDemo";
 import { CountUp, Reveal } from "@/components/Home/Motion";
 import s from "./studio.module.css";
+import { Logo } from '@/components/brand/Logo';
 
 const serif = Fraunces({
   subsets: ["latin"],
@@ -707,8 +708,7 @@ export default function Home() {
           <div className={s.footerTop}>
             <div>
               <a href="#top" className={s.wordmark} aria-label="DoLearnn, back to top">
-                <Image src="/logo-mark.png" alt="" width={281} height={265} className={s.wordmarkLogo} />
-                <span className={s.wordmarkText}>Do<span>Learnn</span></span>
+                <Logo tone="light" size="lg" />
               </a>
               <p>Powered by learning, driven by success.</p>
               <p className={s.location}>Lagos, Nigeria</p>
