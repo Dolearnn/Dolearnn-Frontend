@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ChevronLeft, ChevronRight, Clock, Send } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { ExamGate, ExamWarning, MAX_WARNINGS, exitFullscreen, useExamLockdown } from './ExamLockdown';
@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
+  getQuizCatalog,
   quizKeys,
   submitQuizAttempt,
   type QuizInProgressView,
@@ -140,6 +141,14 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
 
   // Exam mode: timed mocks run full screen with anti-cheating measures.
   const exam = attempt.mode === 'MOCK';
+  // The attempt carries only the exam id; the (cached) catalog gives its name, e.g. "JAMB UTME".
+  const catalogQuery = useQuery({
+    queryKey: quizKeys.catalog,
+    queryFn: getQuizCatalog,
+    enabled: Boolean(attempt.examId),
+    staleTime: 5 * 60_000,
+  });
+  const examName = catalogQuery.data?.exams.find((item) => item.id === attempt.examId)?.name ?? null;
   const onLimitReached = useCallback(() => {
     toast({
       title: 'Exam submitted',
@@ -188,6 +197,7 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
   if (exam && restored && !lockdown.record.started) {
     return (
       <ExamGate
+        examName={examName}
         subject={attempt.subject.name}
         questions={total}
         minutes={attempt.timeLimitSecs ? Math.round(attempt.timeLimitSecs / 60) : null}
@@ -204,7 +214,7 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-            {exam ? 'Exam mode' : 'Practice'}
+            {[examName, exam ? 'Exam mode' : 'Practice'].filter(Boolean).join(' · ')}
           </p>
           <h1 className="text-lg font-bold text-brand dark:text-accent2-400 truncate">
             {attempt.subject.name}
@@ -394,7 +404,12 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#f4f8fb] dark:bg-background">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-border dark:bg-card/90 sm:px-8">
-        <Logo size="sm" />
+        <div className="flex min-w-0 items-center gap-3">
+          <Logo size="sm" />
+          <span className="truncate rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white dark:bg-accent2-500 dark:text-brand">
+            {examName ? `${examName} · ${attempt.subject.name}` : attempt.subject.name}
+          </span>
+        </div>
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',

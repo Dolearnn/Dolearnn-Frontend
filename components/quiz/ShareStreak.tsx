@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Check, Copy, Download, MessageCircle, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +13,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { getAuthUser } from '@/lib/api/auth-storage';
+import { getLearnerProfile, studentKeys } from '@/lib/api/student';
 
 /*
  * "Share your streak", Duolingo-style: draws a branded card (deep navy and
@@ -42,7 +44,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-async function drawCard(input: { days: number; firstName: string; level: string; xp: number }) {
+async function drawCard(input: { days: number; firstName: string; level: string; xp: number; exams: string[] }) {
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -83,9 +85,20 @@ async function drawCard(input: { days: number; firstName: string; level: string;
   ctx.font = '700 64px "Segoe UI", Arial, sans-serif';
   ctx.fillText(input.days === 1 ? 'day streak' : 'day streak!', W / 2, 870);
 
+  // Precise: which exam(s) the learner is preparing for, from their study plan.
+  const line =
+    input.exams.length > 0
+      ? `${input.firstName} is preparing for ${input.exams.join(' & ')}`
+      : `${input.firstName} is practising every day`;
+  // Shrink the text until it fits inside the card (many exams make it long).
+  let size = 44;
+  ctx.font = `500 ${size}px "Segoe UI", Arial, sans-serif`;
+  while (ctx.measureText(line).width > W - 140 && size > 26) {
+    size -= 2;
+    ctx.font = `500 ${size}px "Segoe UI", Arial, sans-serif`;
+  }
   ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.font = '500 44px "Segoe UI", Arial, sans-serif';
-  ctx.fillText(`${input.firstName} is practising every day`, W / 2, 980);
+  ctx.fillText(line, W / 2, 980);
 
   // Level pill.
   const pill = `${input.level} · ${input.xp.toLocaleString()} XP`;
@@ -115,15 +128,20 @@ export default function ShareStreak({ days, level, xp }: { days: number; level: 
   const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
   const [failed, setFailed] = useState(false);
   const [copied, setCopied] = useState(false);
+  // The exams in the learner's study plan (already cached by the Today page).
+  const profileQuery = useQuery({ queryKey: studentKeys.profile, queryFn: getLearnerProfile, staleTime: 5 * 60_000 });
+  const exams = useMemo(() => profileQuery.data?.externalExams ?? [], [profileQuery.data]);
 
-  const message = `I'm on a ${days}-day practice streak on DoLearnn 🔥 Join me: ${SITE_URL}`;
+  const message = exams.length > 0
+    ? `I'm on a ${days}-day streak preparing for ${exams.join(' & ')} on DoLearnn 🔥 Join me: ${SITE_URL}`
+    : `I'm on a ${days}-day practice streak on DoLearnn 🔥 Join me: ${SITE_URL}`;
 
   useEffect(() => {
     if (!open) return;
     let url = '';
     const firstName = getAuthUser()?.name?.split(' ')[0] || 'I';
     setFailed(false);
-    drawCard({ days, firstName, level, xp })
+    drawCard({ days, firstName, level, xp, exams })
       .then((blob) => {
         url = URL.createObjectURL(blob);
         setImage({ blob, url });
@@ -133,7 +151,7 @@ export default function ShareStreak({ days, level, xp }: { days: number; level: 
       if (url) URL.revokeObjectURL(url);
       setImage(null);
     };
-  }, [open, days, level, xp]);
+  }, [open, days, level, xp, exams]);
 
   const file = image ? new File([image.blob], `dolearnn-${days}-day-streak.png`, { type: 'image/png' }) : null;
   const canShareFile =

@@ -192,11 +192,13 @@ export function useExamLockdown({
 
 /** The screen shown before an exam starts. */
 export function ExamGate({
+  examName,
   subject,
   questions,
   minutes,
   onStart,
 }: {
+  examName: string | null;
   subject: string;
   questions: number;
   minutes: number | null;
@@ -206,7 +208,9 @@ export function ExamGate({
     <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-gradient-to-br from-[#022a49] to-brand p-6">
       <div className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-2xl dark:bg-card">
         <Logo size="sm" />
-        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accent2-600">Exam mode</p>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accent2-600">
+          {examName ? `${examName} · Exam mode` : 'Exam mode'}
+        </p>
         <h1 className="mt-1 text-2xl font-bold text-brand dark:text-accent2-400">{subject}</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
           {questions} questions{minutes ? ` · ${minutes} minutes` : ''}, under exam conditions.
