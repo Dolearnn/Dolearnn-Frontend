@@ -22,8 +22,9 @@ const STAGES: Array<{ value: LearnerStage; label: string }> = [
   { value: 'OTHER', label: 'Another stage' },
 ];
 
-// Nigerian senior-secondary exams only (WAEC + JAMB UTME first).
-const COMMON_EXAMS = ['WAEC', 'JAMB UTME', 'NECO', 'GCE', 'NABTEB'];
+// Exams with practice questions in DoLearnn (names must match the exams in the question bank),
+// plus other Nigerian exams learners may be writing.
+const COMMON_EXAMS = ['WAEC', 'JAMB UTME', 'NECO', 'Post-UTME', 'IGCSE / GCSE', 'SAT', 'GCE', 'NABTEB'];
 
 export default function StudentOnboardingPage() {
   const router = useRouter();
