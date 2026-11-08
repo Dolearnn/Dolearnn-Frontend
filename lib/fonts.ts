@@ -36,24 +36,3 @@ export const frauncesAuth = localFont({
   variable: '--f-serif',
   fallback: ['Georgia', 'serif'],
 });
-
-/** Fraunces: headlines on the public /practice page. */
-export const frauncesPractice = localFont({
-  src: [
-    { path: '../app/fonts/fraunces-latin-wght.woff2', weight: '100 900', style: 'normal' },
-    { path: '../app/fonts/fraunces-latin-wght-italic.woff2', weight: '100 900', style: 'italic' },
-  ],
-  display: 'swap',
-  variable: '--practice-display',
-  fallback: ['Georgia', 'serif'],
-});
-
-/** Manrope: body text on the public /practice page. */
-export const manrope = localFont({
-  src: '../app/fonts/manrope-latin-wght.woff2',
-  weight: '200 800',
-  style: 'normal',
-  display: 'swap',
-  variable: '--practice-body',
-  fallback: ['Segoe UI', 'Arial', 'sans-serif'],
-});

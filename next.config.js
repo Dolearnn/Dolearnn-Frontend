@@ -36,6 +36,8 @@ const nextConfig = {
   // Old links (bookmarks, emails, shared Arena codes) land on the same page there.
   async redirects() {
     return [
+      // The public warm-up became the Daily; shared links keep working.
+      { source: '/practice', destination: '/daily', permanent: true },
       { source: '/family/quiz/:path*', destination: '/student/practice/:path*', permanent: true },
       { source: '/family/quiz', destination: '/student/practice', permanent: true },
       { source: '/family/children/:path*', destination: '/student/tutor', permanent: true },

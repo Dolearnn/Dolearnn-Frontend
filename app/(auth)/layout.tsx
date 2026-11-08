@@ -73,10 +73,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <Link
-          href="/practice"
+          href="/daily"
           className="relative inline-flex items-center gap-2 text-xs font-semibold text-white/90 underline underline-offset-4 hover:text-accent2-300"
         >
-          <ArrowLeft className="h-4 w-4" /> Try a free warm-up first
+          <ArrowLeft className="h-4 w-4" /> Play today&apos;s free quiz first
         </Link>
       </aside>
 
@@ -86,10 +86,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <Wordmark />
           </span>
           <Link
-            href="/practice"
+            href="/daily"
             className="hidden text-xs font-semibold text-brand underline underline-offset-4 lg:block dark:text-accent2-400"
           >
-            Try practice first
+            Play today&apos;s quiz
           </Link>
           <ThemeToggle />
         </header>

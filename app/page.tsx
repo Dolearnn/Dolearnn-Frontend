@@ -208,8 +208,8 @@ export default function Home() {
                 <Link href="/register" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand/20 transition hover:bg-brand-700 sm:w-auto">
                   Start practising free <ArrowRight className="h-5 w-5" />
                 </Link>
-                <Link href="/practice" className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-white px-7 py-3.5 text-base font-semibold text-brand transition hover:border-brand sm:w-auto">
-                  Try a free quiz
+                <Link href="/daily" className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-white px-7 py-3.5 text-base font-semibold text-brand transition hover:border-brand sm:w-auto">
+                  Play today&apos;s quiz
                 </Link>
               </div>
               <p className="mt-4 text-sm text-slate-500">No card needed.</p>
@@ -467,7 +467,7 @@ export default function Home() {
               <li><a href="#how-it-works" className="hover:text-white">How it works</a></li>
               <li><a href="#features" className="hover:text-white">Features</a></li>
               <li><a href="#pricing" className="hover:text-white">Pricing</a></li>
-              <li><Link href="/practice" className="hover:text-white">Free quiz</Link></li>
+              <li><Link href="/daily" className="hover:text-white">Daily quiz</Link></li>
             </ul>
           </nav>
           <nav aria-label="Account" className="text-sm">
