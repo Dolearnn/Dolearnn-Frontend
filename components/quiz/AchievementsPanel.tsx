@@ -73,7 +73,7 @@ export default function AchievementsPanel({
                   {!mission.done && (
                     <Link
                       href={actionHref(base, mission.action)}
-                      className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-brand hover:underline dark:text-accent2-400"
+                      className="-my-2 inline-flex shrink-0 items-center gap-1 py-2 text-xs font-semibold text-brand hover:underline dark:text-accent2-400"
                     >
                       {ACTION_LABEL[mission.action]} <ArrowRight className="h-3 w-3" aria-hidden />
                     </Link>

@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ArrowRight,
+  CalendarClock,
   ClipboardCheck,
   GraduationCap,
   ListChecks,
+  RotateCcw,
   Target,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +20,7 @@ import { useStartQuiz } from './useStartQuiz';
 
 const ICONS = {
   DIAGNOSTIC: ListChecks,
+  FIX_MISTAKES: RotateCcw,
   PRACTISE_TOPIC: Target,
   TUTOR: GraduationCap,
   REASSESS: ClipboardCheck,
@@ -25,6 +28,7 @@ const ICONS = {
 
 const EYEBROWS: Record<QuizNextAction['type'], string> = {
   DIAGNOSTIC: 'Start here',
+  FIX_MISTAKES: 'Fix my mistakes',
   PRACTISE_TOPIC: 'Practise next',
   TUTOR: 'Extra help',
   REASSESS: 'See if you improved',
@@ -32,6 +36,7 @@ const EYEBROWS: Record<QuizNextAction['type'], string> = {
 
 const START_LABEL: Record<QuizNextAction['type'], string> = {
   DIAGNOSTIC: 'Choose a subject',
+  FIX_MISTAKES: 'Try them again',
   PRACTISE_TOPIC: 'Practise',
   TUTOR: '',
   REASSESS: 'Test again',
@@ -124,10 +129,13 @@ export default function NextActions({
   studentId,
   actions: providedActions,
   isLoading: providedLoading = false,
+  readyTomorrow = 0,
 }: {
   studentId: string | null;
   actions?: QuizNextAction[];
   isLoading?: boolean;
+  // Questions missed today, which come back tomorrow.
+  readyTomorrow?: number;
 }) {
   const pathname = usePathname();
   const studentWorkspace = pathname.startsWith('/student');
@@ -149,7 +157,8 @@ export default function NextActions({
   const supportActions = actions.filter((action) => action.type === 'TUTOR');
   if (actions.length === 0) return null;
 
-  const [primary, ...secondary] = learningActions;
+  // A short plan: three steps at most, so it never feels like a long to-do list.
+  const [primary, ...secondary] = learningActions.slice(0, 3);
 
   return (
     <section className="mb-10" aria-labelledby="next-move-heading">
@@ -159,7 +168,7 @@ export default function NextActions({
             Based on your results
           </p>
           <h2 id="next-move-heading" className="mt-1 text-2xl font-semibold text-gray-950 dark:text-foreground">
-            Your next move
+            Today&apos;s plan
           </h2>
         </div>
         <Link
@@ -180,6 +189,13 @@ export default function NextActions({
           </div>
         )}
       </div>
+
+      {readyTomorrow > 0 && (
+        <p className="mt-3 flex items-center gap-2 text-sm text-gray-600 dark:text-muted-foreground">
+          <CalendarClock className="h-4 w-4 shrink-0 text-brand dark:text-accent2-400" aria-hidden />
+          Come back tomorrow: {readyTomorrow} {readyTomorrow === 1 ? 'question' : 'questions'} you missed today will be ready to try again.
+        </p>
+      )}
 
       {/* One tutor card: why it is suggested, plus the pre-filled request. */}
       {supportActions.map((action) =>

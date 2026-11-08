@@ -221,10 +221,10 @@ export interface QuizProgress {
 
 export interface QuizNextAction {
   id: string;
-  type: 'DIAGNOSTIC' | 'PRACTISE_TOPIC' | 'TUTOR' | 'REASSESS';
+  type: 'DIAGNOSTIC' | 'FIX_MISTAKES' | 'PRACTISE_TOPIC' | 'TUTOR' | 'REASSESS';
   title: string;
   reason: string;
-  start: { subjectId: string; topicIds?: string[]; count: number; mode: QuizMode } | null;
+  start: { subjectId?: string; reviewMistakes?: boolean; topicIds?: string[]; count: number; mode: QuizMode } | null;
   tutoring: {
     weakTopics: Array<{ topicId: string; name: string; accuracyPercent: number }>;
     prefill: QuizTutoringPrefill;
@@ -232,6 +232,8 @@ export interface QuizNextAction {
 }
 
 export interface QuizPracticeOverview {
+  // Wrong answers: ready to retry now, and missed today (ready tomorrow).
+  mistakes?: { due: number; tomorrow: number };
   catalog: QuizCatalog;
   history: { attempts: QuizHistoryItem[]; nextCursor: string | null };
   progress: QuizProgress;
@@ -253,6 +255,8 @@ export interface StartQuizInput {
   count: number;
   mode: QuizMode;
   studentId?: string;
+  // Re-ask questions the learner got wrong on an earlier day.
+  reviewMistakes?: boolean;
   // Re-test the weak topics of this submitted attempt (the server picks topics and count).
   retakeOfAttemptId?: string;
 }

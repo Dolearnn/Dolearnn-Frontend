@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BookOpenCheck, CalendarDays, Pencil, Target } from 'lucide-react';
+import { BookOpenCheck, CalendarDays, Pencil, Target, TrendingUp } from 'lucide-react';
 import FirstQuizCard from '@/components/quiz/FirstQuizCard';
 import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
@@ -73,6 +73,11 @@ export default function StudentDashboardPage() {
   const sessions = progress?.totalAttempts ?? 0;
   // A new learner sees one clear step instead of empty rewards and leaderboards.
   const isNewLearner = overviewQuery.isSuccess && sessions === 0;
+  // The learner's biggest measured gain: proof the practice is working.
+  const biggestGain = (progress?.subjects ?? [])
+    .flatMap((item) => item.topics)
+    .filter((topic) => topic.change === 'improved')
+    .sort((a, b) => b.changePoints - a.changePoints)[0];
 
   return (
     <div className="max-w-5xl">
@@ -109,8 +114,23 @@ export default function StudentDashboardPage() {
         />
       ) : (
         <>
+          {biggestGain && (
+            <p className="mb-5 flex items-start gap-3 rounded-2xl border border-accent2-200 bg-accent2-50 p-4 text-sm text-gray-800 dark:border-accent2-500/30 dark:bg-accent2-500/10 dark:text-foreground/90">
+              <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-accent2-600 dark:text-accent2-400" aria-hidden />
+              <span>
+                <strong className="font-semibold">It&apos;s working.</strong> {biggestGain.name} went from{' '}
+                <strong className="font-semibold">{biggestGain.baselinePercent}%</strong> to{' '}
+                <strong className="font-semibold">{biggestGain.latestPercent}%</strong> since you started.
+              </span>
+            </p>
+          )}
           <RewardsStrip studentId={null} className="mb-8" />
-          <NextActions studentId={null} actions={overviewQuery.data?.actions ?? []} isLoading={overviewQuery.isLoading} />
+          <NextActions
+            studentId={null}
+            actions={overviewQuery.data?.actions ?? []}
+            isLoading={overviewQuery.isLoading}
+            readyTomorrow={overviewQuery.data?.mistakes?.tomorrow ?? 0}
+          />
           <AchievementsPanel studentId={null} className="mt-2" />
           <WeeklyLeaderboard studentId={null} className="mt-8" />
         </>

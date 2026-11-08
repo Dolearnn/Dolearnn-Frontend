@@ -14,6 +14,9 @@ const config: Config = {
         'gradient-conic':
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
+      // Not built into Tailwind 3.3.
+      minHeight: { 10: '2.5rem', 14: '3.5rem', 16: '4rem' },
+      minWidth: { 14: '3.5rem' },
       fontFamily: {
         campton: ['Campton', 'sans-serif'],
       },

@@ -96,7 +96,7 @@ export default function MixedQuizDialog({
         <div className="space-y-6">
           <fieldset>
             <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">
-              1. Subjects <span className="font-normal text-gray-500 dark:text-muted-foreground">({chosen.length} chosen)</span>
+              Subjects <span className="font-normal text-gray-500 dark:text-muted-foreground">({chosen.length} chosen)</span>
             </legend>
             <div className="flex flex-wrap gap-2">
               {ready.map(({ subject }) => {
@@ -126,7 +126,7 @@ export default function MixedQuizDialog({
 
           {chosen.length > 0 && (
             <fieldset>
-              <legend className="mb-1 text-sm font-medium text-gray-900 dark:text-foreground">2. Topics (optional)</legend>
+              <legend className="mb-1 text-sm font-medium text-gray-900 dark:text-foreground">Topics (optional)</legend>
               <p className="mb-2 text-xs text-gray-500 dark:text-muted-foreground">
                 Every topic is included unless you narrow a subject down.
               </p>
@@ -184,7 +184,7 @@ export default function MixedQuizDialog({
           )}
 
           <fieldset>
-            <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">3. Questions per subject</legend>
+            <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">Questions per subject</legend>
             <div className="flex flex-wrap gap-2">
               {PER_SUBJECT_CHOICES.map((choice) => (
                 <button
@@ -206,7 +206,7 @@ export default function MixedQuizDialog({
           </fieldset>
 
           <fieldset>
-            <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">4. Mode</legend>
+            <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">Mode</legend>
             <div className="grid grid-cols-2 gap-2">
               {modes.map((item) => (
                 <button

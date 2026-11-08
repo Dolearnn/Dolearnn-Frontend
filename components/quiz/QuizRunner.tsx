@@ -232,7 +232,7 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
           <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
             {[examName, exam ? 'Exam mode' : 'Practice'].filter(Boolean).join(' · ')}
           </p>
-          <h1 className="text-lg font-bold text-brand dark:text-accent2-400 truncate">
+          <h1 className="text-lg font-bold text-brand dark:text-accent2-400">
             {attempt.subject.name}
           </h1>
         </div>
@@ -452,14 +452,14 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#f4f8fb] dark:bg-background">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-border dark:bg-card/90 sm:px-8">
         <div className="flex min-w-0 items-center gap-3">
-          <Logo size="sm" />
+          <span className="hidden sm:block"><Logo size="sm" /></span>
           <span className="truncate rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white dark:bg-accent2-500 dark:text-brand">
-            {examName ? `${examName} · ${attempt.subject.name}` : attempt.subject.name}
+            {examName && (attempt.subjects?.length ?? 0) > 1 ? examName : examName ? `${examName} · ${attempt.subject.name}` : attempt.subject.name}
           </span>
         </div>
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+            'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold',
             lockdown.record.warnings > 0
               ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
               : 'bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400',

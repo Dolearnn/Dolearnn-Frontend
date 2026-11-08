@@ -263,7 +263,7 @@ export default function DashboardShell({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden text-gray-700 dark:text-gray-200 hover:text-brand dark:hover:text-accent2-400 transition"
+              className="lg:hidden -m-2 p-2 text-gray-700 dark:text-gray-200 hover:text-brand dark:hover:text-accent2-400 transition"
               aria-label="Open menu"
             >
               <Menu className="w-6 h-6" />

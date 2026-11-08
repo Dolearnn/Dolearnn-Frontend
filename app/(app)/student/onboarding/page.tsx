@@ -174,7 +174,7 @@ export default function StudentOnboardingPage() {
               placeholder="Add another exam"
               aria-label="Exam name"
             />
-            <Button type="button" variant="outline" onClick={addCustomExam} aria-label="Add exam">
+            <Button type="button" variant="outline" className="h-10 w-12 shrink-0 px-0" onClick={addCustomExam} aria-label="Add exam">
               <Plus className="h-4 w-4" />
             </Button>
           </div>

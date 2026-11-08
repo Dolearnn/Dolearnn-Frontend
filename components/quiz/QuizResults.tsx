@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
-import { AlertTriangle, BadgeCheck, Clock, Minus, RotateCcw, ShieldCheck, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, CalendarClock, Clock, Minus, RotateCcw, ShieldCheck, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getQuizProgress, quizKeys, type QuizSubmittedView } from '@/lib/api/quiz';
 import { scoreMessage, scoreTone, toneClasses } from '@/lib/quiz';
@@ -99,6 +99,8 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
     .filter((topic) => topic.accuracyPercent < WEAK_BELOW_PERCENT)
     .sort((a, b) => a.accuracyPercent - b.accuracyPercent || b.attempted - a.attempted)[0];
 
+  const missed = review.filter((question) => question.yourAnswer && !question.isCorrect).length;
+
   const mixed = (attempt.subjects?.length ?? 0) > 1;
   const base = {
     subjectId: attempt.subject.id,
@@ -167,6 +169,13 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
           </ul>
         )}
       </div>
+
+      {missed > 0 && (
+        <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-muted-foreground">
+          <CalendarClock className="h-4 w-4 shrink-0 text-brand dark:text-accent2-400" aria-hidden />
+          The {missed === 1 ? 'question' : `${missed} questions`} you missed will be ready to try again tomorrow.
+        </p>
+      )}
 
       {isFirstResult && (
         <section className="rounded-3xl bg-brand p-6 text-white sm:p-8" aria-labelledby="start-here-heading">
