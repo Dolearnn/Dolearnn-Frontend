@@ -265,6 +265,7 @@ interface ApiBookingRequest {
   startDate: string;
   sessionsRequested: number;
   status: string;
+  declineReason?: string | null;
   createdAt: string;
   student?: ApiStudent | null;
   teacherTimezone?: string | null;
@@ -289,6 +290,7 @@ function mapBookingRequest(request: ApiBookingRequest): SessionBookingRequest {
     startTime: request.startTime,
     startDate: request.startDate,
     sessionsRequested: request.sessionsRequested,
+    declineReason: request.declineReason ?? undefined,
     status:
       request.status === 'SCHEDULED'
         ? 'Scheduled'

@@ -135,6 +135,7 @@ export const adminKeys = {
   sessionsPage: (params: ListAdminSessionsParams = {}) =>
     ['admin', 'sessions', params] as const,
   bookingRequests: ['admin', 'sessions', 'booking-requests'] as const,
+  teacherHours: ['admin', 'teachers', 'hours'] as const,
   cancellations: ['admin', 'sessions', 'cancellations'] as const,
 };
 
@@ -631,11 +632,34 @@ export async function listAdminBookingRequests() {
 
 export async function scheduleAdminBookingRequest(
   requestId: string,
-  meetLink?: string,
+  input: { meetLink: string; startDate?: string; startTime?: string },
 ) {
   await apiFetch(`/admin/sessions/booking-requests/${requestId}/schedule`, {
     method: 'POST',
-    body: JSON.stringify({ meetLink: meetLink || undefined }),
+    body: JSON.stringify(input),
+  });
+}
+
+export async function declineAdminBookingRequest(requestId: string, reason: string) {
+  await apiFetch(`/admin/sessions/booking-requests/${requestId}/decline`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export type TeacherHourSlot = { day: string; time: string };
+
+export async function listAdminTeacherHours() {
+  const response = await apiFetch<{ hours: Record<string, TeacherHourSlot[]> }>(
+    '/admin/teachers/weekly-hours/all',
+  );
+  return response.hours;
+}
+
+export async function saveAdminTeacherHours(teacherId: string, hours: TeacherHourSlot[]) {
+  await apiFetch(`/admin/teachers/${teacherId}/weekly-hours`, {
+    method: 'PUT',
+    body: JSON.stringify({ hours }),
   });
 }
 

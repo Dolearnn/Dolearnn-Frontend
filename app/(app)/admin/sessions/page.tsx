@@ -45,6 +45,8 @@ import {
   listAdminStudents,
   rejectAdminCancellation,
   scheduleAdminBookingRequest,
+  declineAdminBookingRequest,
+  listAdminTeacherHours,
   updateAdminSessionMeetingLink,
 } from '@/lib/api/admin';
 import { formatInTimeZone, TIMEZONES, zonedDateTimeToUtcIso } from '@/lib/timezones';
@@ -198,20 +200,36 @@ export default function AdminSessionsPage() {
   const scheduleRequestMutation = useMutation({
     mutationFn: ({
       requestId,
-      meetLink,
+      input,
     }: {
       requestId: string;
-      meetLink?: string;
-    }) => scheduleAdminBookingRequest(requestId, meetLink),
+      input: { meetLink: string; startDate?: string; startTime?: string };
+    }) => scheduleAdminBookingRequest(requestId, input),
     onSuccess: async () => {
       await invalidateSessions();
-      toast({ title: 'Calendar sessions created' });
+      toast({ title: 'Lessons confirmed', description: 'The learner and teacher have been told.' });
     },
     onError: (error) => {
       toast({
         title: 'Could not create sessions',
         description:
           error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const declineRequestMutation = useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) =>
+      declineAdminBookingRequest(requestId, reason),
+    onSuccess: async () => {
+      await invalidateSessions();
+      toast({ title: 'Request declined', description: 'The learner has been told why.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not decline',
+        description: error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive',
       });
     },
@@ -319,10 +337,9 @@ export default function AdminSessionsPage() {
       <BookingRequestsPanel
         requests={bookingRequestsQuery.data ?? []}
         existingSessions={upcomingSessionsQuery.data?.sessions ?? []}
-        scheduling={scheduleRequestMutation.isPending}
-        onSchedule={(requestId, meetLink) =>
-          scheduleRequestMutation.mutate({ requestId, meetLink })
-        }
+        busy={scheduleRequestMutation.isPending || declineRequestMutation.isPending}
+        onSchedule={(requestId, input) => scheduleRequestMutation.mutate({ requestId, input })}
+        onDecline={(requestId, reason) => declineRequestMutation.mutate({ requestId, reason })}
       />
 
       <div className="flex flex-wrap items-center gap-2 rounded-full border border-gray-200 bg-white p-1 dark:border-border dark:bg-card w-fit">
@@ -422,115 +439,201 @@ export default function AdminSessionsPage() {
 function BookingRequestsPanel({
   requests,
   existingSessions,
-  scheduling,
+  busy,
   onSchedule,
+  onDecline,
 }: {
   requests: SessionBookingRequest[];
   existingSessions: Session[];
-  scheduling: boolean;
-  onSchedule: (requestId: string, meetLink?: string) => void;
+  busy: boolean;
+  onSchedule: (requestId: string, input: { meetLink: string; startDate?: string; startTime?: string }) => void;
+  onDecline: (requestId: string, reason: string) => void;
 }) {
   const pending = requests.filter((request) => request.status === 'Pending');
-  const [meetingLinks, setMeetingLinks] = useState<Record<string, string>>({});
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const [changes, setChanges] = useState<Record<string, { date: string; time: string }>>({});
+  const [declines, setDeclines] = useState<Record<string, string>>({});
+  const hoursQuery = useQuery({ queryKey: adminKeys.teacherHours, queryFn: listAdminTeacherHours });
 
   if (pending.length === 0) return null;
 
   return (
     <div className="rounded-2xl border border-amber-200 p-4 space-y-3 bg-white dark:bg-card dark:border-amber-500/30">
       <div>
-        <p className="font-semibold text-gray-900 dark:text-foreground">
-          Calendar requests
-        </p>
+        <p className="font-semibold text-gray-900 dark:text-foreground">Lesson requests to confirm</p>
         <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
-          Learners picked regular paid slots. Review and create the 60-minute
-          sessions.
+          Nothing is booked until you approve it. Add the meeting link, then approve, change the time, or decline.
         </p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        {pending.map((request) => (
-          (() => {
-            const warnings = Array.from(
-              new Set(
-                Array.from({ length: request.sessionsRequested }, (_, index) =>
-                  clashSummary({
-                    startsAt: requestSessionStartsAt(request, index),
-                    durationMins: 60,
-                    teacherId: request.teacherId,
-                    childId: request.childId,
-                    subject: request.subject,
-                    sessions: existingSessions,
-                  }),
-                ).flat(),
-              ),
-            );
+        {pending.map((request) => {
+          const warnings = Array.from(
+            new Set(
+              Array.from({ length: request.sessionsRequested }, (_, index) =>
+                clashSummary({
+                  startsAt: requestSessionStartsAt(request, index),
+                  durationMins: 60,
+                  teacherId: request.teacherId,
+                  childId: request.childId,
+                  subject: request.subject,
+                  sessions: existingSessions,
+                }),
+              ).flat(),
+            ),
+          );
+          const hours = request.teacherId ? hoursQuery.data?.[request.teacherId] ?? [] : [];
+          const fitsHours = hours.some(
+            (slot) => slot.day === request.day.toUpperCase() && slot.time === request.timeBlock.toUpperCase(),
+          );
+          const change = changes[request.id];
+          const decline = declines[request.id];
+          const link = links[request.id]?.trim() ?? '';
+          const inputClass = 'h-9 bg-white dark:bg-card';
 
-            return (
-            <div
-              key={request.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10"
-            >
-              <div className="min-w-0 flex-1 space-y-2">
-                <div>
-                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">
-                    {request.childName ?? 'Student'} - {request.subject}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-muted-foreground">
-                    {request.sessionsRequested}x {request.day}s at {request.startTime}
-                    {request.studentTimezone ? ` (${request.studentTimezone})` : ''}
-                  </p>
-                  {request.teacherTimezone ? (
-                    <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                      Teacher timezone: {request.teacherTimezone}
-                    </p>
-                  ) : null}
+          return (
+            <div key={request.id} className="space-y-3 rounded-xl border border-amber-100 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                  {request.childName ?? 'Learner'} · {request.subject}
+                  {request.teacherName ? ` · ${request.teacherName}` : ''}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-muted-foreground">
+                  {request.sessionsRequested}x {request.day}s at {request.startTime}, from {request.startDate.slice(0, 10)}
+                  {request.studentTimezone ? ` (${request.studentTimezone})` : ''}
+                </p>
+                {request.teacherTimezone ? (
+                  <p className="text-[11px] text-gray-500 dark:text-muted-foreground">Teacher timezone: {request.teacherTimezone}</p>
+                ) : null}
+                <p className={cn('mt-1 text-xs font-medium', hours.length > 0 && !fitsHours ? 'text-red-700 dark:text-red-300' : 'text-gray-600 dark:text-muted-foreground')}>
+                  {hours.length === 0
+                    ? 'No hours recorded for this teacher.'
+                    : fitsHours
+                      ? "Within the teacher's hours."
+                      : "Outside the teacher's hours."}
+                </p>
+              </div>
+
+              {warnings.length > 0 ? (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="space-y-1">
+                    {warnings.map((warning) => (
+                      <p key={warning}>{warning}</p>
+                    ))}
+                  </div>
                 </div>
+              ) : null}
+
+              <div className="space-y-1">
+                <Label htmlFor={`booking-link-${request.id}`} className="text-[11px] text-gray-600 dark:text-muted-foreground">
+                  Meeting link for all lessons (required)
+                </Label>
+                <Input
+                  id={`booking-link-${request.id}`}
+                  value={links[request.id] ?? ''}
+                  onChange={(event) => setLinks((current) => ({ ...current, [request.id]: event.target.value }))}
+                  placeholder="https://meet.google.com/..."
+                  className={inputClass}
+                />
+              </div>
+
+              {change ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-gray-600 dark:text-muted-foreground">New first date</Label>
+                    <Input
+                      type="date"
+                      value={change.date}
+                      onChange={(event) => setChanges((current) => ({ ...current, [request.id]: { ...change, date: event.target.value } }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-gray-600 dark:text-muted-foreground">New time</Label>
+                    <Input
+                      type="time"
+                      value={change.time}
+                      onChange={(event) => setChanges((current) => ({ ...current, [request.id]: { ...change, time: event.target.value } }))}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {decline !== undefined ? (
                 <div className="space-y-1">
-                  <Label
-                    htmlFor={`booking-link-${request.id}`}
-                    className="text-[11px] text-gray-600 dark:text-muted-foreground"
-                  >
-                    Meeting link for all sessions
-                  </Label>
+                  <Label className="text-[11px] text-gray-600 dark:text-muted-foreground">Reason (the learner will see this)</Label>
                   <Input
-                    id={`booking-link-${request.id}`}
-                    value={meetingLinks[request.id] ?? ''}
-                    onChange={(event) =>
-                      setMeetingLinks((current) => ({
-                        ...current,
-                        [request.id]: event.target.value,
-                      }))
-                    }
-                    placeholder="https://meet.google.com/..."
-                    className="h-9 bg-white dark:bg-card"
+                    value={decline}
+                    onChange={(event) => setDeclines((current) => ({ ...current, [request.id]: event.target.value }))}
+                    placeholder="For example: this teacher is not free then"
+                    className={inputClass}
                   />
                 </div>
-                {warnings.length > 0 ? (
-                  <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                      <div className="space-y-1">
-                        {warnings.map((warning) => (
-                          <p key={warning}>{warning}</p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
+              ) : null}
+
+              <div className="flex flex-wrap gap-2">
+                {decline !== undefined ? (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="rounded-full"
+                    disabled={busy || decline.trim().length < 3}
+                    onClick={() => onDecline(request.id, decline.trim())}
+                  >
+                    Confirm decline
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      size="sm"
+                      className="rounded-full bg-brand hover:bg-brand-600"
+                      disabled={busy || !link || Boolean(change && (!change.date || !change.time))}
+                      onClick={() =>
+                        onSchedule(request.id, {
+                          meetLink: link,
+                          ...(change ? { startDate: change.date, startTime: change.time } : {}),
+                        })
+                      }
+                    >
+                      {busy ? 'Saving...' : 'Approve'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() =>
+                        setChanges((current) => {
+                          const next = { ...current };
+                          if (next[request.id]) delete next[request.id];
+                          else next[request.id] = { date: request.startDate.slice(0, 10), time: request.startTime };
+                          return next;
+                        })
+                      }
+                    >
+                      {change ? 'Keep requested time' : 'Change time'}
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-full"
+                  onClick={() =>
+                    setDeclines((current) => {
+                      const next = { ...current };
+                      if (next[request.id] !== undefined) delete next[request.id];
+                      else next[request.id] = '';
+                      return next;
+                    })
+                  }
+                >
+                  {decline !== undefined ? 'Back' : 'Decline'}
+                </Button>
               </div>
-              <Button
-                size="sm"
-                className="rounded-full bg-brand hover:bg-brand-600 shrink-0"
-                disabled={scheduling}
-                onClick={() =>
-                  onSchedule(request.id, meetingLinks[request.id]?.trim() || undefined)
-                }
-              >
-                {scheduling ? 'Creating...' : 'Create sessions'}
-              </Button>
             </div>
-            );
-          })()
-        ))}
+          );
+        })}
       </div>
     </div>
   );

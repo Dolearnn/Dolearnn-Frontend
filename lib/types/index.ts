@@ -242,6 +242,7 @@ export interface SessionBookingRequest {
   startDate: string;
   sessionsRequested: number;
   status: BookingRequestStatus;
+  declineReason?: string;
   createdAt: string;
 }
 

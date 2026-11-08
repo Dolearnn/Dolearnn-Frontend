@@ -29,14 +29,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
-  acceptFamilySessionProposal,
   confirmFamilySessionAttendance,
   createFamilyBookingRequest,
-  declineFamilySessionProposal,
   familyKeys,
   getFamilySessionCredits,
   listFamilyBookingRequests,
-  listFamilySessionProposals,
   listFamilySessions,
   listFamilyStudents,
   requestFamilySessionCancellation,
@@ -47,7 +44,6 @@ import type {
   Session,
   SessionBookingRequest,
   SessionCreditSummary,
-  SessionProposal,
   SessionStatus,
   TimeBlock,
 } from '@/lib/types';
@@ -85,10 +81,6 @@ export default function SessionsPage() {
     queryKey: familyKeys.sessions,
     queryFn: listFamilySessions,
   });
-  const proposalsQuery = useQuery({
-    queryKey: familyKeys.proposals,
-    queryFn: listFamilySessionProposals,
-  });
   const creditsQuery = useQuery({
     queryKey: familyKeys.credits,
     queryFn: getFamilySessionCredits,
@@ -103,7 +95,6 @@ export default function SessionsPage() {
 
   const invalidateSessions = () => {
     queryClient.invalidateQueries({ queryKey: familyKeys.sessions });
-    queryClient.invalidateQueries({ queryKey: familyKeys.proposals });
     queryClient.invalidateQueries({ queryKey: familyKeys.credits });
     queryClient.invalidateQueries({ queryKey: familyKeys.bookingRequests });
   };
@@ -120,59 +111,6 @@ export default function SessionsPage() {
     onError: (error) => {
       toast({
         title: 'Could not send calendar request',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const acceptMutation = useMutation({
-    mutationFn: acceptFamilySessionProposal,
-    onSuccess: () => {
-      invalidateSessions();
-      toast({ title: 'Session accepted' });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Could not accept session',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const declineMutation = useMutation({
-    mutationFn: ({
-      proposalId,
-      reason,
-      preferredAlternative,
-      preferredAlternativeExactTime,
-    }: {
-      proposalId: string;
-      reason: string;
-      preferredAlternative?: {
-        day: DayOfWeek;
-        time: TimeBlock;
-      };
-      preferredAlternativeExactTime?: string;
-    }) =>
-      declineFamilySessionProposal(proposalId, {
-        reason,
-        preferredAlternative,
-        preferredAlternativeExactTime,
-      }),
-    onSuccess: () => {
-      invalidateSessions();
-      toast({
-        title: 'Different time requested',
-        description: 'The teacher will propose another time for this lesson.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Could not request different time',
         description:
           error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive',
@@ -225,14 +163,6 @@ export default function SessionsPage() {
     );
   }, [active, sessionsQuery.data]);
 
-  const pendingProposals = useMemo(() => {
-    if (!active) return [];
-    return (proposalsQuery.data ?? []).filter(
-      (proposal) =>
-        proposal.childId === active.id && proposal.status === 'Pending',
-    );
-  }, [active, proposalsQuery.data]);
-
   const grouped = useMemo(() => {
     const bucket: Record<SessionStatus, Session[]> = {
       Upcoming: [],
@@ -248,10 +178,9 @@ export default function SessionsPage() {
 
   const isLoading =
     studentsQuery.isLoading ||
-    sessionsQuery.isLoading ||
-    proposalsQuery.isLoading;
+    sessionsQuery.isLoading;
   const error =
-    studentsQuery.error ?? sessionsQuery.error ?? proposalsQuery.error;
+    studentsQuery.error ?? sessionsQuery.error;
 
   if (isLoading) {
     return (
@@ -303,33 +232,6 @@ export default function SessionsPage() {
         submitting={bookingMutation.isPending}
         onSubmit={(input) => bookingMutation.mutate(input)}
       />
-
-      {pendingProposals.length > 0 && (
-        <div className="space-y-3">
-          {pendingProposals.map((proposal) => (
-            <SessionProposalCard
-              key={proposal.id}
-              proposal={proposal}
-              child={active}
-              accepting={
-                acceptMutation.isPending &&
-                acceptMutation.variables === proposal.id
-              }
-              declining={
-                declineMutation.isPending &&
-                declineMutation.variables?.proposalId === proposal.id
-              }
-              onAccept={() => acceptMutation.mutate(proposal.id)}
-              onDecline={(input) =>
-                declineMutation.mutate({
-                  proposalId: proposal.id,
-                  ...input,
-                })
-              }
-            />
-          ))}
-        </div>
-      )}
 
       <Tabs defaultValue="Upcoming" className="space-y-4">
         <TabsList className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-full p-1 w-fit">
@@ -590,7 +492,10 @@ function CalendarRequestPanel({
       {requests.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-gray-700 dark:text-foreground/90">
-            Calendar requests
+            Your lesson requests
+          </p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground">
+            An admin confirms every lesson and adds the meeting link.
           </p>
           {requests.slice(0, 3).map((request) => (
             <div
@@ -601,231 +506,19 @@ function CalendarRequestPanel({
                 {request.sessionsRequested}x {request.subject} on {request.day}s at{' '}
                 {request.startTime}
               </span>
-              <span className="font-medium text-brand">{request.status}</span>
+              <span className="text-right">
+                <span className="block font-medium text-brand">
+                  {request.status === 'Pending' ? 'Waiting for admin' : request.status === 'Scheduled' ? 'Approved' : 'Declined'}
+                </span>
+                {request.declineReason && (
+                  <span className="block text-gray-600 dark:text-muted-foreground">{request.declineReason}</span>
+                )}
+              </span>
             </div>
           ))}
         </div>
       )}
     </div>
-  );
-}
-
-function SessionProposalCard({
-  proposal,
-  child,
-  accepting,
-  declining,
-  onAccept,
-  onDecline,
-}: {
-  proposal: SessionProposal;
-  child: Child;
-  accepting: boolean;
-  declining: boolean;
-  onAccept: () => void;
-  onDecline: (input: {
-    reason: string;
-    preferredAlternative?: {
-      day: DayOfWeek;
-      time: TimeBlock;
-    };
-    preferredAlternativeExactTime?: string;
-  }) => void;
-}) {
-  const [declineOpen, setDeclineOpen] = useState(false);
-  const [reason, setReason] = useState('');
-  const [preferredSlot, setPreferredSlot] = useState('none');
-  const [preferredExactTime, setPreferredExactTime] = useState('');
-  const availability = Object.entries(child.intake?.preferredSchedule ?? {}) as Array<
-    [DayOfWeek, TimeBlock]
-  >;
-  const hasAvailability = availability.length > 0;
-  const selectedAvailability =
-    preferredSlot === 'none'
-      ? undefined
-      : (preferredSlot.split(':') as [DayOfWeek, TimeBlock]);
-  const selectedTimeBlock = selectedAvailability?.[1];
-  const exactTimeInvalid =
-    !!preferredExactTime &&
-    !!selectedTimeBlock &&
-    !timeIsInBlock(preferredExactTime, selectedTimeBlock);
-
-  function submitDecline() {
-    const [day, time] =
-      preferredSlot === 'none'
-        ? []
-        : (preferredSlot.split(':') as [DayOfWeek, TimeBlock]);
-
-    onDecline({
-      reason,
-      preferredAlternative: day && time ? { day, time } : undefined,
-      preferredAlternativeExactTime:
-        day && time && preferredExactTime ? preferredExactTime : undefined,
-    });
-    setDeclineOpen(false);
-    setReason('');
-    setPreferredSlot('none');
-    setPreferredExactTime('');
-  }
-
-  return (
-    <>
-      <div className="bg-white dark:bg-card border border-brand/20 dark:border-accent2-400/30 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-brand/10 text-brand dark:bg-accent2-500/15 dark:text-accent2-400 flex items-center justify-center shrink-0">
-          <CalendarCheck2 className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-brand dark:text-accent2-400 bg-brand/10 dark:bg-accent2-500/10 px-2 py-0.5 rounded-full">
-              Proposed session
-            </span>
-            <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground">
-              {proposal.subject}
-            </span>
-          </div>
-          <p className="font-semibold text-gray-900 dark:text-foreground">
-            {proposal.teacherName ?? 'Teacher'}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-            {new Date(proposal.startsAt).toLocaleString(undefined, {
-              weekday: 'short',
-              day: 'numeric',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}{' '}
-            - {proposal.durationMins} min - {proposal.timeBlock}
-          </p>
-          {proposal.note && (
-            <p className="text-xs text-gray-600 dark:text-foreground/80 mt-2">
-              {proposal.note}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="rounded-full"
-            disabled={accepting || declining}
-            onClick={() => setDeclineOpen(true)}
-          >
-            {declining ? 'Sending...' : 'Request different time'}
-          </Button>
-          <Button
-            className="rounded-full bg-brand hover:bg-brand-600"
-            disabled={accepting || declining}
-            onClick={onAccept}
-          >
-            {accepting ? 'Accepting...' : 'Accept'}
-          </Button>
-        </div>
-      </div>
-
-      <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Request a different time</DialogTitle>
-            <DialogDescription>
-              This does not cancel the lesson. It tells the teacher this time
-              does not work and asks them to propose another saved slot.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor={`decline-reason-${proposal.id}`}>
-                Reason
-              </Label>
-              <Textarea
-                id={`decline-reason-${proposal.id}`}
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="Example: We still want this lesson, but this time clashes with school pickup."
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Preferred alternative</Label>
-              {hasAvailability ? (
-                <Select
-                  value={preferredSlot}
-                  onValueChange={(value) => {
-                    setPreferredSlot(value);
-                    if (value === 'none') setPreferredExactTime('');
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pick from saved availability" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Let teacher choose another time</SelectItem>
-                    {availability.map(([day, time]) => (
-                      <SelectItem key={`${day}:${time}`} value={`${day}:${time}`}>
-                        {day} - {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
-                  You have not saved your availability yet.
-                </p>
-              )}
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                If the time you want is not listed, update your availability
-                first.
-              </p>
-              {selectedTimeBlock && (
-                <div className="space-y-2">
-                  <Label htmlFor={`exact-time-${proposal.id}`}>
-                    Preferred exact time
-                  </Label>
-                  <Input
-                    id={`exact-time-${proposal.id}`}
-                    type="time"
-                    value={preferredExactTime}
-                    onChange={(event) =>
-                      setPreferredExactTime(event.target.value)
-                    }
-                  />
-                  <p
-                    className={
-                      exactTimeInvalid
-                        ? 'text-xs text-red-600'
-                        : 'text-xs text-gray-500 dark:text-muted-foreground'
-                    }
-                  >
-                    Pick a time inside the selected {selectedTimeBlock} block.
-                  </p>
-                </div>
-              )}
-              <Link
-                href="/student/tutor"
-                className="text-xs font-semibold text-brand"
-              >
-                Update availability
-              </Link>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeclineOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-red-600 hover:bg-red-700"
-              disabled={
-                reason.trim().length < 5 || exactTimeInvalid || declining
-              }
-              onClick={submitDecline}
-            >
-              {declining ? 'Sending...' : 'Send request'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }
 
