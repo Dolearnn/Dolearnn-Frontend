@@ -286,14 +286,14 @@ export default function AdminIntakesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Intakes"
-        description="Review new tutor requests and assign the right tutor."
+        title="Tutor requests"
+        description="Review new requests and assign the right teacher."
         action={
           <Button
             className="rounded-full bg-brand hover:bg-brand-600"
             onClick={() => setAddOpen(true)}
           >
-            Create student
+            Add learner
           </Button>
         }
       />
@@ -797,7 +797,7 @@ export default function AdminIntakesPage() {
                 })
               }
             >
-              {createStudentMutation.isPending ? 'Creating...' : 'Create student'}
+              {createStudentMutation.isPending ? 'Adding...' : 'Add learner'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -879,7 +879,7 @@ function IntakeCard({
           <p className="font-semibold text-gray-900 dark:text-foreground">
             {child.fullName}{' '}
             <span className="text-xs text-gray-500 dark:text-muted-foreground font-normal">
-              - {displayGrade(child)} - Age {child.age}
+              · {displayGrade(child)}{child.age ? ` · Age ${child.age}` : ''}
             </span>
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
@@ -987,7 +987,7 @@ function IntakeCard({
                     </p>
                     {assignedTeacher && (
                       <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-                        Star {assignedTeacher.rating.toFixed(1)} -{' '}
+                        {assignedTeacher.rating > 0 ? `★ ${assignedTeacher.rating.toFixed(1)}` : 'New'} ·{' '}
                         {assignedTeacher.subjects.join(', ')}
                       </p>
                     )}
@@ -1119,7 +1119,7 @@ function SuggestionRow({
           {teacher.name}
         </p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-          Star {teacher.rating.toFixed(1)} - {naira(teacher.hourlyRate)} per session -{' '}
+          {teacher.rating > 0 ? `★ ${teacher.rating.toFixed(1)}` : 'New'} · {naira(teacher.hourlyRate)} per session ·{' '}
           {teacher.totalSessions} sessions
         </p>
       </div>

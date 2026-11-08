@@ -58,6 +58,8 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  // Starts a labelled group in the sidebar.
+  section?: string;
 };
 
 // One account type for learners: practice, Arena, tutoring and payments together.
@@ -86,16 +88,16 @@ const teacherNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { label: 'Overview', href: '/admin', icon: Home },
-  { label: 'Question bank', href: '/admin/questions', icon: BookOpen },
-  { label: 'Intakes', href: '/admin/intakes', icon: ClipboardList },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
+  { label: 'Tutor requests', href: '/admin/intakes', icon: ClipboardList, section: 'Tutoring' },
   { label: 'Teachers', href: '/admin/teachers', icon: GraduationCap },
   { label: 'Sessions', href: '/admin/sessions', icon: Calendar },
   { label: 'Payments', href: '/admin/payments', icon: CreditCard },
+  { label: 'Question bank', href: '/admin/questions', icon: BookOpen, section: 'Content and growth' },
   { label: 'Leads', href: '/admin/leads', icon: Inbox },
-  { label: 'Reports', href: '/admin/reports', icon: ChartNoAxesColumnIncreasing },
+  { label: 'Reports', href: '/admin/reports', icon: ChartNoAxesColumnIncreasing, section: 'Insights' },
   { label: 'Impact', href: '/admin/impact', icon: Target },
   { label: 'Audit', href: '/admin/audit', icon: FileSearch },
-  { label: 'Notifications', href: '/admin/notifications', icon: Bell },
 ];
 
 type Role = 'student' | 'teacher' | 'admin';
@@ -317,6 +319,11 @@ function SidebarContents({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.25, delay: i * 0.04, ease: 'easeOut' }}
             >
+              {item.section && (
+                <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                  {item.section}
+                </p>
+              )}
               <Link
                 href={item.href}
                 className={cn(

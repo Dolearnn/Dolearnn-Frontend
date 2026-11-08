@@ -293,6 +293,12 @@ export default function AdminSessionsPage() {
       <PageHeader
         title="Sessions"
         description="Every session across the platform, at a glance."
+        action={
+          <ScheduleSessionDialog
+            students={studentsQuery.data ?? []}
+            existingSessions={upcomingSessionsQuery.data?.sessions ?? []}
+          />
+        }
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -308,10 +314,6 @@ export default function AdminSessionsPage() {
             className="rounded-full pl-9"
           />
         </div>
-        <ScheduleSessionDialog
-          students={studentsQuery.data ?? []}
-          existingSessions={upcomingSessionsQuery.data?.sessions ?? []}
-        />
       </div>
 
       <BookingRequestsPanel

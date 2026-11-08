@@ -318,7 +318,7 @@ export default function AdminTeachersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Teachers"
-        description={`Managing ${summary?.total ?? 0} teachers across the DoLearn roster.`}
+        description={`${summary?.total ?? 0} ${summary?.total === 1 ? 'teacher' : 'teachers'} on the DoLearnn roster.`}
         action={
           <Button
             className="rounded-full bg-brand hover:bg-brand-600"
