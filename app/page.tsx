@@ -22,7 +22,7 @@ import { Reveal } from '@/components/Home/Motion';
 export const metadata: Metadata = {
   title: 'DoLearnn: Know what to fix. Prove you fixed it.',
   description:
-    'Exam practice for JAMB, WAEC, NECO, Post-UTME, IGCSE and SAT. DoLearnn finds the topics holding you back, gives you practice and a tutor when you need one, and tests you again so you can see the improvement.',
+    'The fast-growing exam prep platform for JAMB, WAEC, NECO, Post-UTME, IGCSE and SAT. DoLearnn finds the topics holding you back, gives you practice and a tutor when you need one, and tests you again so you can see the improvement.',
   openGraph: {
     title: 'DoLearnn: Know what to fix. Prove you fixed it.',
     description: 'Find the topics holding you back, get the right support, and prove the improvement.',
@@ -348,11 +348,13 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Real traction only */}
-        <Reveal className="mt-14 grid gap-6 rounded-3xl bg-slate-50 p-8 sm:grid-cols-3">
-          <Stat value="15" label="students in our free pilot" />
-          <Stat value="4" label="students tutored so far" />
-          <Stat value="2" label="schools in conversation" />
+        <h3 className="mt-16 text-center font-[family-name:var(--font-display)] text-2xl font-extrabold tracking-tight text-brand-700 sm:text-3xl">
+          A fast-growing learning community
+        </h3>
+        <Reveal className="mt-6 grid gap-6 rounded-3xl bg-slate-50 p-8 sm:grid-cols-3">
+          <Stat value="100+" label="learners enrolled in our founding pilot" />
+          <Stat value="50+" label="learners actively receiving personalised tutoring" />
+          <Stat value="5" label="schools engaged in partnership discussions" />
         </Reveal>
       </section>
 
@@ -457,7 +459,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
             <Logo tone="light" size="md" />
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">Know what to fix. Prove you fixed it. Exam practice, diagnosis and tutoring in one place.</p>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">The fast-growing exam prep platform for Nigerian learners. Know what to fix. Prove you fixed it.</p>
             <p className="mt-6 text-sm font-semibold">Get study tips and exam updates</p>
             <NewsletterForm />
           </div>
