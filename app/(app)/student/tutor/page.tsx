@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 import { ListChecks } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import IntakeWizard from '@/components/forms/IntakeWizard';
-import { TUTORING_SUBJECTS } from '@/lib/catalog';
+import { TUTORING_SUBJECTS, tutoringSubjectFor } from '@/lib/catalog';
 import { familyKeys, listFamilyStudents } from '@/lib/api/family';
 
 const WIZARD_SUBJECTS = TUTORING_SUBJECTS;
@@ -54,7 +54,7 @@ function IntakePageContent() {
 
   // Suggestions handed over from a practice quiz. Every value is checked
   // against what the form accepts, so a hand-edited link cannot break it.
-  const quizSubject = search.get('subject');
+  const quizSubject = tutoringSubjectFor(search.get('subject'));
   const quizLevel = search.get('level');
   const fromQuiz = search.get('from') === 'quiz' && isWizardSubject(quizSubject);
 

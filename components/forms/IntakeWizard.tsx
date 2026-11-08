@@ -356,7 +356,7 @@ function StepA({ form }: { form: FormApi }) {
         name="subjects"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Subjects / skills needed</FormLabel>
+            <FormLabel>Which subjects do you need a tutor for?</FormLabel>
             <FormControl>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {SUBJECTS.map((subject) => {
@@ -423,9 +423,6 @@ function StepA({ form }: { form: FormApi }) {
                 <SelectItem value="Exam prep">Exam prep</SelectItem>
                 <SelectItem value="Catch up with school">
                   Catch up with school
-                </SelectItem>
-                <SelectItem value="Learn a new skill">
-                  Learn a new skill
                 </SelectItem>
                 <SelectItem value="General improvement">
                   General improvement
