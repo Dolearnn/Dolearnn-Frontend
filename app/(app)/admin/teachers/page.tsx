@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import TeacherHoursDialog from '@/components/admin/TeacherHoursDialog';
+import TeacherSubjectsDialog from '@/components/admin/TeacherSubjectsDialog';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -658,6 +659,7 @@ function TeacherCard({
         </span>
         {!isTerminated && (
           <div className="flex flex-wrap justify-end gap-2">
+            <TeacherSubjectsDialog teacherId={teacher.id} name={teacher.name} subjects={teacher.subjects} />
             <TeacherHoursDialog teacherId={teacher.id} name={teacher.name} />
             <Button
               variant="outline"

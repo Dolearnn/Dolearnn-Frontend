@@ -336,6 +336,14 @@ export function resendAdminTeacherInvite(teacherId: string) {
   });
 }
 
+export async function updateAdminTeacherSubjects(teacherId: string, subjects: string[]) {
+  const response = await apiFetch<{ teacher: ApiTeacher }>(`/admin/teachers/${teacherId}/subjects`, {
+    method: 'PATCH',
+    body: JSON.stringify({ subjects }),
+  });
+  return mapTeacher(response.teacher);
+}
+
 export async function updateAdminTeacherRate(
   teacherId: string,
   hourlyRate: number,

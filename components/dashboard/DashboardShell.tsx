@@ -255,6 +255,7 @@ export default function DashboardShell({
                 <X className="w-5 h-5" />
               </button>
               <SidebarContents
+                onNavigate={() => setMobileOpen(false)}
                 nav={nav}
                 role={role}
                 pathname={pathname}
@@ -299,16 +300,19 @@ function SidebarContents({
   role,
   pathname,
   unreadNotificationCount,
+  onNavigate,
 }: {
   nav: NavItem[];
   role: Role;
   pathname: string;
   unreadNotificationCount: number;
+  // On phones, closes the menu after a link is tapped.
+  onNavigate?: () => void;
 }) {
   return (
     <>
       <div className="px-6 py-6 border-b border-white/10">
-        <Link href="/" aria-label="DoLearnn home" className="inline-block">
+        <Link href="/" aria-label="DoLearnn home" className="inline-block" onClick={onNavigate}>
           <Logo tone="light" size="sm" />
         </Link>
         <p className="text-xs text-white/60 mt-1 capitalize">{role} workspace</p>
@@ -336,6 +340,7 @@ function SidebarContents({
               )}
               <Link
                 href={item.href}
+                onClick={onNavigate}
                 className={cn(
                   'relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
                   active
