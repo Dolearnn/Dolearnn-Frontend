@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Users,
   Wallet,
+  Zap,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -95,6 +96,7 @@ const adminNav: NavItem[] = [
   { label: 'Sessions', href: '/admin/sessions', icon: Calendar },
   { label: 'Payments', href: '/admin/payments', icon: CreditCard },
   { label: 'Question bank', href: '/admin/questions', icon: BookOpen, section: 'Content and growth' },
+  { label: 'Daily quiz', href: '/admin/daily', icon: Zap },
   { label: 'Leads', href: '/admin/leads', icon: Inbox },
   { label: 'Reports', href: '/admin/reports', icon: ChartNoAxesColumnIncreasing, section: 'Insights' },
   { label: 'Impact', href: '/admin/impact', icon: Target },

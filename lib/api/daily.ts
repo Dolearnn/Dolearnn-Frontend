@@ -68,7 +68,69 @@ export interface DailyLeaderboard {
 export const dailyKeys = {
   state: ['daily', 'state'] as const,
   leaderboard: ['daily', 'leaderboard'] as const,
+  pool: ['admin', 'daily', 'pool'] as const,
+  stats: ['admin', 'daily', 'stats'] as const,
 };
+
+export type DailyCategory = 'english' | 'maths' | 'history';
+
+export interface DailyPoolQuestion {
+  id: string;
+  category: DailyCategory;
+  text: string;
+  options: Array<{ id: string; text: string }>;
+  correctOptionId: string;
+  explanation: string | null;
+  usedOn: string | null;
+}
+
+export interface DailyPool {
+  summary: {
+    daysLeft: number;
+    categories: Array<{ category: string; total: number; unused: number; perDay: number }>;
+  };
+  total: number;
+  page: number;
+  pageSize: number;
+  questions: DailyPoolQuestion[];
+}
+
+export function listDailyPool(params: { category?: DailyCategory; search?: string; id?: string; page?: number; pageSize?: number }) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') query.set(key, String(value));
+  }
+  return apiFetch<DailyPool>(`/daily/admin/pool?${query.toString()}`);
+}
+
+export interface DailyDayStats {
+  day: string;
+  number: number;
+  played: number;
+  members: number;
+  guests: number;
+  dropped: number;
+  averageScore: number | null;
+}
+
+export async function getDailyStats() {
+  const response = await apiFetch<{ days: DailyDayStats[] }>('/daily/admin/stats');
+  return response.days;
+}
+
+export function saveDailyQuestion(
+  id: string | undefined,
+  input: { category: DailyCategory; text: string; options: string[]; correctIndex: number; explanation: string },
+) {
+  return apiFetch(id ? `/daily/admin/questions/${id}` : '/daily/admin/questions', {
+    method: id ? 'PUT' : 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteDailyQuestion(id: string) {
+  return apiFetch(`/daily/admin/questions/${id}`, { method: 'DELETE' });
+}
 
 const GUEST_KEY = 'dolearn.daily.guest';
 

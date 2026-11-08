@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Users,
   Wallet,
+  Zap,
   type LucideIcon,
 } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -29,6 +30,7 @@ import {
 } from '@/lib/api/admin';
 import { listAdminTeacherPayouts, paymentKeys } from '@/lib/api/payments';
 import { listQuestionReports, reportKeys } from '@/lib/api/question-reports';
+import { dailyKeys, getDailyStats, listDailyPool } from '@/lib/api/daily';
 import { displayGrade, displaySubject, type Child, type Session, type Teacher } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { naira } from '@/lib/money';
@@ -64,6 +66,11 @@ export default function AdminHome() {
   });
 
   const reportsQuery = useQuery({ queryKey: reportKeys.open, queryFn: listQuestionReports });
+  const dailyStatsQuery = useQuery({ queryKey: dailyKeys.stats, queryFn: getDailyStats });
+  const dailyPoolQuery = useQuery({
+    queryKey: [...dailyKeys.pool, 'summary'],
+    queryFn: () => listDailyPool({ pageSize: 1 }),
+  });
 
   const students = studentsQuery.data ?? EMPTY_STUDENTS;
   const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
@@ -160,6 +167,22 @@ export default function AdminHome() {
     });
   }
 
+  const dailyToday = dailyStatsQuery.data?.[0]?.played ?? 0;
+  const dailyDaysLeft = dailyPoolQuery.data?.summary.daysLeft;
+  if (dailyDaysLeft !== undefined && dailyDaysLeft <= 7) {
+    tasks.push({
+      id: 'daily-pool',
+      icon: Zap,
+      title:
+        dailyDaysLeft === 0
+          ? 'The Daily quiz has run out of new questions'
+          : `The Daily quiz has ${plural(dailyDaysLeft, 'day')} of new questions left`,
+      detail: 'Add more questions so older ones do not start repeating.',
+      href: '/admin/daily',
+      cta: 'Add questions',
+    });
+  }
+
   const reported = reportsQuery.data?.length ?? 0;
   if (reported > 0) {
     tasks.push({
@@ -218,7 +241,8 @@ export default function AdminHome() {
         )}
       </section>
 
-      <section aria-label="Key numbers" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section aria-label="Key numbers" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatTile icon={Zap} label="Daily quiz" value={dailyToday} sub="played today" />
         <StatTile icon={Users} label="Learners" value={students.length} sub={`${pending.length} waiting for a teacher`} />
         <StatTile
           icon={GraduationCap}

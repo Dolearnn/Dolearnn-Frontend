@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +32,7 @@ export default function QuestionReportsPanel() {
           Reported questions ({reports.length})
         </h2>
         <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
-          Check each one, edit it below if it is wrong, then mark it as done.
+          Check each one and correct it if it is wrong, then mark it as done.
         </p>
       </div>
       <ul className="space-y-3">
@@ -50,9 +51,16 @@ export default function QuestionReportsPanel() {
                 </li>
               ))}
             </ul>
-            <Button size="sm" variant="outline" className="mt-2 rounded-full" disabled={resolve.isPending} onClick={() => resolve.mutate(report)}>
-              Mark as done
-            </Button>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {report.kind === 'daily' && (
+                <Button asChild size="sm" className="rounded-full">
+                  <Link href={`/admin/daily?edit=${report.questionId}`}>Fix this question</Link>
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="rounded-full" disabled={resolve.isPending} onClick={() => resolve.mutate(report)}>
+                Mark as done
+              </Button>
+            </div>
           </li>
         ))}
       </ul>
