@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 
 // Same headline font as the landing page, so the two feel like one product.
 
-const loop = ['Assess', 'Diagnose', 'Practise', 'Get support', 'Reassess'];
+const loop = ['Take a quiz', 'See weak topics', 'Practise', 'Get help', 'Test again'];
 
 // Illustrative topic map, as on the landing page.
 const gaps = [

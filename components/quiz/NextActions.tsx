@@ -25,16 +25,16 @@ const ICONS = {
 
 const EYEBROWS: Record<QuizNextAction['type'], string> = {
   DIAGNOSTIC: 'Start here',
-  PRACTISE_TOPIC: 'Your mission',
-  TUTOR: 'Human support',
-  REASSESS: 'Measure the change',
+  PRACTISE_TOPIC: 'Practise next',
+  TUTOR: 'Extra help',
+  REASSESS: 'See if you improved',
 };
 
 const START_LABEL: Record<QuizNextAction['type'], string> = {
   DIAGNOSTIC: 'Choose a subject',
-  PRACTISE_TOPIC: 'Start mission',
+  PRACTISE_TOPIC: 'Practise',
   TUTOR: '',
-  REASSESS: 'Start reassessment',
+  REASSESS: 'Test again',
 };
 
 function StartAction({

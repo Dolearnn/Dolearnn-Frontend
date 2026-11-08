@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import { AlertTriangle, BadgeCheck, Clock, Minus, RotateCcw, ShieldCheck, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { QuizSubmittedView } from '@/lib/api/quiz';
+import { getQuizProgress, quizKeys, type QuizSubmittedView } from '@/lib/api/quiz';
 import { scoreMessage, scoreTone, toneClasses } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
 import DiagnosisCard from './DiagnosisCard';
 import { readExamRecord, type ExamRecord } from './ExamLockdown';
-import PracticeLoop from './PracticeLoop';
 import QuizReview from './QuizReview';
 import RetakeComparison from './RetakeComparison';
 import RewardsStrip from './RewardsStrip';
@@ -89,6 +89,16 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
     (a, b) => a.accuracyPercent - b.accuracyPercent,
   );
 
+  // Only the learner's very first result gets the "start here" treatment.
+  const progressQuery = useQuery({
+    queryKey: quizKeys.progress(attempt.studentId ?? null),
+    queryFn: () => getQuizProgress(attempt.studentId ?? null),
+  });
+  const isFirstResult = progressQuery.data?.totalAttempts === 1;
+  const startHere = [...result.topics]
+    .filter((topic) => topic.accuracyPercent < WEAK_BELOW_PERCENT)
+    .sort((a, b) => a.accuracyPercent - b.accuracyPercent || b.attempted - a.attempted)[0];
+
   const mixed = (attempt.subjects?.length ?? 0) > 1;
   const base = {
     subjectId: attempt.subject.id,
@@ -158,11 +168,53 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
         )}
       </div>
 
+      {isFirstResult && (
+        <section className="rounded-3xl bg-brand p-6 text-white sm:p-8" aria-labelledby="start-here-heading">
+          <p className="text-sm font-semibold text-accent2-300">Start here</p>
+          {startHere ? (
+            <>
+              <h2 id="start-here-heading" className="mt-1 text-2xl font-bold tracking-tight">
+                Your weakest topic is {startHere.name}
+              </h2>
+              <p className="mt-2 leading-7 text-white/80">
+                You got {startHere.correct} of {startHere.attempted} right, so this is the best place to start.
+              </p>
+              <Button
+                variant="secondary"
+                className="mt-5 h-12 px-6 text-base"
+                disabled={start.isPending}
+                onClick={() =>
+                  start.mutate({
+                    subjectId: startHere.subjectId ?? attempt.subject.id,
+                    examId: attempt.examId ?? undefined,
+                    studentId: attempt.studentId ?? undefined,
+                    topicIds: [startHere.topicId],
+                    count: 10,
+                    mode: 'PRACTICE',
+                  })
+                }
+              >
+                <Target className="mr-2 h-4 w-4" />
+                {start.isPending ? 'Starting…' : `Practise ${startHere.name}`}
+              </Button>
+            </>
+          ) : (
+            <>
+              <h2 id="start-here-heading" className="mt-1 text-2xl font-bold tracking-tight">
+                Great start, no weak topics in this quiz
+              </h2>
+              <p className="mt-2 leading-7 text-white/80">Try another subject to see where you need the most help.</p>
+              <Button asChild variant="secondary" className="mt-5 h-12 px-6 text-base">
+                <Link href={practicePath}>Choose a subject</Link>
+              </Button>
+            </>
+          )}
+        </section>
+      )}
+
       {result.retake && <RetakeComparison retake={result.retake} />}
 
-      <RewardsStrip studentId={attempt.studentId ?? null} />
-
-      <PracticeLoop active={result.retake ? 'Reassess' : 'Diagnose'} />
+      {!isFirstResult && <RewardsStrip studentId={attempt.studentId ?? null} />}
 
       <DiagnosisCard attemptId={attempt.id} />
 
@@ -200,7 +252,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
         <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 id="result-next-step" className="text-xl font-semibold">
-              {weakTopicIds.length > 0 ? 'Turn the weak topics into a mission' : 'Keep the result moving'}
+              {weakTopicIds.length > 0 ? 'Practise your weak topics' : 'Keep going'}
             </h2>
             <p className="mt-1 max-w-xl text-sm leading-6 text-white/75 dark:text-brand/70">
               {weakTopicIds.length > 0
@@ -217,7 +269,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
                 start.mutate({ ...base, topicIds: weakTopicIds, count: 10, mode: 'PRACTICE' })
               }
             >
-              <Target className="mr-2 h-4 w-4" /> Start targeted mission
+              <Target className="mr-2 h-4 w-4" /> Practise weak topics
             </Button>
           )}
         </div>
@@ -237,7 +289,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
             }
           >
             <BadgeCheck className="mr-2 h-4 w-4" />
-            {weakTopicIds.length > 0 ? 'Retake weak topics to prove progress' : 'Retake to prove progress'}
+            {weakTopicIds.length > 0 ? 'Test your weak topics again' : 'Test yourself again'}
           </Button>
           <Button
             variant="outline"
@@ -251,7 +303,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
               })
             }
           >
-            <RotateCcw className="mr-2 h-4 w-4" /> {mixed ? 'Take this mix again' : 'Reassess this subject'}
+            <RotateCcw className="mr-2 h-4 w-4" /> {mixed ? 'Take this mix again' : 'Test this subject again'}
           </Button>
           <Button asChild variant="ghost" className="h-10 px-4 text-white hover:bg-white/10 hover:text-white dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand">
             <Link href={practicePath}>Back to practice</Link>

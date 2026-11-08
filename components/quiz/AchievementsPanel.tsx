@@ -16,7 +16,7 @@ function actionHref(base: LearnerBase, action: QuizMission['action']) {
 
 const ACTION_LABEL: Record<QuizMission['action'], string> = {
   practice: 'Practise',
-  reassess: 'Reassess',
+  reassess: 'Test again',
   arena: 'Open Arena',
 };
 

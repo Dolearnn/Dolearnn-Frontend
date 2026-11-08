@@ -46,6 +46,7 @@ import {
   notificationKeys,
 } from '@/lib/api/notifications';
 import { Logo } from '@/components/brand/Logo';
+import TutorTabs, { TUTOR_TABS } from '@/components/dashboard/TutorTabs';
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -60,6 +61,8 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   // Starts a labelled group in the sidebar.
   section?: string;
+  // Other pages that belong to this item, so it stays highlighted on them.
+  also?: string[];
 };
 
 // One account type for learners: practice, Arena, tutoring and payments together.
@@ -68,10 +71,7 @@ const studentNav: NavItem[] = [
   { label: 'Practice', href: '/student/practice', icon: ListChecks },
   { label: 'Arena', href: '/student/arena', icon: Swords },
   { label: 'Progress', href: '/student/progress', icon: TrendingUp },
-  { label: 'Get a tutor', href: '/student/tutor', icon: GraduationCap },
-  { label: 'Sessions', href: '/student/sessions', icon: Calendar },
-  { label: 'Payments', href: '/student/payments', icon: CreditCard },
-  { label: 'Reports', href: '/student/reports', icon: ChartNoAxesColumnIncreasing },
+  { label: 'Tutor', href: '/student/tutor', icon: GraduationCap, also: TUTOR_TABS.map((tab) => tab.href) },
   { label: 'Notifications', href: '/student/notifications', icon: Bell },
 ];
 
@@ -278,6 +278,7 @@ export default function DashboardShell({
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-x-hidden">
+          <TutorTabs />
           {children}
         </main>
       </div>
@@ -308,7 +309,8 @@ function SidebarContents({
         {nav.map((item, i) => {
           const active =
             pathname === item.href ||
-            (item.href !== `/${role}` && pathname.startsWith(item.href));
+            (item.href !== `/${role}` && pathname.startsWith(item.href)) ||
+            Boolean(item.also?.some((path) => pathname.startsWith(path)));
           const hasUnreadNotifications =
             item.label === 'Notifications' && unreadNotificationCount > 0;
           const Icon = item.icon;
@@ -355,9 +357,6 @@ function SidebarContents({
           );
         })}
       </nav>
-      <div className="p-4 border-t border-white/10 text-xs text-white/50">
-        DoLearnn MVP · v0.1
-      </div>
     </>
   );
 }

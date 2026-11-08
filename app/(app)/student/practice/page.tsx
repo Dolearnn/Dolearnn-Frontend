@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { BookOpenCheck, ChevronRight, Layers, Target } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
-import PracticeLoop, { type PracticeLoopStep } from '@/components/quiz/PracticeLoop';
 import MixedQuizDialog from '@/components/quiz/MixedQuizDialog';
 import StartQuizDialog from '@/components/quiz/StartQuizDialog';
 import { useStartQuiz } from '@/components/quiz/useStartQuiz';
@@ -109,22 +108,16 @@ export default function QuizHubPage() {
   const weakTopics = (overviewQuery.data?.weak.topics ?? []).filter((topic) => topic.isWeak).slice(0, 5);
   const history = overviewQuery.data?.history.attempts ?? [];
   const hasAttempts = history.length > 0;
-  const loopStep: PracticeLoopStep = weakTopics.length > 0
-    ? 'Practise'
-    : hasAttempts
-      ? 'Reassess'
-      : 'Assess';
 
   return (
     <div className="max-w-5xl">
       <PageHeader
         title="Practice"
-        description="Start with an assessment, work on the gaps it finds, then return to measure the change."
+        description="Pick a subject, see your weak topics, then test yourself again to see the change."
       />
 
       {/* Practice is for choosing what to practise. Rewards, missions, badges and the
-          leaderboard live on the Today page; weak topics below carry their own missions. */}
-      <PracticeLoop active={loopStep} />
+          leaderboard live on the Today page. */}
 
       {(overviewQuery.data?.learningPlan?.unavailableExams.length ?? 0) > 0 && (
         <aside className="mb-8 border-l-4 border-amber-400 bg-amber-50 p-4 dark:bg-amber-500/10" aria-label="Examination content availability">
@@ -164,7 +157,7 @@ export default function QuizHubPage() {
                 Question bank
               </p>
               <h2 id="choose-subject-heading" className="mt-1 text-2xl font-semibold text-gray-950 dark:text-foreground">
-                {hasAttempts ? 'Choose another subject' : 'Choose your first assessment'}
+                {hasAttempts ? 'Choose another subject' : 'Choose your first subject'}
               </h2>
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
@@ -191,7 +184,7 @@ export default function QuizHubPage() {
                 ))}
               </div>
               <p className="max-w-sm text-xs leading-5 text-gray-500 dark:text-muted-foreground sm:text-right">
-                Use all topics for a broad diagnosis, select topics for a focused mission, or mix subjects for a full exam.
+                Choose a subject, focus on certain topics, or mix subjects for a full exam.
               </p>
             </div>
           </div>
@@ -282,7 +275,7 @@ export default function QuizHubPage() {
         <section className="mt-10" aria-labelledby="learning-map-heading">
           <div className="mb-3">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-muted-foreground">
-              Diagnosis
+              From your results
             </p>
             <h2 id="learning-map-heading" className="mt-1 text-xl font-semibold text-gray-950 dark:text-foreground">
               Topics to strengthen
@@ -316,7 +309,7 @@ export default function QuizHubPage() {
                       })
                     }
                   >
-                    <Target className="mr-1.5 h-3.5 w-3.5" /> Start mission
+                    <Target className="mr-1.5 h-3.5 w-3.5" /> Practise
                   </Button>
                 </div>
               </div>

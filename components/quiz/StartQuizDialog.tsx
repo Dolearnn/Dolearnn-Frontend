@@ -24,7 +24,7 @@ const COUNT_CHOICES = [10, 20, 40];
 const MIN_COUNT = 5;
 
 const modes: Array<{ value: QuizMode; title: string; hint: string }> = [
-  { value: 'PRACTICE', title: 'Guided practice', hint: 'No timer. Diagnose the result and review explanations.' },
+  { value: 'PRACTICE', title: 'Guided practice', hint: 'No timer. See your weak topics and read the explanations.' },
   { value: 'MOCK', title: 'Exam mode', hint: 'Full screen and timed, 1 minute per question. Switching tabs is recorded.' },
 ];
 
@@ -130,7 +130,7 @@ export default function StartQuizDialog({
               </legend>
               <p className="text-xs text-gray-500 dark:text-muted-foreground mb-2">
                 {topicIds.length === 0
-                  ? 'All topics gives you a broad assessment. Select topics for a focused mission.'
+                  ? 'All topics are included. Pick some if you want to focus.'
                   : `${topicIds.length} selected`}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -172,8 +172,8 @@ export default function StartQuizDialog({
               : mode === 'MOCK'
                 ? 'Start timed mock'
                 : topicIds.length > 0
-                  ? 'Start focused mission'
-                  : 'Start assessment'}
+                  ? 'Start practising'
+                  : 'Start quiz'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BookOpenCheck, CalendarDays, Pencil, Target } from 'lucide-react';
+import { BookOpenCheck, CalendarDays, Pencil, Target } from 'lucide-react';
+import FirstQuizCard from '@/components/quiz/FirstQuizCard';
 import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
 import AchievementsPanel from '@/components/quiz/AchievementsPanel';
@@ -70,6 +71,8 @@ export default function StudentDashboardPage() {
   const progress = overviewQuery.data?.progress;
   const examDays = daysUntil(profile.examDate);
   const sessions = progress?.totalAttempts ?? 0;
+  // A new learner sees one clear step instead of empty rewards and leaderboards.
+  const isNewLearner = overviewQuery.isSuccess && sessions === 0;
 
   return (
     <div className="max-w-5xl">
@@ -82,7 +85,7 @@ export default function StudentDashboardPage() {
           <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
             {sessions > 0
               ? `${sessions} practice ${sessions === 1 ? 'session' : 'sessions'} so far. Here is what to do next.`
-              : 'Start with a short assessment and we will map your topics.'}
+              : 'Welcome to DoLearnn. Your first step is below.'}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Chip icon={Target}>{profile.externalExams.join(' · ') || 'No exam chosen'}</Chip>
@@ -99,29 +102,19 @@ export default function StudentDashboardPage() {
         </Button>
       </header>
 
-      <RewardsStrip studentId={null} className="mb-8" />
-
-      {profile.guestBaseline && sessions === 0 && (
-        <section className="mb-9 rounded-2xl border border-accent2-200 bg-accent2-50 p-5 dark:border-accent2-500/30 dark:bg-accent2-500/10">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">Your warm-up signal</p>
-          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-2xl font-semibold text-gray-950 dark:text-foreground">{profile.guestBaseline.score}%</p>
-              <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
-                {profile.guestBaseline.weakTopics.length > 0
-                  ? `Check ${profile.guestBaseline.weakTopics.join(', ')} in a full assessment.`
-                  : 'Take a full assessment to create your topic map.'}
-              </p>
-            </div>
-            <Button asChild><Link href="/student/practice">Take full assessment <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-          </div>
-        </section>
+      {isNewLearner && overviewQuery.data ? (
+        <FirstQuizCard
+          catalog={overviewQuery.data.catalog}
+          warmUpTopics={profile.guestBaseline?.weakTopics ?? []}
+        />
+      ) : (
+        <>
+          <RewardsStrip studentId={null} className="mb-8" />
+          <NextActions studentId={null} actions={overviewQuery.data?.actions ?? []} isLoading={overviewQuery.isLoading} />
+          <AchievementsPanel studentId={null} className="mt-2" />
+          <WeeklyLeaderboard studentId={null} className="mt-8" />
+        </>
       )}
-
-      <NextActions studentId={null} actions={overviewQuery.data?.actions ?? []} isLoading={overviewQuery.isLoading} />
-
-      <AchievementsPanel studentId={null} className="mt-2" />
-      <WeeklyLeaderboard studentId={null} className="mt-8" />
     </div>
   );
 }

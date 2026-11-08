@@ -82,7 +82,7 @@ export default function StudentOnboardingPage() {
   const submit = () => {
     setError('');
     if (externalExams.length === 0) {
-      setError('Choose or add at least one external examination.');
+      setError('Choose or add at least one exam.');
       return;
     }
     if (subjectIds.length === 0) {
@@ -94,12 +94,12 @@ export default function StudentOnboardingPage() {
 
   return (
     <div className="mx-auto max-w-4xl pb-10">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">Set your direction</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">Your plan</p>
       <h1 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight text-gray-950 dark:text-foreground sm:text-4xl">
         Tell DoLearnn what you are preparing for.
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-muted-foreground">
-        This sets your starting subjects and exam context. You can prepare for any external examination and change these choices later.
+        Takes about a minute. You can change this later.
       </p>
 
       {profileQuery.data?.guestBaseline && (
@@ -109,7 +109,7 @@ export default function StudentOnboardingPage() {
             {profileQuery.data.guestBaseline.correct} of {profileQuery.data.guestBaseline.total} correct
             {profileQuery.data.guestBaseline.weakTopics.length > 0
               ? ` · Start by checking ${profileQuery.data.guestBaseline.weakTopics.join(', ')}.`
-              : ' · Your fuller assessment will find where to stretch next.'}
+              : ' · Your first quiz will show where to go next.'}
           </p>
         </div>
       )}
@@ -138,8 +138,8 @@ export default function StudentOnboardingPage() {
         </fieldset>
 
         <fieldset>
-          <legend className="text-lg font-semibold text-gray-950 dark:text-foreground">2. Which external examinations?</legend>
-          <p className="mt-1 text-sm text-gray-500 dark:text-muted-foreground">Choose any that apply, or add an examination that is not listed.</p>
+          <legend className="text-lg font-semibold text-gray-950 dark:text-foreground">2. Which exams are you writing?</legend>
+          <p className="mt-1 text-sm text-gray-500 dark:text-muted-foreground">Choose any that apply, or add one that is not listed.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {examOptions.map((name) => {
               const selected = externalExams.includes(name);
@@ -171,10 +171,10 @@ export default function StudentOnboardingPage() {
                   addCustomExam();
                 }
               }}
-              placeholder="Add another external examination"
-              aria-label="External examination name"
+              placeholder="Add another exam"
+              aria-label="Exam name"
             />
-            <Button type="button" variant="outline" onClick={addCustomExam} aria-label="Add examination">
+            <Button type="button" variant="outline" onClick={addCustomExam} aria-label="Add exam">
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -186,8 +186,8 @@ export default function StudentOnboardingPage() {
         </fieldset>
 
         <fieldset>
-          <legend className="text-lg font-semibold text-gray-950 dark:text-foreground">3. Which subjects matter first?</legend>
-          <p className="mt-1 text-sm text-gray-500 dark:text-muted-foreground">Start focused. You can add subjects as the question bank expands.</p>
+          <legend className="text-lg font-semibold text-gray-950 dark:text-foreground">3. Which subjects do you want to work on?</legend>
+          <p className="mt-1 text-sm text-gray-500 dark:text-muted-foreground">Pick the ones that matter most. You can add more later.</p>
           <div className="mt-3 grid grid-cols-2 border-y border-gray-200 dark:border-border sm:grid-cols-3">
             {(catalogQuery.data?.subjects ?? []).map((subject) => {
               const selected = subjectIds.includes(subject.id);
@@ -221,7 +221,7 @@ export default function StudentOnboardingPage() {
 
       <div className="mt-8 border-t border-gray-200 pt-6 dark:border-border">
         <Button type="button" onClick={submit} disabled={save.isPending || catalogQuery.isLoading} className="h-12 px-6">
-          {save.isPending ? 'Saving your plan…' : 'Build my practice plan'}
+          {save.isPending ? 'Saving…' : 'Save and continue'}
           {!save.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>

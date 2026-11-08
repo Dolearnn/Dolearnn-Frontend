@@ -35,7 +35,7 @@ export default function DiagnosisCard({ attemptId }: { attemptId: string }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">
-            Diagnose
+            Your result
           </p>
           <h2 id="diagnosis-heading" className="mt-1 flex items-center gap-2 text-xl font-semibold text-gray-950 dark:text-foreground">
             <Sparkles className="h-5 w-5 text-brand dark:text-accent2-400" />

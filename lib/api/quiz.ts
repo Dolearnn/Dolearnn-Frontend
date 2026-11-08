@@ -86,6 +86,7 @@ export interface QuizRetakeComparison {
 }
 
 export interface QuizTopicResult {
+  subjectId?: string;
   topicId: string;
   name: string;
   attempted: number;

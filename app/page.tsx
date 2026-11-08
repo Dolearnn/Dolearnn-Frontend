@@ -99,27 +99,29 @@ const plans = [
     price: '₦0',
     unit: 'forever',
     tagline: 'Start practising today',
-    features: ['1 full diagnostic per month', '3 practice missions per day', '15 AI Study Coach messages per day', 'Basic progress view'],
+    popular: true,
+    features: ['1 full diagnostic per month', '3 practice missions per day', 'Written explanations for every question', 'Basic progress view'],
   },
   {
     name: 'Plus',
     price: '₦2,500',
     unit: 'per month',
     tagline: 'For daily exam prep',
-    popular: true,
-    features: ['Unlimited diagnostics and practice', '150 AI Coach messages per day', 'Full topic-gap report', 'Weekly reassessment'],
+    soon: true,
+    features: ['Unlimited diagnostics and practice', 'Mixed-subject practice', 'Full topic-gap report', 'Weekly reassessment'],
   },
   {
     name: 'Pro',
     price: '₦4,500',
     unit: 'per month',
     tagline: 'For the final push',
-    features: ['Everything in Plus', 'Unlimited AI Coach (fair use)', 'Timed WAEC / UTME mock exams', 'Parent progress report', '10% off tutoring + priority booking'],
+    soon: true,
+    features: ['Everything in Plus', 'Timed WAEC / UTME mock exams', 'Parent progress report', '10% off tutoring + priority booking'],
   },
 ];
 
 const extras = [
-  ['Exam Season Pass', '₦12,000 for 3 months of Pro, timed to WAEC and UTME.'],
+  ['Exam Season Pass (coming soon)', '₦12,000 for 3 months of Pro, timed to WAEC and UTME.'],
   ['Tutoring', '₦10,000 per session, focused on your weak topics.'],
   ['Schools', '₦900,000 a year: diagnostics, dashboards and parent reports.'],
 ];
@@ -143,11 +145,11 @@ const faqs = [
   },
   {
     q: 'Is it really free?',
-    a: 'Yes. Every learner gets a monthly diagnostic, daily practice missions and a capped AI Study Coach at no cost. Paid plans lift the limits when you need more.',
+    a: 'Yes. Every learner gets a monthly diagnostic, daily practice missions and written explanations at no cost. Paid plans are coming soon for learners who want more.',
   },
   {
     q: 'How does tutoring work?',
-    a: '₦10,000 per session with a tutor matched to your weak topics. Request one from your results; the tutor sees your diagnosis before the first lesson. Pro members get 10% off.',
+    a: '₦10,000 per session with a tutor matched to your weak topics. Request one from your results; the tutor sees your diagnosis before the first lesson.',
   },
 ];
 
@@ -365,7 +367,7 @@ export default function Home() {
       {/* ---------- PRICING ---------- */}
       <section id="pricing" className="bg-slate-50/70 py-20 lg:py-28" aria-labelledby="pricing-title">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHead kicker="Pricing" title={<span id="pricing-title">Free to start. Priced for students.</span>} text="Upgrade only when you need more practice or the final push before your exam." />
+          <SectionHead kicker="Pricing" title={<span id="pricing-title">Free to start. Priced for students.</span>} text="Everything you need to start is free. Paid plans are coming soon." />
           <div className="mt-12 grid gap-5 lg:grid-cols-3">
             {plans.map((plan, index) => (
               <Reveal
@@ -375,7 +377,10 @@ export default function Home() {
                 className={`relative flex flex-col rounded-3xl p-7 ${plan.popular ? 'bg-brand text-white shadow-2xl shadow-brand/25 lg:-my-3 lg:py-10' : 'border border-slate-200 bg-white'}`}
               >
                 {plan.popular && (
-                  <span className="absolute -top-3 left-7 rounded-full bg-accent2-400 px-3 py-1 text-xs font-bold text-brand-700">Most popular</span>
+                  <span className="absolute -top-3 left-7 rounded-full bg-accent2-400 px-3 py-1 text-xs font-bold text-brand-700">Available now</span>
+                )}
+                {plan.soon && (
+                  <span className="absolute -top-3 left-7 rounded-full bg-slate-200 px-3 py-1 text-xs font-bold text-slate-700">Coming soon</span>
                 )}
                 <h3 className={`font-[family-name:var(--font-display)] text-lg font-bold ${plan.popular ? 'text-white' : 'text-brand-700'}`}>{plan.name}</h3>
                 <p className={`mt-1 text-sm ${plan.popular ? 'text-white/70' : 'text-slate-500'}`}>{plan.tagline}</p>
@@ -391,12 +396,18 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/register"
-                  className={`mt-8 rounded-full py-3 text-center font-semibold transition ${plan.popular ? 'bg-accent2-400 text-brand-700 hover:bg-accent2-300' : 'border border-slate-300 text-brand hover:border-brand'}`}
-                >
-                  {plan.name === 'Free' ? 'Start free' : `Get ${plan.name}`}
-                </Link>
+                {plan.soon ? (
+                  <span aria-disabled="true" className="mt-8 rounded-full bg-slate-100 py-3 text-center font-semibold text-slate-500">
+                    Coming soon
+                  </span>
+                ) : (
+                  <Link
+                    href="/register"
+                    className="mt-8 rounded-full bg-accent2-400 py-3 text-center font-semibold text-brand-700 transition hover:bg-accent2-300"
+                  >
+                    Start free
+                  </Link>
+                )}
               </Reveal>
             ))}
           </div>
