@@ -127,13 +127,13 @@ function Results({ number, result }: { number: number; result: DailyResult }) {
           {result.score}
           <span className="text-3xl text-white/60">/{result.total}</span>
         </p>
-        <p className="mt-2 text-white/80">in {result.seconds} seconds</p>
+        <p className="mt-2 text-white/80">in {result.seconds} {result.seconds === 1 ? 'second' : 'seconds'}</p>
         {result.flagged ? (
           <p className="mt-3 text-sm text-white/80">Your score is being checked before it goes on the leaderboard.</p>
         ) : (
           <p className="mt-3 text-lg font-semibold">
             {result.ranked ? `You're #${result.rank} today` : `That would be #${result.rank} today`}
-            {result.players > 1 ? `, ahead of ${result.aheadPercent}% of players` : ''}
+            {result.players > 1 && result.aheadPercent > 0 ? `, ahead of ${result.aheadPercent}% of players` : ''}
           </p>
         )}
       </section>
