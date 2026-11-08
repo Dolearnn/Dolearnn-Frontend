@@ -108,7 +108,7 @@ const plans = [
     unit: 'per month',
     tagline: 'For the final push',
     soon: true,
-    features: ['Everything in Plus', 'Timed WAEC / UTME mock exams', 'Weekly progress report', '10% off tutoring + priority booking'],
+    features: ['Everything in Plus', 'Timed WAEC / UTME mock exams', 'Weekly progress report'],
   },
 ];
 

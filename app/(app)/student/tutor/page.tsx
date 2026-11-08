@@ -88,7 +88,7 @@ function IntakePageContent() {
         {[
           ['1', 'Tell us your gaps', 'Subjects, weak topics and when you are free.'],
           ['2', 'We match a tutor', 'A qualified tutor who sees your practice results.'],
-          ['3', 'Plan your lessons', '₦10,000 per 60-minute session. Pro members get 10% off.'],
+          ['3', 'Plan your lessons', '₦10,000 per 60-minute session.'],
         ].map(([step, title, text]) => (
           <li key={step} className="flex gap-3 bg-white p-4 dark:bg-card">
             <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-brand text-xs font-bold text-white dark:bg-accent2-500 dark:text-brand">
