@@ -36,7 +36,15 @@ export default function TeacherNotificationsPage() {
       <div className="space-y-6">
         <PageHeader title="Notifications" description="" />
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-          We could not load notifications right now. Please try again.
+          <p>We could not load notifications right now.</p>
+          <button
+            type="button"
+            onClick={() => notificationsQuery.refetch()}
+            disabled={notificationsQuery.isFetching}
+            className="mt-2 font-semibold underline disabled:opacity-60"
+          >
+            {notificationsQuery.isFetching ? 'Trying again…' : 'Try again'}
+          </button>
         </div>
       </div>
     );

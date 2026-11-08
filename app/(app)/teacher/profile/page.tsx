@@ -247,6 +247,9 @@ export default function TeacherProfilePage() {
             Qualifications
           </p>
           <ul className="flex flex-wrap gap-2">
+            {me.qualifications.length === 0 && (
+              <li className="text-xs text-gray-500 dark:text-muted-foreground">None added yet</li>
+            )}
             {me.qualifications.map((q) => (
               <li
                 key={q}

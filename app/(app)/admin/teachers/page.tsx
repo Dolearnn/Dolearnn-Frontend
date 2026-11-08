@@ -267,7 +267,6 @@ export default function AdminTeachersPage() {
     teacherForm.email.trim() &&
     teacherForm.gender &&
     teacherForm.subjects.length > 0 &&
-    teacherForm.qualifications.trim() &&
     // Optional; if given it must be at least 8 characters.
     (teacherForm.defaultPassword.trim().length === 0 ||
       teacherForm.defaultPassword.trim().length >= 8);
@@ -639,7 +638,7 @@ function TeacherCard({
           Qualifications
         </p>
         <p className="text-xs text-gray-700 dark:text-foreground/90">
-          {teacher.qualifications.join(' / ')}
+          {teacher.qualifications.join(' / ') || 'None added yet'}
         </p>
         {teacher.terminationReason && (
           <p className="pt-1 text-xs text-red-600">
@@ -796,7 +795,7 @@ function AddTeacherDialog({
           <Textarea
             value={form.qualifications}
             onChange={(event) => patch({ qualifications: event.target.value })}
-            placeholder="Qualifications, one per line"
+            placeholder="Qualifications, one per line (optional)"
             rows={4}
           />
           <div className="grid gap-3 sm:grid-cols-2">
