@@ -18,3 +18,10 @@ export async function subscribeNewsletter(input: { email: string }) {
     body: JSON.stringify(input),
   });
 }
+
+export function turnOffReminders(input: { userId: string; code: string }) {
+  return apiFetch<{ ok: boolean }>('/public/reminders/off', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}

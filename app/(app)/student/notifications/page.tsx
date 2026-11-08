@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import NotificationList from '@/components/dashboard/NotificationList';
 import PageHeader from '@/components/dashboard/PageHeader';
+import ReminderToggle from '@/components/quiz/ReminderToggle';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import {
   listNotifications,
@@ -43,13 +44,16 @@ export default function FamilyNotificationsPage() {
   }
 
   return (
-    <NotificationList
-      initialItems={notificationsQuery.data ?? []}
-      emptyDescription="Session updates and feedback will appear here."
-      onMarkAllRead={() => markAllMutation.mutateAsync()}
-      onToggleRead={async (id, read) => {
-        await readMutation.mutateAsync({ id, read });
-      }}
-    />
+    <>
+      <NotificationList
+        initialItems={notificationsQuery.data ?? []}
+        emptyDescription="Session updates and feedback will appear here."
+        onMarkAllRead={() => markAllMutation.mutateAsync()}
+        onToggleRead={async (id, read) => {
+          await readMutation.mutateAsync({ id, read });
+        }}
+      />
+      <ReminderToggle />
+    </>
   );
 }

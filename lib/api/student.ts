@@ -32,7 +32,19 @@ export interface UpdateLearnerProfileInput {
 
 export const studentKeys = {
   profile: ['student', 'profile'] as const,
+  reminders: ['student', 'reminders'] as const,
 };
+
+export function getReminderSetting() {
+  return apiFetch<{ enabled: boolean }>('/student/reminders');
+}
+
+export function setReminderSetting(enabled: boolean) {
+  return apiFetch<{ enabled: boolean }>('/student/reminders', {
+    method: 'PUT',
+    body: JSON.stringify({ enabled }),
+  });
+}
 
 export function getLearnerProfile() {
   return apiFetch<{ profile: LearnerProfile }>('/student/me').then((response) => response.profile);
