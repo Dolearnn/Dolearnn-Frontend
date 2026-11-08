@@ -231,7 +231,24 @@ export interface QuizNextAction {
   } | null;
 }
 
+export interface QuizExamPlan {
+  totalTopics: number;
+  coveredTopics: number;
+  strongTopics: number;
+  // Null when there is no future exam date.
+  daysLeft: number | null;
+  topicsPerWeek: number | null;
+  nextTopic: {
+    topicId: string;
+    name: string;
+    subjectId: string;
+    subjectName: string;
+    examId: string;
+  } | null;
+}
+
 export interface QuizPracticeOverview {
+  examPlan?: QuizExamPlan | null;
   // Wrong answers: ready to retry now, and missed today (ready tomorrow).
   mistakes?: { due: number; tomorrow: number };
   catalog: QuizCatalog;

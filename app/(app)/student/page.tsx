@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookOpenCheck, CalendarDays, Pencil, Target, TrendingUp } from 'lucide-react';
+import ExamPlanCard from '@/components/quiz/ExamPlanCard';
 import FirstQuizCard from '@/components/quiz/FirstQuizCard';
 import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
@@ -131,6 +132,7 @@ export default function StudentDashboardPage() {
             isLoading={overviewQuery.isLoading}
             readyTomorrow={overviewQuery.data?.mistakes?.tomorrow ?? 0}
           />
+          {overviewQuery.data?.examPlan && <ExamPlanCard plan={overviewQuery.data.examPlan} />}
           <AchievementsPanel studentId={null} className="mt-2" />
           <WeeklyLeaderboard studentId={null} className="mt-8" />
         </>
