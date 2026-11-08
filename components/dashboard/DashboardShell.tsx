@@ -46,6 +46,7 @@ import {
   notificationKeys,
 } from '@/lib/api/notifications';
 import { Logo } from '@/components/brand/Logo';
+import { claimGuestDaily } from '@/lib/api/daily';
 import TutorTabs, { TUTOR_TABS } from '@/components/dashboard/TutorTabs';
 
 function initialsOf(name: string) {
@@ -153,6 +154,11 @@ export default function DashboardShell({
     setAuthUser(user);
     setAuthChecked(true);
   }, []);
+
+  // A score from playing the Daily before signing up moves onto the account.
+  useEffect(() => {
+    if (authUser && role === 'student') void claimGuestDaily();
+  }, [authUser, role]);
 
   useEffect(() => {
     if (!authChecked) return;

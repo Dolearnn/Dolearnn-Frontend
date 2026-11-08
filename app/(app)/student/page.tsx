@@ -10,7 +10,7 @@ import FirstQuizCard from '@/components/quiz/FirstQuizCard';
 import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
 import AchievementsPanel from '@/components/quiz/AchievementsPanel';
-import WeeklyLeaderboard from '@/components/quiz/WeeklyLeaderboard';
+import DailyCard from '@/components/daily/DailyCard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAuthUser } from '@/lib/api/auth-storage';
@@ -125,7 +125,8 @@ export default function StudentDashboardPage() {
               </span>
             </p>
           )}
-          <RewardsStrip studentId={null} className="mb-8" />
+          <RewardsStrip studentId={null} className="mb-4" />
+          <DailyCard className="mb-8" />
           <NextActions
             studentId={null}
             actions={overviewQuery.data?.actions ?? []}
@@ -134,7 +135,6 @@ export default function StudentDashboardPage() {
           />
           {overviewQuery.data?.examPlan && <ExamPlanCard plan={overviewQuery.data.examPlan} />}
           <AchievementsPanel studentId={null} className="mt-2" />
-          <WeeklyLeaderboard studentId={null} className="mt-8" />
         </>
       )}
     </div>

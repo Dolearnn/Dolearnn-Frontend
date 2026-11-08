@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { ChevronRight, Swords } from 'lucide-react';
+import DailyCard from '@/components/daily/DailyCard';
+import DailyLeaderboard from '@/components/daily/DailyLeaderboard';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -138,6 +140,9 @@ export default function ArenaHubPage() {
         title="Arena"
         description="Challenge a friend. You both answer the same questions, then the scores are compared."
       />
+
+      <DailyCard className="mb-4" />
+      <DailyLeaderboard className="mb-8" />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5">

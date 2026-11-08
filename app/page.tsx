@@ -299,7 +299,7 @@ export default function Home() {
               icon={Flame}
               kicker="Streaks, missions and badges"
               title="Show up daily. Share your streak."
-              text="Three short missions a day keep you moving. Earn badges, climb the weekly leaderboard (or hide your name) and share a streak card that says which exam you are preparing for."
+              text="Three short missions a day keep you moving. Earn badges, climb the Daily leaderboard (or hide your name) and share a streak card that says which exam you are preparing for."
               points={['Daily missions on your weak topics', 'Badges for real progress', 'Share to WhatsApp in one tap']}
               image={{ src: '/landing/missions.webp', alt: 'Daily missions and progress', width: 1100, height: 948 }}
               narrow

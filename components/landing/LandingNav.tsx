@@ -8,6 +8,7 @@ import { subscribeNewsletter } from '@/lib/api/public';
 import { cn } from '@/lib/utils';
 
 const links = [
+  { href: '/daily', label: 'Daily quiz' },
   { href: '#how-it-works', label: 'How it works' },
   { href: '#features', label: 'Features' },
   { href: '#exams', label: 'Exams' },

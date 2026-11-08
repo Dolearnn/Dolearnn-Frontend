@@ -6,6 +6,7 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import { getQuizCatalog, quizKeys, type QuizReviewQuestion } from '@/lib/api/quiz';
 import { cn } from '@/lib/utils';
 import ExplainWithAI from './ExplainWithAI';
+import ReportQuestion from './ReportQuestion';
 
 export default function QuizReview({
   attemptId,
@@ -102,6 +103,7 @@ export default function QuizReview({
                 {question.explanation}
               </p>
             )}
+            <ReportQuestion kind="bank" questionId={question.id} />
           </article>
         ))}
       </div>

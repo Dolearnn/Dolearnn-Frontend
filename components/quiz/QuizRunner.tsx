@@ -25,6 +25,7 @@ import {
 } from '@/lib/api/quiz';
 import { formatClock } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
+import ReportQuestion from './ReportQuestion';
 
 interface SavedProgress {
   answers?: Record<string, string>;
@@ -303,6 +304,8 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
         <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-foreground whitespace-pre-line">
           {question.text}
         </p>
+        {/* Not during exam mode: nothing should interrupt a timed paper. */}
+        {!exam && <ReportQuestion key={question.id} kind="bank" questionId={question.id} />}
         {question.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img

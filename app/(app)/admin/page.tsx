@@ -10,6 +10,7 @@ import {
   CalendarX2,
   CheckCircle2,
   ClipboardList,
+  Flag,
   GraduationCap,
   Users,
   Wallet,
@@ -27,6 +28,7 @@ import {
   listAdminTeachers,
 } from '@/lib/api/admin';
 import { listAdminTeacherPayouts, paymentKeys } from '@/lib/api/payments';
+import { listQuestionReports, reportKeys } from '@/lib/api/question-reports';
 import { displayGrade, displaySubject, type Child, type Session, type Teacher } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { naira } from '@/lib/money';
@@ -60,6 +62,8 @@ export default function AdminHome() {
     queryKey: paymentKeys.adminPayouts(month),
     queryFn: () => listAdminTeacherPayouts(month),
   });
+
+  const reportsQuery = useQuery({ queryKey: reportKeys.open, queryFn: listQuestionReports });
 
   const students = studentsQuery.data ?? EMPTY_STUDENTS;
   const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
@@ -153,6 +157,18 @@ export default function AdminHome() {
       detail: `${naira(payoutsDue.reduce((sum, payout) => sum + payout.amount, 0))} due from verified lessons.`,
       href: '/admin/payments',
       cta: 'Pay',
+    });
+  }
+
+  const reported = reportsQuery.data?.length ?? 0;
+  if (reported > 0) {
+    tasks.push({
+      id: 'reports',
+      icon: Flag,
+      title: `${plural(reported, 'question')} reported by learners`,
+      detail: 'Check whether the answer or wording needs fixing.',
+      href: '/admin/questions',
+      cta: 'Review',
     });
   }
 

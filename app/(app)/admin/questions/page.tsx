@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { BookOpen, ChevronDown, Pencil, Plus, Search } from 'lucide-react';
+import QuestionReportsPanel from '@/components/admin/QuestionReportsPanel';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
@@ -172,6 +173,8 @@ export default function AdminQuestionBankPage() {
           </Button>
         }
       />
+
+      <QuestionReportsPanel />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <MetricCard label="Total questions" value={total} />
