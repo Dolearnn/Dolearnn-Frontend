@@ -992,7 +992,7 @@ function CancellationReview({
               )}
             >
               {requestLabel} {cancellation.status.toLowerCase()} by{' '}
-              {cancellation.requestedBy}
+              {cancellation.requestedBy === 'family' ? 'learner' : cancellation.requestedBy}
             </span>
           );
         })()}

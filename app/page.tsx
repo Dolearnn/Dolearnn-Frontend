@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Swords,
   Target,
-  Users,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { LandingNav, NewsletterForm } from '@/components/landing/LandingNav';
@@ -59,7 +58,7 @@ const steps = [
     title: 'Practise or get a tutor',
     text: 'Daily missions target those topics. Need more help? A tutor sees your results first.',
     tone: 'bg-[#FFF4E5]',
-  },
+  },  
   {
     n: '04',
     title: 'Test again, see the change',
@@ -77,16 +76,9 @@ const audiences = [
     cta: 'Start free',
   },
   {
-    icon: Users,
-    title: 'Parents',
-    text: 'Sign up on behalf of your child. See their weak topics, why a tutor helps and how their scores change.',
-    href: '/register',
-    cta: 'Create an account',
-  },
-  {
     icon: School,
     title: 'Schools',
-    text: 'Class-wide diagnostics, progress dashboards, parent reports and competitions: ₦900,000 a year.',
+    text: 'Class-wide diagnostics, progress dashboards, class reports and competitions: ₦900,000 a year.',
     href: trial,
     cta: 'Ask about a pilot',
     external: true,
@@ -116,20 +108,20 @@ const plans = [
     unit: 'per month',
     tagline: 'For the final push',
     soon: true,
-    features: ['Everything in Plus', 'Timed WAEC / UTME mock exams', 'Parent progress report', '10% off tutoring + priority booking'],
+    features: ['Everything in Plus', 'Timed WAEC / UTME mock exams', 'Weekly progress report', '10% off tutoring + priority booking'],
   },
 ];
 
 const extras = [
   ['Exam Season Pass (coming soon)', '₦12,000 for 3 months of Pro, timed to WAEC and UTME.'],
   ['Tutoring', '₦10,000 per session, focused on your weak topics.'],
-  ['Schools', '₦900,000 a year: diagnostics, dashboards and parent reports.'],
+  ['Schools', '₦900,000 a year: diagnostics, dashboards and class reports.'],
 ];
 
 const faqs = [
   {
     q: 'Who is DoLearnn for?',
-    a: 'Secondary school students and recent school leavers preparing for JAMB UTME, WAEC, NECO, Post-UTME, IGCSE / GCSE or SAT. Parents can sign up on behalf of their child, and schools can use DoLearnn for whole classes.',
+    a: 'Secondary school students and recent school leavers preparing for JAMB UTME, WAEC, NECO, Post-UTME, IGCSE / GCSE or SAT. Schools can use DoLearnn for whole classes.',
   },
   {
     q: 'How is this different from a quiz app?',
@@ -220,7 +212,7 @@ export default function Home() {
                   Try a free quiz
                 </Link>
               </div>
-              <p className="mt-4 text-sm text-slate-500">No card needed. Parents can sign up for their child.</p>
+              <p className="mt-4 text-sm text-slate-500">No card needed.</p>
             </div>
 
             <Reveal className="relative mx-auto mt-14 max-w-5xl">
@@ -326,7 +318,7 @@ export default function Home() {
               kicker="Tutors who come prepared"
               title="Help that starts from your results."
               text="Request a tutor in a few taps. Before the first lesson your tutor sees your weak topics and recent scores, so no time is wasted. ₦10,000 per session."
-              points={['Matched to your weak topics', 'Session notes after every lesson', 'Progress reports for parents']}
+              points={['Matched to your weak topics', 'Session notes after every lesson', 'Monthly lesson reports']}
               image={{ src: '/landing/tutor-summary.webp', alt: 'A tutor’s summary of a learner’s weak topics', width: 1104, height: 617 }}
               narrow
             />
@@ -336,8 +328,8 @@ export default function Home() {
 
       {/* ---------- AUDIENCES ---------- */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:py-28" aria-labelledby="who-title">
-        <SectionHead kicker="Who it’s for" title={<span id="who-title">One account. Everyone on the same page.</span>} />
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+        <SectionHead kicker="Who it’s for" title={<span id="who-title">For learners and schools.</span>} />
+        <div className="mx-auto mt-12 grid max-w-4xl gap-5 md:grid-cols-2">
           {audiences.map((item, index) => (
             <Reveal as="article" key={item.title} delay={index * 90} className="flex flex-col rounded-3xl border border-slate-200 p-7 transition hover:border-accent2-300 hover:shadow-lg">
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent2-50 text-accent2-600"><item.icon className="h-6 w-6" /></span>

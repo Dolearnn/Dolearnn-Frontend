@@ -185,7 +185,7 @@ export default function StudentSessionRow({
           <DialogHeader>
             <DialogTitle>Request reschedule</DialogTitle>
             <DialogDescription>
-              Admin will review this and help decide the next step. The family
+              Admin will review this and help decide the next step. The learner
               will only be contacted after admin reviews it.
             </DialogDescription>
           </DialogHeader>

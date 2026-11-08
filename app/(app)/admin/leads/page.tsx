@@ -301,7 +301,7 @@ export default function AdminLeadsPage() {
                         {lead.phone ?? '--'}
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-foreground/90 capitalize">
-                        {lead.userType ?? '--'}
+                        {lead.userType === 'family/student' ? 'learner' : lead.userType ?? '--'}
                       </td>
                       <td className="px-4 py-3">
                         <Select

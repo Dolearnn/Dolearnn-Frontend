@@ -183,7 +183,7 @@ export default function ReportsPage() {
           empty="No cancellation requests this month."
           rows={report.cancellations.map((session) => ({
             id: session.id,
-            label: `${session.cancellation?.requestedBy ?? 'Someone'} requested cancellation`,
+            label: `${session.cancellation?.requestedBy === 'family' ? 'Learner' : session.cancellation?.requestedBy ?? 'Someone'} requested cancellation`,
             sub: session.cancellation?.reason ?? '',
             tone:
               session.cancellation?.status === 'Approved'

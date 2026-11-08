@@ -69,7 +69,7 @@ function mapRole(role: ApiAuditLog['actorRole']): Role {
     case 'STUDENT':
       return 'student';
     default:
-      return 'parent';
+      return 'student';
   }
 }
 

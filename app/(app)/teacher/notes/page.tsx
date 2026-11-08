@@ -407,7 +407,7 @@ function DraftCard({
         </Label>
         <Textarea
           id={`concerns-${session.id}`}
-          placeholder="Anything the parent should know"
+          placeholder="Anything the learner should know"
           value={draft?.concerns ?? ''}
           onChange={(event) => onChange({ concerns: event.target.value })}
           rows={2}
@@ -422,7 +422,7 @@ function DraftCard({
 
       <div className="flex justify-end">
         <p className="mr-auto text-xs text-gray-500 dark:text-muted-foreground">
-          Parents will see this feedback after you submit it.
+          The learner will see this feedback after you submit it.
         </p>
         <Button
           className="bg-brand hover:bg-brand-600 rounded-full"

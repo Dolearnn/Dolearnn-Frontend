@@ -89,7 +89,7 @@ export default function AdminImpactPage() {
 
       <Section
         title="Engagement"
-        note="A learner is a learner account (older parent accounts count each child profile)."
+        note="Each learner counts once."
       >
         <StatTile
           icon={BookOpenCheck}

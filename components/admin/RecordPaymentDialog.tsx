@@ -98,7 +98,7 @@ export default function RecordPaymentDialog({
       setOpen(false);
       toast({
         title: 'Payment recorded',
-        description: 'The family can now see this payment.',
+        description: 'The learner can now see this payment.',
       });
     },
     onError: (error) => {
@@ -123,11 +123,11 @@ export default function RecordPaymentDialog({
       )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Record parent payment</DialogTitle>
+          <DialogTitle>Record payment</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label>Parent</Label>
+            <Label>Learner</Label>
             <Select
               value={parentId}
               onValueChange={(value) => {
@@ -137,7 +137,7 @@ export default function RecordPaymentDialog({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select parent" />
+                <SelectValue placeholder="Select learner" />
               </SelectTrigger>
               <SelectContent>
                 {parents.map((parent) => (
