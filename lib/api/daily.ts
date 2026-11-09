@@ -63,6 +63,7 @@ export interface DailyLeaderboard {
   yesterday: DailyBoardRow[];
   hidden: boolean;
   canHide: boolean;
+  nickname: string | null;
 }
 
 export const dailyKeys = {
@@ -181,6 +182,13 @@ export function answerDaily(questionId: string, optionId: string | null) {
 
 export function getDailyLeaderboard() {
   return apiFetch<DailyLeaderboard>('/daily/leaderboard');
+}
+
+export function setDailyNickname(nickname: string) {
+  return apiFetch<{ nickname: string }>('/daily/nickname', {
+    method: 'PUT',
+    body: JSON.stringify({ nickname }),
+  });
 }
 
 /** After signing up or logging in: moves today's guest score onto the account. */

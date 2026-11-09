@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EyeOff, Medal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { dailyKeys, getDailyLeaderboard, type DailyBoardRow } from '@/lib/api/daily';
+import { dailyKeys, getDailyLeaderboard, setDailyNickname, type DailyBoardRow } from '@/lib/api/daily';
 import { setLeaderboardPrivacy } from '@/lib/api/quiz';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +30,80 @@ function Row({ row, period }: { row: DailyBoardRow; period: 'today' | 'week' }) 
       )}
       <span className="w-12 text-right font-semibold tabular-nums text-brand dark:text-accent2-400">{row.score}</span>
     </li>
+  );
+}
+
+function Nickname({ current }: { current: string | null }) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(current ?? '');
+  const save = useMutation({
+    mutationFn: () => setDailyNickname(value),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: dailyKeys.leaderboard });
+      setEditing(false);
+    },
+  });
+
+  if (current && !editing) {
+    return (
+      <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-700 dark:border-border dark:text-foreground/90">
+        <span className="min-w-0 truncate">
+          Playing as <strong className="font-semibold">{current}</strong>
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setValue(current);
+            setEditing(true);
+          }}
+        >
+          Change
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="border-t border-gray-100 px-4 py-3 dark:border-border"
+      onSubmit={(event) => {
+        event.preventDefault();
+        save.mutate();
+      }}
+    >
+      <label htmlFor="daily-nickname" className="text-sm font-medium text-gray-900 dark:text-foreground">
+        {current ? 'Change your nickname' : 'Choose a nickname for the leaderboard'}
+      </label>
+      <div className="mt-2 flex gap-2">
+        <Input
+          id="daily-nickname"
+          value={value}
+          maxLength={20}
+          autoComplete="off"
+          placeholder="e.g. MathsKing_07"
+          aria-describedby="daily-nickname-help"
+          onChange={(event) => setValue(event.target.value)}
+        />
+        <Button type="submit" disabled={save.isPending || value.trim().length < 3}>
+          {save.isPending ? 'Saving…' : 'Save'}
+        </Button>
+        {current && (
+          <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        )}
+      </div>
+      <p id="daily-nickname-help" className="mt-2 text-xs text-gray-500 dark:text-muted-foreground">
+        3 to 20 letters, numbers or underscores. Don&apos;t use your real name.
+      </p>
+      {save.isError && (
+        <p role="alert" className="mt-1 text-sm text-red-600">
+          {save.error instanceof Error ? save.error.message : 'Your nickname could not be saved. Please try again.'}
+        </p>
+      )}
+    </form>
   );
 }
 
@@ -98,10 +174,12 @@ export default function DailyLeaderboard({ className }: { className?: string }) 
         </p>
       )}
 
+      {data.canHide && <Nickname key={data.nickname ?? ''} current={data.nickname} />}
+
       {data.canHide && (
         <label className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-700 dark:border-border dark:text-foreground/90">
           <span className="flex items-center gap-2">
-            <EyeOff className="h-4 w-4" aria-hidden /> Hide my name
+            <EyeOff className="h-4 w-4" aria-hidden /> Hide my nickname
           </span>
           <Switch checked={data.hidden} disabled={privacy.isPending} onCheckedChange={(hidden) => privacy.mutate(hidden)} />
         </label>
