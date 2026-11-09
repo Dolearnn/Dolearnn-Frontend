@@ -141,7 +141,7 @@ function Results({ number, result }: { number: number; result: DailyResult }) {
       {!result.ranked && !signedIn && (
         <section className="rounded-2xl border border-accent2-200 bg-accent2-50 p-5 text-center">
           <p className="font-semibold text-gray-950">Want more? Create a free account</p>
-          <p className="mt-1 text-sm text-gray-600">Practise any subject, save today&apos;s score and get on the leaderboard.</p>
+          <p className="mt-1 text-sm text-gray-600">Practise any subject, save today&apos;s score and pick a nickname for the leaderboard.</p>
           <Button asChild className="mt-4 rounded-full">
             <Link href="/register">
               Create free account <ArrowRight className="ml-2 h-4 w-4" />

@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EyeOff, Medal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { getAuthToken } from '@/lib/api/auth-storage';
 import { dailyKeys, getDailyLeaderboard, setDailyNickname, type DailyBoardRow } from '@/lib/api/daily';
 import { setLeaderboardPrivacy } from '@/lib/api/quiz';
 import { cn } from '@/lib/utils';
@@ -154,6 +156,8 @@ export default function DailyLeaderboard({ className }: { className?: string }) 
         </div>
       </div>
 
+      {data.canHide && !data.nickname && <Nickname key="choose" current={null} />}
+
       {board.top.length === 0 ? (
         <p className="border-t border-gray-100 p-8 text-center text-sm text-gray-500 dark:border-border dark:text-muted-foreground">
           No scores yet. Be the first on the board.
@@ -174,7 +178,20 @@ export default function DailyLeaderboard({ className }: { className?: string }) 
         </p>
       )}
 
-      {data.canHide && <Nickname key={data.nickname ?? ''} current={data.nickname} />}
+      {data.canHide && data.nickname && <Nickname key={data.nickname} current={data.nickname} />}
+
+      {!data.canHide && !getAuthToken() && (
+        <p className="border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-border dark:text-muted-foreground">
+          <Link href="/register" className="font-semibold text-brand underline-offset-2 hover:underline dark:text-accent2-400">
+            Create a free account
+          </Link>{' '}
+          or{' '}
+          <Link href="/login" className="font-semibold text-brand underline-offset-2 hover:underline dark:text-accent2-400">
+            log in
+          </Link>{' '}
+          to pick your nickname and join the leaderboard.
+        </p>
+      )}
 
       {data.canHide && (
         <label className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-700 dark:border-border dark:text-foreground/90">
