@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { EyeOff, Medal } from 'lucide-react';
+import { EyeOff, Loader2, Medal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { getAuthToken } from '@/lib/api/auth-storage';
 import { dailyKeys, getDailyLeaderboard, setDailyNickname, type DailyBoardRow } from '@/lib/api/daily';
@@ -119,7 +118,17 @@ export default function DailyLeaderboard({ className }: { className?: string }) 
     onSuccess: () => queryClient.invalidateQueries({ queryKey: dailyKeys.leaderboard }),
   });
 
-  if (query.isLoading) return <Skeleton className={cn('h-72 w-full rounded-2xl', className)} />;
+  if (query.isLoading) {
+    return (
+      <div
+        role="status"
+        className={cn('flex h-40 items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-600 dark:border-border dark:bg-card dark:text-muted-foreground', className)}
+      >
+        <Loader2 className="h-5 w-5 animate-spin text-brand dark:text-accent2-400" aria-hidden />
+        Loading the leaderboard…
+      </div>
+    );
+  }
   if (query.isError || !query.data) {
     return <p className={cn('text-sm text-gray-500 dark:text-muted-foreground', className)}>The leaderboard could not load. Refresh to try again.</p>;
   }

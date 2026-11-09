@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Check, Clock, Copy, X } from 'lucide-react';
+import { ArrowRight, Check, Clock, Copy, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { getAuthToken } from '@/lib/api/auth-storage';
 import {
   answerDaily,
@@ -24,6 +23,28 @@ import DailyLeaderboard from './DailyLeaderboard';
 
 const CATEGORY: Record<string, string> = { english: 'English', maths: 'Maths', history: 'History' };
 
+// The server can take up to half a minute to wake, so a slow load says so.
+const SLOW_LOAD_MS = 5000;
+
+function Loading() {
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), SLOW_LOAD_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div role="status" className="flex h-96 flex-col items-center justify-center rounded-3xl border border-gray-200 bg-white p-8 text-center">
+      <Loader2 className="h-10 w-10 animate-spin text-brand" aria-hidden />
+      <p className="mt-4 text-lg font-semibold text-gray-950">Loading today&apos;s quiz…</p>
+      <p className="mt-1 max-w-xs text-sm text-gray-600">
+        {slow ? 'Still working on it. This can take up to 30 seconds, so please keep this page open.' : 'This should only take a moment.'}
+      </p>
+    </div>
+  );
+}
+
 function Question({
   question,
   onAnswer,
@@ -34,6 +55,7 @@ function Question({
   busy: boolean;
 }) {
   const [left, setLeft] = useState(question.secondsLeft);
+  const [picked, setPicked] = useState<string | null>(null);
   const answer = useRef(onAnswer);
   answer.current = onAnswer;
 
@@ -73,19 +95,36 @@ function Question({
       </div>
       <h1 className="whitespace-pre-line text-xl font-semibold leading-snug text-gray-950">{question.text}</h1>
       <div className="mt-6 space-y-3">
-        {question.options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            disabled={busy}
-            onClick={() => onAnswer(option.id)}
-            className="min-h-14 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left font-medium text-gray-900 transition-colors hover:border-brand hover:bg-accent2-50 disabled:opacity-60"
-          >
-            {option.text}
-          </button>
-        ))}
+        {question.options.map((option) => {
+          const saving = busy && picked === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setPicked(option.id);
+                onAnswer(option.id);
+              }}
+              className={cn(
+                'flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left font-medium text-gray-900 transition-colors hover:border-brand hover:bg-accent2-50 disabled:opacity-60',
+                saving && 'border-brand bg-accent2-50 disabled:opacity-100',
+              )}
+            >
+              {option.text}
+              {saving && <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand" aria-hidden />}
+            </button>
+          );
+        })}
       </div>
-      <p className="mt-4 text-center text-xs text-gray-500">One attempt. Your answer locks as soon as you tap it.</p>
+      {busy ? (
+        <p role="status" className="mt-4 flex items-center justify-center gap-2 text-center text-sm font-medium text-brand">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          {picked ? 'Saving your answer…' : "Time's up. Loading the next question…"}
+        </p>
+      ) : (
+        <p className="mt-4 text-center text-xs text-gray-500">One attempt. Your answer locks as soon as you tap it.</p>
+      )}
     </div>
   );
 }
@@ -230,12 +269,15 @@ export default function DailyPlay() {
     }
   };
 
-  if (loaded.isLoading) return <Skeleton className="h-96 w-full rounded-3xl" />;
+  if (loaded.isLoading) return <Loading />;
   if (loaded.isError || !current) {
     return (
       <div className="text-center">
         <p className="text-gray-700">Today&apos;s quiz could not load.</p>
-        <Button className="mt-4 rounded-full" onClick={() => loaded.refetch()}>Try again</Button>
+        <Button className="mt-4 rounded-full" disabled={loaded.isFetching} onClick={() => loaded.refetch()}>
+          {loaded.isFetching && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+          {loaded.isFetching ? 'Trying again…' : 'Try again'}
+        </Button>
       </div>
     );
   }
@@ -255,9 +297,12 @@ export default function DailyPlay() {
             {current.total} questions in English, Maths and History. About 3 minutes. You only get one attempt, so make it count.
           </p>
           <Button className="mt-7 h-12 rounded-full px-8 text-base" disabled={busy} onClick={() => run(startDaily)}>
+            {busy && <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden />}
             {busy ? 'Starting…' : 'Start the quiz'}
           </Button>
-          <p className="mt-3 text-sm text-gray-500">The timer starts as soon as you tap.</p>
+          <p role="status" className="mt-3 text-sm text-gray-500">
+            {busy ? 'Getting your first question ready…' : 'The timer starts as soon as you tap.'}
+          </p>
           <div className="mt-10 text-left">
             <DailyLeaderboard />
           </div>
