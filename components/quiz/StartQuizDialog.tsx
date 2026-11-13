@@ -18,6 +18,7 @@ import type {
   QuizMode,
 } from '@/lib/api/quiz';
 import { cn } from '@/lib/utils';
+import { idlePill, selectedPill } from './pills';
 import { useStartQuiz } from './useStartQuiz';
 
 const COUNT_CHOICES = [10, 20, 40];
@@ -33,12 +34,15 @@ export default function StartQuizDialog({
   subject,
   exam,
   available,
+  byTopic,
   studentId,
   onClose,
 }: {
   subject: QuizCatalogSubject;
   exam: QuizCatalogExam | undefined;
+  // Published questions for this exam, in total and per topic.
   available: number;
+  byTopic: Record<string, number>;
   studentId: string | null;
   onClose: () => void;
 }) {
@@ -112,9 +116,7 @@ export default function StartQuizDialog({
                   aria-pressed={count === choice}
                   className={cn(
                     'h-10 min-w-14 rounded-xl border px-4 text-sm font-semibold transition-colors',
-                    count === choice
-                      ? 'border-brand bg-brand text-white dark:border-accent2-500 dark:bg-accent2-500 dark:text-brand'
-                      : 'border-gray-200 text-gray-700 hover:border-brand/50 dark:border-border dark:text-foreground',
+                    count === choice ? selectedPill : idlePill,
                   )}
                 >
                   {choice}
@@ -134,18 +136,28 @@ export default function StartQuizDialog({
                   : `${topicIds.length} selected`}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {subject.topics.map((topic) => (
-                  <label
-                    key={topic.id}
-                    className="flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-border px-3 py-2 text-sm cursor-pointer"
-                  >
-                    <Checkbox
-                      checked={topicIds.includes(topic.id)}
-                      onCheckedChange={() => toggleTopic(topic.id)}
-                    />
-                    <span className="text-gray-800 dark:text-foreground">{topic.name}</span>
-                  </label>
-                ))}
+                {subject.topics.map((topic) => {
+                  const topicCount = byTopic[topic.id] ?? 0;
+                  return (
+                    <label
+                      key={topic.id}
+                      className={cn(
+                        'flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-border px-3 py-2 text-sm',
+                        topicCount === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+                      )}
+                    >
+                      <Checkbox
+                        checked={topicIds.includes(topic.id)}
+                        disabled={topicCount === 0}
+                        onCheckedChange={() => toggleTopic(topic.id)}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-gray-800 dark:text-foreground">{topic.name}</span>
+                      <span className="shrink-0 text-xs text-gray-500 dark:text-muted-foreground">
+                        {topicCount === 0 ? 'None yet' : topicCount}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </fieldset>
           )}

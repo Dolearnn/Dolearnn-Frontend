@@ -27,9 +27,12 @@ export interface QuizCatalogExam {
 export interface QuizCatalog {
   exams: QuizCatalogExam[];
   subjects: QuizCatalogSubject[];
+  // Published questions per exam, subject and topic. Sum the rows for a
+  // subject to get its total.
   availability: Array<{
     examId: string | null;
     subjectId: string;
+    topicId: string;
     questionCount: number;
   }>;
   // Which AI features the server has switched on.

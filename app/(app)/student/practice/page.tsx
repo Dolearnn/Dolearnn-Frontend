@@ -87,10 +87,18 @@ export default function QuizHubPage() {
   const catalog = scope === 'all' ? fullCatalogQuery.data ?? overviewQuery.data?.catalog : overviewQuery.data?.catalog;
   const activeExam = catalog?.exams.find((exam) => exam.id === examId) ?? catalog?.exams[0];
 
+  const availabilityFor = (subjectId: string) =>
+    (catalog?.availability ?? []).filter(
+      (row) => row.subjectId === subjectId && (!activeExam || row.examId === activeExam.id),
+    );
   const availableFor = (subjectId: string) =>
-    (catalog?.availability ?? [])
-      .filter((row) => row.subjectId === subjectId && (!activeExam || row.examId === activeExam.id))
-      .reduce((sum, row) => sum + row.questionCount, 0);
+    availabilityFor(subjectId).reduce((sum, row) => sum + row.questionCount, 0);
+  // Published questions per topic, so the dialogs can grey out empty topics.
+  const byTopicFor = (subjectId: string) =>
+    availabilityFor(subjectId).reduce<Record<string, number>>((counts, row) => {
+      counts[row.topicId] = (counts[row.topicId] ?? 0) + row.questionCount;
+      return counts;
+    }, {});
 
   const subjects = useMemo(
     () =>
@@ -98,6 +106,7 @@ export default function QuizHubPage() {
         .map((subject) => ({
           subject,
           available: availableFor(subject.id),
+          byTopic: byTopicFor(subject.id),
         }))
         // The whole bank: only list subjects that have questions for this exam.
         .filter((row) => scope === 'plan' || row.available > 0),
@@ -351,6 +360,7 @@ export default function QuizHubPage() {
           subject={chosenSubject}
           exam={activeExam}
           available={availableFor(chosenSubject.id)}
+          byTopic={byTopicFor(chosenSubject.id)}
           studentId={studentId}
           onClose={() => setChosenSubject(null)}
         />

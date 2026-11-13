@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { quizKeys, startQuizAttempt } from '@/lib/api/quiz';
 
@@ -9,7 +9,6 @@ import { quizKeys, startQuizAttempt } from '@/lib/api/quiz';
 // it is placed straight into the cache and the attempt page needs no second request.
 export function useStartQuiz() {
   const router = useRouter();
-  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -17,8 +16,7 @@ export function useStartQuiz() {
     mutationFn: startQuizAttempt,
     onSuccess: (view) => {
       queryClient.setQueryData(quizKeys.attempt(view.attempt.id), view);
-      const base = '/student/practice';
-      router.push(`${base}/attempt/${view.attempt.id}`);
+      router.push(`/student/practice/attempt/${view.attempt.id}`);
     },
     onError: (error) => {
       toast({
