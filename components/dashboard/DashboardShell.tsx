@@ -48,6 +48,7 @@ import {
 } from '@/lib/api/notifications';
 import { Logo } from '@/components/brand/Logo';
 import { claimGuestDaily } from '@/lib/api/daily';
+import { trackPageView } from '@/lib/api/activity';
 import TutorTabs, { TUTOR_TABS } from '@/components/dashboard/TutorTabs';
 
 function initialsOf(name: string) {
@@ -100,7 +101,7 @@ const adminNav: NavItem[] = [
   { label: 'Leads', href: '/admin/leads', icon: Inbox },
   { label: 'Reports', href: '/admin/reports', icon: ChartNoAxesColumnIncreasing, section: 'Insights' },
   { label: 'Impact', href: '/admin/impact', icon: Target },
-  { label: 'Audit', href: '/admin/audit', icon: FileSearch },
+  { label: 'Activity log', href: '/admin/audit', icon: FileSearch },
 ];
 
 type Role = 'student' | 'teacher' | 'admin';
@@ -128,6 +129,20 @@ function roleForAuthUser(user: AuthUser | null): Role | null {
   if (user.role === 'TEACHER') return 'teacher';
   // Learners, and older parent accounts, share the learner workspace.
   return 'student';
+}
+
+/** The sidebar label of the page at `path`, e.g. "Practice", for the activity log. */
+function pageTitle(nav: NavItem[], path: string) {
+  let best: NavItem | undefined;
+  for (const item of nav) {
+    const hrefs = [item.href, ...(item.also ?? [])];
+    for (const href of hrefs) {
+      if ((path === href || path.startsWith(`${href}/`)) && href.length >= (best?.href.length ?? 0)) {
+        best = { ...item, href };
+      }
+    }
+  }
+  return best?.label;
 }
 
 const roleLabel: Record<Role, string> = {
@@ -185,6 +200,14 @@ export default function DashboardShell({
     if (!authChecked || !allowedRole) return false;
     return routeRole !== allowedRole;
   }, [allowedRole, authChecked, routeRole]);
+
+  // Every page a signed-in user opens shows up in the admin activity log.
+  useEffect(() => {
+    if (!authChecked || !authUser || isWrongWorkspace) return;
+    trackPageView(pathname, pageTitle(nav, pathname));
+    // nav follows the role, which is settled once auth is checked.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authChecked, authUser, isWrongWorkspace, pathname]);
 
   const notificationsQuery = useQuery({
     queryKey: notificationKeys.all,

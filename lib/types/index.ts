@@ -390,38 +390,28 @@ export interface Lead {
   updatedAt: string;
 }
 
-export type AuditAction =
-  | 'STUDENT_CREATED'
-  | 'PAYMENT_RECORDED'
-  | 'PAYOUT_MARKED_PAID'
-  | 'MEETING_LINK_UPDATED'
-  | 'CANCELLATION_APPROVED'
-  | 'CANCELLATION_REJECTED'
-  | 'TEACHER_RATE_UPDATED'
-  | 'TEACHER_TERMINATED'
-  | 'FAMILY_ATTENDANCE_CONFIRMED'
-  | 'TEACHER_ATTENDANCE_CONFIRMED';
-
-export type AuditEntityType =
-  | 'STUDENT'
-  | 'PAYMENT'
-  | 'PAYOUT'
-  | 'SESSION'
-  | 'CANCELLATION'
-  | 'TEACHER'
-  | 'ATTENDANCE';
+/** What happened, e.g. "QUIZ_SUBMITTED". New kinds appear as the platform grows. */
+export type AuditAction = string;
+export type AuditEntityType = string;
+/** Area of the platform: AUTH, PRACTICE, ARENA, TUTORING, NAVIGATION, ... */
+export type AuditCategory = string;
 
 export interface AuditLog {
   id: string;
-  actorUserId: string;
-  actorRole: Role;
+  /** Missing for a visitor who was not signed in. */
+  actorUserId?: string;
+  actorRole?: Role;
   actorName?: string;
   actorEmail?: string;
   action: AuditAction;
   entityType: AuditEntityType;
   entityId: string;
+  category: AuditCategory;
+  outcome: 'SUCCESS' | 'FAILED';
   summary: string;
   metadata?: Record<string, unknown> | null;
+  ipAddress?: string;
+  userAgent?: string;
   childId?: string;
   childName?: string;
   teacherId?: string;
