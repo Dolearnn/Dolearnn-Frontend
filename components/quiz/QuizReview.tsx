@@ -31,14 +31,14 @@ export default function QuizReview({
   return (
     <section>
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-foreground">
+        <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Review your answers
         </h2>
         {wrongCount > 0 && (
           <button
             type="button"
             onClick={() => setWrongOnly((current) => !current)}
-            className="text-xs font-medium rounded-full px-3 py-1.5 bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400"
+            className="min-h-10 shrink-0 rounded-full bg-accent2-100 px-3.5 text-xs font-semibold text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-accent2-500/20 dark:text-accent2-400"
             aria-pressed={wrongOnly}
           >
             {wrongOnly ? 'Show all' : `Only wrong or skipped (${wrongCount})`}
@@ -50,7 +50,7 @@ export default function QuizReview({
         {visible.map(({ question, number }) => (
           <article
             key={question.id}
-            className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-4 sm:p-5"
+            className="rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:p-5"
           >
             <div className="flex items-start gap-2.5">
               {question.isCorrect ? (
@@ -58,13 +58,13 @@ export default function QuizReview({
               ) : (
                 <XCircle className="w-5 h-5 mt-0.5 shrink-0 text-red-500" aria-label="Incorrect" />
               )}
-              <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-foreground whitespace-pre-line">
-                <span className="text-gray-400 dark:text-muted-foreground mr-1">{number}.</span>
+              <p className="whitespace-pre-line text-[15px] font-medium leading-relaxed text-gray-950 dark:text-foreground sm:text-base">
+                <span className="mr-1 font-display font-bold tabular-nums text-gray-400 dark:text-muted-foreground">{number}.</span>
                 {question.text}
               </p>
             </div>
 
-            <ul className="mt-3 space-y-1.5">
+            <ul className="mt-3 space-y-2">
               {question.options.map((option) => {
                 const isCorrect = option.id === question.correctOptionId;
                 const isYours = option.id === question.yourAnswer;
@@ -72,7 +72,7 @@ export default function QuizReview({
                   <li
                     key={option.id}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm',
+                      'flex min-h-11 items-center gap-2.5 rounded-xl border px-3 py-2 text-sm',
                       isCorrect
                         ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200'
                         : isYours
@@ -80,10 +80,10 @@ export default function QuizReview({
                           : 'border-gray-200 text-gray-700 dark:border-border dark:text-foreground/80',
                     )}
                   >
-                    <span className="font-semibold w-5">{option.id}</span>
-                    <span className="flex-1">{option.text}</span>
-                    {isCorrect && <span className="text-xs font-medium">Correct answer</span>}
-                    {isYours && !isCorrect && <span className="text-xs font-medium">Your answer</span>}
+                    <span className="w-5 shrink-0 font-display font-bold">{option.id}</span>
+                    <span className="min-w-0 flex-1">{option.text}</span>
+                    {isCorrect && <span className="shrink-0 text-xs font-semibold">{isYours ? 'Your answer, correct' : 'Correct'}</span>}
+                    {isYours && !isCorrect && <span className="shrink-0 text-xs font-semibold">Your answer</span>}
                   </li>
                 );
               })}
@@ -98,7 +98,7 @@ export default function QuizReview({
               <ExplainWithAI attemptId={attemptId} questionId={question.id} />
             )}
             {question.explanation && (
-              <p className="mt-3 rounded-lg bg-gray-50 dark:bg-white/5 px-3 py-2 text-sm text-gray-700 dark:text-foreground/80">
+              <p className="mt-3 rounded-2xl bg-gray-50 px-3.5 py-2.5 text-sm leading-6 text-gray-700 dark:bg-white/5 dark:text-foreground/80">
                 <span className="font-semibold">Why: </span>
                 {question.explanation}
               </p>

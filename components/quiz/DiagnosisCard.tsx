@@ -31,13 +31,13 @@ export default function DiagnosisCard({ attemptId }: { attemptId: string }) {
   const sections = result ? parseSections(result.diagnosis) : null;
 
   return (
-    <section className="border-l-4 border-accent2-500 bg-accent2-50 p-5 dark:bg-accent2-500/10 sm:p-6" aria-labelledby="diagnosis-heading">
+    <section className="rounded-3xl bg-accent2-50 p-5 dark:bg-accent2-500/10 sm:p-6" aria-labelledby="diagnosis-heading">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">
+          <p className="text-sm font-medium text-brand dark:text-accent2-400">
             Your result
           </p>
-          <h2 id="diagnosis-heading" className="mt-1 flex items-center gap-2 text-xl font-semibold text-gray-950 dark:text-foreground">
+          <h2 id="diagnosis-heading" className="mt-1 flex items-center gap-2 font-display text-lg font-bold text-gray-950 dark:text-foreground sm:text-xl">
             <Sparkles className="h-5 w-5 text-brand dark:text-accent2-400" />
             What this result means
           </h2>

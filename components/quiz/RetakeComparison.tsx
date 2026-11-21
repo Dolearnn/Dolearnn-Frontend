@@ -19,12 +19,12 @@ export default function RetakeComparison({ retake }: { retake: QuizRetakeCompari
   return (
     <section
       aria-labelledby="retake-heading"
-      className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-border dark:bg-card sm:p-6"
+      className="rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card sm:p-6"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-muted-foreground">
+      <p className="text-sm font-medium text-brand dark:text-accent2-400">
         Proof of progress
       </p>
-      <h2 id="retake-heading" className="mt-1 text-lg font-semibold text-gray-950 dark:text-foreground">
+      <h2 id="retake-heading" className="mt-1 font-display text-lg font-bold text-gray-950 dark:text-foreground">
         {improved
           ? `You improved by ${retake.changePoints} points on these topics`
           : same
@@ -36,11 +36,11 @@ export default function RetakeComparison({ retake }: { retake: QuizRetakeCompari
       </p>
 
       <div className="mt-4 flex items-center gap-4">
-        <span className="text-3xl font-semibold tabular-nums text-gray-500 dark:text-muted-foreground">
+        <span className="font-display text-[32px] font-extrabold tabular-nums text-gray-400 dark:text-muted-foreground">
           {retake.beforePercent}%
         </span>
         <ArrowRight className="h-5 w-5 text-gray-400" aria-hidden />
-        <span className={cn('text-3xl font-semibold tabular-nums', toneClasses[scoreTone(retake.afterPercent)].text)}>
+        <span className={cn('font-display text-[32px] font-extrabold tabular-nums', toneClasses[scoreTone(retake.afterPercent)].text)}>
           {retake.afterPercent}%
         </span>
         <Icon

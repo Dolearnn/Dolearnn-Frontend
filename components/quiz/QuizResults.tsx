@@ -21,12 +21,13 @@ const WEAK_BELOW_PERCENT = 60;
 function ScoreRing({ percent }: { percent: number }) {
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
-  const tone = toneClasses[scoreTone(percent)];
+  const tone = scoreTone(percent);
+  const stroke = tone === 'good' ? 'stroke-accent2-400' : tone === 'fair' ? 'stroke-amber-400' : 'stroke-red-400';
 
   return (
     <div className="relative h-32 w-32 shrink-0" role="img" aria-label={`Score ${percent} percent`}>
       <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-        <circle cx="60" cy="60" r={radius} fill="none" strokeWidth="10" className="stroke-gray-200 dark:stroke-white/10" />
+        <circle cx="60" cy="60" r={radius} fill="none" strokeWidth="10" className="stroke-white/15" />
         <circle
           cx="60"
           cy="60"
@@ -36,11 +37,12 @@ function ScoreRing({ percent }: { percent: number }) {
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - percent / 100)}
-          className={cn('transition-all duration-700', tone.text, 'stroke-current')}
+          className={cn('transition-[stroke-dashoffset] duration-700 motion-reduce:transition-none', stroke)}
         />
       </svg>
-      <span className={cn('absolute inset-0 flex items-center justify-center text-3xl font-bold', tone.text)}>
-        {percent}%
+      <span className="absolute inset-0 flex items-center justify-center font-display text-[34px] font-extrabold tabular-nums text-white">
+        {percent}
+        <span className="text-lg">%</span>
       </span>
     </div>
   );
@@ -66,11 +68,11 @@ function ExamIntegrity({ attemptId }: { attemptId: string }) {
     .join(', ');
 
   return record.warnings === 0 ? (
-    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-accent2-100 px-3 py-1 text-xs font-medium text-brand dark:bg-accent2-500/20 dark:text-accent2-300">
+    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-accent2-300">
       <ShieldCheck className="h-3.5 w-3.5" /> No warnings during this exam
     </p>
   ) : (
-    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-xs font-medium text-amber-200">
       <AlertTriangle className="h-3.5 w-3.5" /> {record.warnings} {record.warnings === 1 ? 'warning' : 'warnings'}: {detail}
     </p>
   );
@@ -110,38 +112,41 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5 sm:p-6">
-        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-          {attempt.mode === 'MOCK' ? 'Exam mode' : 'Practice'} · {attempt.subject.name}
+    <div className="mx-auto max-w-3xl space-y-4">
+      <section
+        aria-labelledby="result-heading"
+        className="relative overflow-hidden rounded-[28px] bg-brand p-5 text-white shadow-[0_18px_40px_-24px_rgba(4,66,114,0.9)] dark:bg-[hsl(208,70%,16%)] sm:p-7"
+      >
+        <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent2-400/25 blur-3xl" />
+        <p className="relative text-sm text-white/70">
+          {attempt.mode === 'MOCK' ? 'Exam mode' : 'Practice'}, {attempt.subject.name}
         </p>
-        <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-5">
+        <div className="relative mt-4 flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
           <ScoreRing percent={result.scorePercent} />
-          <div>
-            <h1 className="text-2xl font-bold text-brand dark:text-accent2-400">
-              {result.correctCount} of {result.totalQuestions} correct
+          <div className="min-w-0">
+            <h1 id="result-heading" className="font-display text-2xl font-extrabold">
+              <span className="tabular-nums">{result.correctCount}</span> of{' '}
+              <span className="tabular-nums">{result.totalQuestions}</span> correct
             </h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
-              {scoreMessage(result.scorePercent)}
-            </p>
+            <p className="mt-1 text-sm leading-6 text-white/75">{scoreMessage(result.scorePercent)}</p>
             {attempt.mode === 'MOCK' && <ExamIntegrity attemptId={attempt.id} />}
             {result.comparison && (
               <p
                 className={cn(
-                  'mt-2 inline-flex items-center gap-1.5 text-sm font-medium',
+                  'mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold tabular-nums',
                   result.comparison.changePoints > 0
-                    ? toneClasses.good.text
+                    ? 'bg-accent2-400 text-brand-700'
                     : result.comparison.changePoints < 0
-                      ? toneClasses.weak.text
-                      : 'text-gray-600 dark:text-muted-foreground',
+                      ? 'bg-red-400/20 text-red-200'
+                      : 'bg-white/10 text-white/80',
                 )}
               >
                 {result.comparison.changePoints > 0 ? (
-                  <TrendingUp className="w-4 h-4" />
+                  <TrendingUp className="h-4 w-4" />
                 ) : result.comparison.changePoints < 0 ? (
-                  <TrendingDown className="w-4 h-4" />
+                  <TrendingDown className="h-4 w-4" />
                 ) : (
-                  <Minus className="w-4 h-4" />
+                  <Minus className="h-4 w-4" />
                 )}
                 {result.comparison.changePoints === 0
                   ? `Same as last time (${result.comparison.previousScorePercent}%)`
@@ -149,48 +154,48 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
               </p>
             )}
             {result.timedOut && (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                <Clock className="w-3.5 h-3.5" /> This was submitted after the time limit.
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-amber-200 sm:justify-start">
+                <Clock className="h-3.5 w-3.5" /> This was submitted after the time limit.
               </p>
             )}
           </div>
         </div>
 
         {result.subjects && result.subjects.length > 1 && (
-          <ul className="mt-5 grid gap-2 border-t border-gray-100 pt-4 dark:border-border sm:grid-cols-2" aria-label="Score by subject">
+          <ul className="relative mt-5 grid gap-2 border-t border-white/15 pt-4 sm:grid-cols-2" aria-label="Score by subject">
             {result.subjects.map((subject) => (
-              <li key={subject.id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-white/5">
-                <span className="truncate text-sm font-medium text-gray-900 dark:text-foreground">{subject.name}</span>
-                <span className={cn('shrink-0 text-sm font-semibold tabular-nums', toneClasses[scoreTone(subject.scorePercent)].text)}>
-                  {subject.correct}/{subject.attempted} · {subject.scorePercent}%
+              <li key={subject.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white/10 px-3 py-2.5">
+                <span className="truncate text-sm font-medium">{subject.name}</span>
+                <span className="shrink-0 text-sm tabular-nums text-white/70">
+                  {subject.correct}/{subject.attempted}{' '}
+                  <strong className="ml-1 font-display text-base font-bold text-white">{subject.scorePercent}%</strong>
                 </span>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </section>
 
       {missed > 0 && (
-        <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-muted-foreground">
+        <p className="flex items-center gap-2 px-1 text-sm text-gray-600 dark:text-muted-foreground">
           <CalendarClock className="h-4 w-4 shrink-0 text-brand dark:text-accent2-400" aria-hidden />
           The {missed === 1 ? 'question' : `${missed} questions`} you missed will be ready to try again tomorrow.
         </p>
       )}
 
       {isFirstResult && (
-        <section className="rounded-3xl bg-brand p-6 text-white sm:p-8" aria-labelledby="start-here-heading">
-          <p className="text-sm font-semibold text-accent2-300">Start here</p>
+        <section className="rounded-3xl bg-accent2-100 p-5 text-brand-700 dark:bg-accent2-500/15 dark:text-foreground sm:p-7" aria-labelledby="start-here-heading">
+          <p className="text-sm font-semibold text-brand dark:text-accent2-400">Start here</p>
           {startHere ? (
             <>
-              <h2 id="start-here-heading" className="mt-1 text-2xl font-bold tracking-tight">
+              <h2 id="start-here-heading" className="mt-1 font-display text-xl font-bold tracking-tight sm:text-2xl">
                 Your weakest topic is {startHere.name}
               </h2>
-              <p className="mt-2 leading-7 text-white/80">
+              <p className="mt-2 leading-7 text-brand-700/80 dark:text-muted-foreground">
                 You got {startHere.correct} of {startHere.attempted} right, so this is the best place to start.
               </p>
               <Button
-                variant="secondary"
-                className="mt-5 h-12 px-6 text-base"
+                className="mt-5 h-12 w-full rounded-2xl px-6 text-[15px] sm:w-auto"
                 disabled={start.isPending}
                 onClick={() =>
                   start.mutate({
@@ -209,11 +214,11 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
             </>
           ) : (
             <>
-              <h2 id="start-here-heading" className="mt-1 text-2xl font-bold tracking-tight">
+              <h2 id="start-here-heading" className="mt-1 font-display text-xl font-bold tracking-tight sm:text-2xl">
                 Great start, no weak topics in this quiz
               </h2>
-              <p className="mt-2 leading-7 text-white/80">Try another subject to see where you need the most help.</p>
-              <Button asChild variant="secondary" className="mt-5 h-12 px-6 text-base">
+              <p className="mt-2 leading-7 text-brand-700/80 dark:text-muted-foreground">Try another subject to see where you need the most help.</p>
+              <Button asChild className="mt-5 h-12 w-full rounded-2xl px-6 text-[15px] sm:w-auto">
                 <Link href={practicePath}>Choose a subject</Link>
               </Button>
             </>
@@ -227,19 +232,20 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
 
       <DiagnosisCard attemptId={attempt.id} />
 
-      <section className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5 sm:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-foreground mb-4">
+      <section className="rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card sm:p-6">
+        <h2 className="mb-4 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           How you did by topic
         </h2>
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {sortedTopics.map((topic) => {
             const tone = toneClasses[scoreTone(topic.accuracyPercent)];
             return (
               <li key={topic.topicId}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-800 dark:text-foreground">{topic.name}</span>
-                  <span className={cn('tabular-nums font-semibold', tone.text)}>
-                    {topic.correct}/{topic.attempted} · {topic.accuracyPercent}%
+                <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate font-medium text-gray-800 dark:text-foreground">{topic.name}</span>
+                  <span className="shrink-0 tabular-nums text-gray-500 dark:text-muted-foreground">
+                    {topic.correct}/{topic.attempted}{' '}
+                    <strong className={cn('ml-1 font-display text-base font-bold', tone.text)}>{topic.accuracyPercent}%</strong>
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
@@ -254,25 +260,22 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
         </ul>
       </section>
 
-      <section className="bg-brand p-5 text-white dark:bg-accent2-500 dark:text-brand sm:p-6" aria-labelledby="result-next-step">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent2-300 dark:text-brand/65">
-          Practise
+      <section
+        className="rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card sm:p-6"
+        aria-labelledby="result-next-step"
+      >
+        <h2 id="result-next-step" className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
+          {weakTopicIds.length > 0 ? 'Practise your weak topics' : 'Keep going'}
+        </h2>
+        <p className="mt-1 max-w-xl text-sm leading-6 text-gray-600 dark:text-muted-foreground">
+          {weakTopicIds.length > 0
+            ? 'Ten questions drawn from the topics that need the most work.'
+            : 'Take another question set when you are ready and compare the result.'}
         </p>
-        <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 id="result-next-step" className="text-xl font-semibold">
-              {weakTopicIds.length > 0 ? 'Practise your weak topics' : 'Keep going'}
-            </h2>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-white/75 dark:text-brand/70">
-              {weakTopicIds.length > 0
-                ? 'Practise ten questions drawn from the topics that need the most work.'
-                : 'Take another question set when you are ready and compare the result.'}
-            </p>
-          </div>
+        <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
           {weakTopicIds.length > 0 && (
             <Button
-              variant="secondary"
-              className="h-11 shrink-0 px-5"
+              className="h-12 rounded-2xl px-5 text-[15px]"
               disabled={start.isPending}
               onClick={() =>
                 start.mutate({ ...base, topicIds: weakTopicIds, count: 10, mode: 'PRACTICE' })
@@ -281,11 +284,9 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
               <Target className="mr-2 h-4 w-4" /> Practise weak topics
             </Button>
           )}
-        </div>
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-white/15 pt-4 dark:border-brand/15">
           <Button
             variant="outline"
-            className="h-10 border-white/30 bg-transparent px-4 text-white hover:bg-white/10 hover:text-white dark:border-brand/30 dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand"
+            className="h-12 rounded-2xl px-5"
             disabled={start.isPending}
             title="New questions on the same topics, compared with this result"
             onClick={() =>
@@ -302,7 +303,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
           </Button>
           <Button
             variant="outline"
-            className="h-10 border-white/30 bg-transparent px-4 text-white hover:bg-white/10 hover:text-white dark:border-brand/30 dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand"
+            className="h-12 rounded-2xl px-5"
             disabled={start.isPending}
             onClick={() =>
               start.mutate({
@@ -314,7 +315,7 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
           >
             <RotateCcw className="mr-2 h-4 w-4" /> {mixed ? 'Take this mix again' : 'Test this subject again'}
           </Button>
-          <Button asChild variant="ghost" className="h-10 px-4 text-white hover:bg-white/10 hover:text-white dark:text-brand dark:hover:bg-brand/10 dark:hover:text-brand">
+          <Button asChild variant="ghost" className="h-12 rounded-2xl px-5">
             <Link href={practicePath}>Back to practice</Link>
           </Button>
         </div>

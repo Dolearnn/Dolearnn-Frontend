@@ -16,8 +16,8 @@ const MEDALS = ['text-amber-500', 'text-slate-400', 'text-orange-700'];
 
 function Row({ row, period }: { row: DailyBoardRow; period: 'today' | 'week' }) {
   return (
-    <li className={cn('flex items-center gap-3 px-4 py-2.5 text-sm', row.isMe && 'bg-accent2-50 dark:bg-accent2-500/10')}>
-      <span className="flex w-7 shrink-0 justify-center font-semibold tabular-nums text-gray-500 dark:text-muted-foreground">
+    <li className={cn('flex min-h-12 items-center gap-3 px-4 py-2.5 text-sm', row.isMe && 'bg-accent2-50 dark:bg-accent2-500/10')}>
+      <span className="flex w-7 shrink-0 justify-center font-display font-bold tabular-nums text-gray-400 dark:text-muted-foreground">
         {row.rank <= 3 ? <Medal className={cn('h-5 w-5', MEDALS[row.rank - 1])} aria-label={`Rank ${row.rank}`} /> : row.rank}
       </span>
       <span className="min-w-0 flex-1 truncate font-medium text-gray-900 dark:text-foreground">
@@ -25,11 +25,11 @@ function Row({ row, period }: { row: DailyBoardRow; period: 'today' | 'week' }) 
         {row.isMe ? ' (you)' : ''}
       </span>
       {period === 'week' && (
-        <span className="text-xs text-gray-500 dark:text-muted-foreground">
+        <span className="shrink-0 text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
           {row.days} {row.days === 1 ? 'day' : 'days'}
         </span>
       )}
-      <span className="w-12 text-right font-semibold tabular-nums text-brand dark:text-accent2-400">{row.score}</span>
+      <span className="w-12 shrink-0 text-right font-display text-base font-bold tabular-nums text-gray-950 dark:text-foreground">{row.score}</span>
     </li>
   );
 }
@@ -55,6 +55,7 @@ function Nickname({ current }: { current: string | null }) {
         <Button
           variant="ghost"
           size="sm"
+          className="h-10 rounded-full"
           onClick={() => {
             setValue(current);
             setEditing(true);
@@ -85,9 +86,10 @@ function Nickname({ current }: { current: string | null }) {
           autoComplete="off"
           placeholder="e.g. MathsKing_07"
           aria-describedby="daily-nickname-help"
+          className="h-11 rounded-xl"
           onChange={(event) => setValue(event.target.value)}
         />
-        <Button type="submit" disabled={save.isPending || value.trim().length < 3}>
+        <Button type="submit" className="h-11 rounded-xl px-5" disabled={save.isPending || value.trim().length < 3}>
           {save.isPending ? 'Saving…' : 'Save'}
         </Button>
         {current && (
@@ -122,7 +124,7 @@ export default function DailyLeaderboard({ className }: { className?: string }) 
     return (
       <div
         role="status"
-        className={cn('flex h-40 items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-600 dark:border-border dark:bg-card dark:text-muted-foreground', className)}
+        className={cn('flex h-40 items-center justify-center gap-2 rounded-3xl border border-gray-200/80 bg-white text-sm font-medium text-gray-600 dark:border-border dark:bg-card dark:text-muted-foreground', className)}
       >
         <Loader2 className="h-5 w-5 animate-spin text-brand dark:text-accent2-400" aria-hidden />
         Loading the leaderboard…
@@ -138,10 +140,10 @@ export default function DailyLeaderboard({ className }: { className?: string }) 
   const meOutsideTop = board.me && !board.top.some((row) => row.isMe);
 
   return (
-    <section className={cn('rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card', className)} aria-labelledby="daily-board-title">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <h2 id="daily-board-title" className="text-lg font-semibold text-gray-950 dark:text-foreground">Leaderboard</h2>
-        <div className="inline-flex rounded-full border border-gray-200 p-1 text-sm dark:border-border" role="tablist" aria-label="Leaderboard period">
+    <section className={cn('overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card', className)} aria-labelledby="daily-board-title">
+      <div className="flex items-center justify-between gap-3 p-4">
+        <h2 id="daily-board-title" className="font-display text-lg font-bold text-gray-950 dark:text-foreground">Leaderboard</h2>
+        <div className="grid grid-cols-2 rounded-full bg-gray-100 p-1 text-sm dark:bg-white/5" role="tablist" aria-label="Leaderboard period">
           {(
             [
               ['today', 'Today'],
@@ -155,8 +157,10 @@ export default function DailyLeaderboard({ className }: { className?: string }) 
               aria-selected={period === value}
               onClick={() => setPeriod(value)}
               className={cn(
-                'rounded-full px-4 py-1.5 font-medium transition-colors',
-                period === value ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand' : 'text-gray-600 dark:text-muted-foreground',
+                'min-h-9 whitespace-nowrap rounded-full px-3.5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                period === value
+                  ? 'bg-white text-gray-950 shadow-sm dark:bg-accent2-500 dark:text-brand'
+                  : 'text-gray-600 dark:text-muted-foreground',
               )}
             >
               {label}

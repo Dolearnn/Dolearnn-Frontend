@@ -227,47 +227,59 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
   const lowTime = remaining !== null && remaining <= 60;
 
   const content = (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center justify-between gap-3 mb-3">
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-            {[examName, exam ? 'Exam mode' : 'Practice'].filter(Boolean).join(' · ')}
+          <p className="truncate text-xs text-gray-500 dark:text-muted-foreground">
+            {examName ? `${examName}, ` : ''}
+            {exam ? 'exam mode' : 'practice'}
           </p>
-          <h1 className="text-lg font-bold text-brand dark:text-accent2-400">
+          <h1 className="truncate font-display text-lg font-bold text-gray-950 dark:text-foreground">
             {attempt.subject.name}
           </h1>
         </div>
         {remaining !== null && (
           <div
             className={cn(
-              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums',
+              'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 font-display text-base font-bold tabular-nums',
               lowTime
                 ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300'
-                : 'bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400',
+                : 'bg-brand text-white dark:bg-accent2-500 dark:text-brand',
             )}
             role="timer"
             aria-label="Time remaining"
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="h-4 w-4" />
             {formatClock(remaining)}
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-2 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+      <div className="mb-5 flex items-center gap-3">
+        <div
+          className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-white/10"
+          role="progressbar"
+          aria-label="Questions answered"
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={answeredCount}
+        >
           <div
-            className="h-full bg-brand dark:bg-accent2-500 transition-all"
+            className="h-full rounded-full bg-accent2-500 transition-[width] duration-300"
             style={{ width: `${(answeredCount / total) * 100}%` }}
           />
         </div>
-        <span className="text-xs text-gray-500 dark:text-muted-foreground tabular-nums">
-          {answeredCount}/{total} answered
+        <span className="text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
+          <strong className="font-semibold text-gray-900 dark:text-foreground">{answeredCount}</strong>/{total} answered
         </span>
       </div>
 
       {sections.length > 1 && (
-        <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Subjects">
+        <div
+          className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
+          role="tablist"
+          aria-label="Subjects"
+        >
           {sections.map((section) => {
             const active = section.id === currentSection?.id;
             const done = questions
@@ -281,7 +293,7 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
                 aria-selected={active}
                 onClick={() => setIndex(section.first)}
                 className={cn(
-                  'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+                  'min-h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   active
                     ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
                     : 'border border-gray-200 bg-white text-gray-700 hover:border-brand/50 dark:border-border dark:bg-card dark:text-foreground',
@@ -297,21 +309,21 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5 sm:p-6">
-        <p className="text-xs font-medium text-gray-500 dark:text-muted-foreground mb-2">
-          {currentSection ? `${currentSection.name} · ` : ''}Question {index + 1} of {total}
+      <div className="rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card sm:p-7">
+        <p className="flex items-baseline gap-1.5 text-gray-500 dark:text-muted-foreground">
+          <span className="font-display text-2xl font-extrabold tabular-nums text-brand dark:text-accent2-400">{index + 1}</span>
+          <span className="text-sm tabular-nums">of {total}</span>
+          {currentSection && <span className="ml-1 truncate text-sm">in {currentSection.name}</span>}
         </p>
-        <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-foreground whitespace-pre-line">
+        <p className="mt-3 whitespace-pre-line text-[17px] font-medium leading-relaxed text-gray-950 dark:text-foreground sm:text-lg">
           {question.text}
         </p>
-        {/* Not during exam mode: nothing should interrupt a timed paper. */}
-        {!exam && <ReportQuestion key={question.id} kind="bank" questionId={question.id} />}
         {question.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={question.imageUrl}
             alt="Diagram for this question"
-            className="mt-4 max-h-64 rounded-lg border border-gray-200 dark:border-border"
+            className="mt-4 max-h-64 rounded-xl border border-gray-200 dark:border-border"
           />
         )}
 
@@ -326,15 +338,15 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
                 aria-checked={selected}
                 onClick={() => select(option.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
+                  'flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left transition-[border-color,background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]',
                   selected
-                    ? 'border-brand bg-accent2-50 dark:border-accent2-400 dark:bg-accent2-500/15'
-                    : 'border-gray-200 hover:border-brand/50 hover:bg-gray-50 dark:border-border dark:hover:bg-white/5',
+                    ? 'border-brand bg-brand-50 dark:border-accent2-400 dark:bg-accent2-500/15'
+                    : 'border-gray-200/80 hover:border-brand/40 hover:bg-gray-50 dark:border-border dark:hover:bg-white/5',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-display text-sm font-bold transition-colors',
                     selected
                       ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
                       : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-muted-foreground',
@@ -342,61 +354,46 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
                 >
                   {option.id}
                 </span>
-                <span className="text-sm sm:text-base text-gray-800 dark:text-foreground">
-                  {option.text}
-                </span>
+                <span className="text-[15px] leading-snug text-gray-900 dark:text-foreground sm:text-base">{option.text}</span>
               </button>
             );
           })}
         </div>
+
+        {/* Not during exam mode: nothing should interrupt a timed paper. */}
+        {!exam && <ReportQuestion key={question.id} kind="bank" questionId={question.id} />}
       </div>
 
-      <div className="flex items-center justify-between gap-3 mt-4">
+      <div className="mt-4 grid grid-cols-[auto_1fr] gap-2">
         <Button
           type="button"
           variant="outline"
-          className="h-10 px-4 rounded-xl"
+          className="h-12 rounded-2xl px-4"
           onClick={() => go(index - 1)}
           disabled={index === 0}
+          aria-label="Previous question"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+          <ChevronLeft className="h-5 w-5 sm:mr-1" /> <span className="hidden sm:inline">Previous</span>
         </Button>
         {index < total - 1 ? (
-          <Button
-            type="button"
-            className="h-10 px-5 rounded-xl"
-            onClick={() => go(index + 1)}
-          >
-            Next <ChevronRight className="w-4 h-4 ml-1" />
+          <Button type="button" className="h-12 rounded-2xl text-[15px]" onClick={() => go(index + 1)}>
+            Next <ChevronRight className="ml-1 h-5 w-5" />
           </Button>
         ) : (
           <Button
             type="button"
-            className="h-10 px-5 rounded-xl"
+            className="h-12 rounded-2xl bg-accent2-500 text-[15px] text-brand-700 hover:bg-accent2-400"
             onClick={() => setConfirmOpen(true)}
             disabled={submit.isPending}
           >
-            <Send className="w-4 h-4 mr-2" /> Finish
+            <Send className="mr-2 h-4 w-4" /> Finish
           </Button>
         )}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-            Jump to question
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-9 px-4 rounded-xl"
-            onClick={() => setConfirmOpen(true)}
-            disabled={submit.isPending}
-          >
-            {submit.isPending ? 'Submitting...' : 'Submit quiz'}
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <div className="mt-6 rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:p-5">
+        <p className="text-sm font-semibold text-gray-900 dark:text-foreground">Jump to a question</p>
+        <div className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2">
           {questions.map((item, i) => {
             const isAnswered = Boolean(answers[item.id]);
             return (
@@ -407,11 +404,11 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
                 aria-label={`Question ${i + 1}${isAnswered ? ', answered' : ', not answered'}`}
                 aria-current={i === index ? 'true' : undefined}
                 className={cn(
-                  'h-9 w-9 rounded-lg text-xs font-semibold transition-colors',
+                  'h-10 rounded-xl text-sm font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isAnswered
                     ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
                     : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-muted-foreground',
-                  i === index && 'ring-2 ring-offset-2 ring-brand dark:ring-accent2-400 dark:ring-offset-card',
+                  i === index && 'ring-2 ring-accent2-400 ring-offset-2 dark:ring-offset-card',
                 )}
               >
                 {i + 1}
@@ -419,7 +416,16 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
             );
           })}
         </div>
-        <p className="mt-3 text-xs text-gray-500 dark:text-muted-foreground">
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4 h-11 w-full rounded-2xl"
+          onClick={() => setConfirmOpen(true)}
+          disabled={submit.isPending}
+        >
+          {submit.isPending ? 'Submitting…' : 'Submit quiz'}
+        </Button>
+        <p className="mt-3 hidden text-xs text-gray-500 dark:text-muted-foreground sm:block">
           Tip: press A, B, C or D to answer, and the arrow keys to move between questions.
         </p>
       </div>
