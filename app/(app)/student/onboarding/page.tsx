@@ -94,8 +94,8 @@ export default function StudentOnboardingPage() {
 
   return (
     <div className="mx-auto max-w-4xl pb-10">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">Your plan</p>
-      <h1 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight text-gray-950 dark:text-foreground sm:text-4xl">
+      <p className="text-sm font-medium text-brand dark:text-accent2-400">Your plan</p>
+      <h1 className="mt-1 max-w-2xl font-display text-[28px] font-extrabold leading-tight tracking-tight text-gray-950 dark:text-foreground sm:text-4xl">
         Tell DoLearnn what you are preparing for.
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-muted-foreground">
@@ -103,20 +103,20 @@ export default function StudentOnboardingPage() {
       </p>
 
       {profileQuery.data?.guestBaseline && (
-        <div className="mt-7 border-l-4 border-accent2-500 bg-accent2-50 p-4 dark:bg-accent2-500/10">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand dark:text-accent2-400">Warm-up carried over</p>
+        <div className="mt-6 rounded-3xl bg-accent2-50 p-4 dark:bg-accent2-500/10">
+          <p className="text-sm font-semibold text-brand dark:text-accent2-400">Warm-up carried over</p>
           <p className="mt-1 text-sm text-gray-800 dark:text-foreground/90">
             {profileQuery.data.guestBaseline.correct} of {profileQuery.data.guestBaseline.total} correct
             {profileQuery.data.guestBaseline.weakTopics.length > 0
-              ? ` · Start by checking ${profileQuery.data.guestBaseline.weakTopics.join(', ')}.`
-              : ' · Your first quiz will show where to go next.'}
+              ? `. Start by checking ${profileQuery.data.guestBaseline.weakTopics.join(', ')}.`
+              : '. Your first quiz will show where to go next.'}
           </p>
         </div>
       )}
 
       <div className="mt-9 space-y-10">
         <fieldset>
-          <legend className="text-lg font-semibold text-gray-950 dark:text-foreground">1. Where are you now?</legend>
+          <legend className="flex items-center gap-2.5 font-display text-lg font-bold text-gray-950 dark:text-foreground"><StepNumber n={1} />Where are you now?</legend>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {STAGES.map((item) => (
               <button
@@ -125,7 +125,7 @@ export default function StudentOnboardingPage() {
                 aria-pressed={stage === item.value}
                 onClick={() => setStage(item.value)}
                 className={cn(
-                  'min-h-14 border px-3 py-2 text-left text-sm font-medium transition-colors',
+                  'min-h-14 rounded-2xl border-2 px-3 py-2 text-left text-sm font-semibold transition-[border-color,background-color,transform] active:scale-[0.98]',
                   stage === item.value
                     ? 'border-brand bg-brand text-white dark:border-accent2-500 dark:bg-accent2-500 dark:text-brand'
                     : 'border-gray-200 bg-white text-gray-700 hover:border-brand dark:border-border dark:bg-card dark:text-foreground',
@@ -138,7 +138,7 @@ export default function StudentOnboardingPage() {
         </fieldset>
 
         <fieldset>
-          <legend className="text-lg font-semibold text-gray-950 dark:text-foreground">2. Which exams are you writing?</legend>
+          <legend className="flex items-center gap-2.5 font-display text-lg font-bold text-gray-950 dark:text-foreground"><StepNumber n={2} />Which exams are you writing?</legend>
           <p className="mt-1 text-sm text-gray-500 dark:text-muted-foreground">Choose any that apply, or add one that is not listed.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {examOptions.map((name) => {
@@ -150,7 +150,7 @@ export default function StudentOnboardingPage() {
                   aria-pressed={selected}
                   onClick={() => toggleExam(name)}
                   className={cn(
-                    'inline-flex min-h-10 items-center gap-2 border px-3 text-sm transition-colors',
+                    'inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-colors active:scale-[0.98]',
                     selected
                       ? 'border-brand bg-accent2-100 font-medium text-brand dark:border-accent2-400 dark:bg-accent2-500/15 dark:text-accent2-300'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-brand dark:border-border dark:bg-card dark:text-foreground',
@@ -173,22 +173,23 @@ export default function StudentOnboardingPage() {
               }}
               placeholder="Add another exam"
               aria-label="Exam name"
+              className="h-11 rounded-xl"
             />
-            <Button type="button" variant="outline" className="h-10 w-12 shrink-0 px-0" onClick={addCustomExam} aria-label="Add exam">
+            <Button type="button" variant="outline" className="h-11 w-12 shrink-0 rounded-xl px-0" onClick={addCustomExam} aria-label="Add exam">
               <Plus className="h-4 w-4" />
             </Button>
           </div>
           {externalExams.filter((name) => !examOptions.includes(name)).map((name) => (
-            <button key={name} type="button" onClick={() => toggleExam(name)} className="mt-2 mr-2 inline-flex items-center gap-1 bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 dark:bg-white/10 dark:text-foreground">
+            <button key={name} type="button" onClick={() => toggleExam(name)} className="mt-2 mr-2 inline-flex min-h-9 items-center gap-1 rounded-full bg-gray-100 px-3 text-xs font-medium text-gray-700 dark:bg-white/10 dark:text-foreground">
               {name} <X className="h-3 w-3" />
             </button>
           ))}
         </fieldset>
 
         <fieldset>
-          <legend className="text-lg font-semibold text-gray-950 dark:text-foreground">3. Which subjects do you want to work on?</legend>
+          <legend className="flex items-center gap-2.5 font-display text-lg font-bold text-gray-950 dark:text-foreground"><StepNumber n={3} />Which subjects do you want to work on?</legend>
           <p className="mt-1 text-sm text-gray-500 dark:text-muted-foreground">Pick the ones that matter most. You can add more later.</p>
-          <div className="mt-3 grid grid-cols-2 border-y border-gray-200 dark:border-border sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {(catalogQuery.data?.subjects ?? []).map((subject) => {
               const selected = subjectIds.includes(subject.id);
               return (
@@ -198,13 +199,13 @@ export default function StudentOnboardingPage() {
                   aria-pressed={selected}
                   onClick={() => toggleSubject(subject.id)}
                   className={cn(
-                    'flex min-h-16 items-center justify-between border-b border-r border-gray-200 px-4 text-left text-sm font-medium dark:border-border',
+                    'flex min-h-14 items-center justify-between gap-2 rounded-2xl border-2 px-3.5 text-left text-sm font-semibold transition-[border-color,background-color,transform] active:scale-[0.98]',
                     selected
-                      ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
-                      : 'bg-white text-gray-800 hover:bg-accent2-50 dark:bg-card dark:text-foreground dark:hover:bg-accent2-500/10',
+                      ? 'border-brand bg-brand text-white dark:border-accent2-500 dark:bg-accent2-500 dark:text-brand'
+                      : 'border-gray-200 bg-white text-gray-800 hover:border-brand/40 dark:border-border dark:bg-card dark:text-foreground',
                   )}
                 >
-                  {subject.name} {selected && <Check className="h-4 w-4" />}
+                  <span className="min-w-0">{subject.name}</span> {selected && <Check className="h-4 w-4 shrink-0" />}
                 </button>
               );
             })}
@@ -212,19 +213,27 @@ export default function StudentOnboardingPage() {
         </fieldset>
 
         <div>
-          <label htmlFor="exam-date" className="text-lg font-semibold text-gray-950 dark:text-foreground">4. Nearest exam date <span className="text-sm font-normal text-gray-500">(optional)</span></label>
-          <Input id="exam-date" type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} className="mt-3 max-w-xs" />
+          <label htmlFor="exam-date" className="flex items-center gap-2.5 font-display text-lg font-bold text-gray-950 dark:text-foreground"><StepNumber n={4} />Nearest exam date <span className="font-sans text-sm font-normal text-gray-500">(optional)</span></label>
+          <Input id="exam-date" type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} className="mt-3 h-11 max-w-xs rounded-xl" />
         </div>
       </div>
 
       {error && <p className="mt-6 text-sm font-medium text-red-600" role="alert">{error}</p>}
 
-      <div className="mt-8 border-t border-gray-200 pt-6 dark:border-border">
-        <Button type="button" onClick={submit} disabled={save.isPending || catalogQuery.isLoading} className="h-12 px-6">
+      <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 -mx-4 mt-8 bg-gradient-to-t from-gray-50 via-gray-50/95 to-transparent px-4 pb-2 pt-6 dark:from-background dark:via-background/95 lg:static lg:mx-0 lg:bg-none lg:px-0 lg:pb-0">
+        <Button type="button" onClick={submit} disabled={save.isPending || catalogQuery.isLoading} className="h-12 w-full rounded-2xl px-6 text-[15px] shadow-lg sm:w-auto lg:shadow-none">
           {save.isPending ? 'Saving…' : 'Save and continue'}
           {!save.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
     </div>
+  );
+}
+
+function StepNumber({ n }: { n: number }) {
+  return (
+    <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent2-100 font-display text-sm font-bold text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
+      {n}
+    </span>
   );
 }

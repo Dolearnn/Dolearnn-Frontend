@@ -205,25 +205,40 @@ export function ExamGate({
   onStart: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-gradient-to-br from-[#022a49] to-brand p-6">
-      <div className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-2xl dark:bg-card">
-        <Logo size="sm" />
-        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accent2-600">
-          {examName ? `${examName} · Exam mode` : 'Exam mode'}
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-brand dark:text-accent2-400">{subject}</h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
-          {questions} questions{minutes ? ` · ${minutes} minutes` : ''}, under exam conditions.
-        </p>
-        <ul className="mt-6 space-y-3 text-sm text-gray-700 dark:text-foreground/90">
-          <li className="flex gap-3"><Expand className="mt-0.5 h-4 w-4 flex-none text-brand dark:text-accent2-400" /> The exam opens full screen and stays there until you submit.</li>
-          <li className="flex gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 flex-none text-amber-600" /> Leaving full screen or switching tabs or apps counts as a warning. After {MAX_WARNINGS} warnings your exam is submitted automatically.</li>
-          <li className="flex gap-3"><ShieldCheck className="mt-0.5 h-4 w-4 flex-none text-brand dark:text-accent2-400" /> Copying, pasting and right-clicking are turned off. Warnings appear on your results.</li>
-          {minutes && <li className="flex gap-3"><Clock className="mt-0.5 h-4 w-4 flex-none text-brand dark:text-accent2-400" /> The timer is already running and cannot be paused.</li>}
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-brand text-white dark:bg-[hsl(208,70%,12%)]">
+      <div aria-hidden className="pointer-events-none fixed -right-24 -top-24 h-80 w-80 rounded-full bg-accent2-400/20 blur-3xl" />
+      <div className="relative mx-auto flex min-h-full max-w-lg flex-col px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-6 sm:justify-center">
+        <Logo tone="light" size="sm" />
+        <p className="mt-8 text-sm font-medium text-accent2-300">{examName ? `${examName}, exam mode` : 'Exam mode'}</p>
+        <h1 className="mt-1 font-display text-3xl font-extrabold">{subject}</h1>
+
+        <dl className="mt-6 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-white/10 p-4">
+            <dd className="font-display text-4xl font-extrabold leading-none tabular-nums">{questions}</dd>
+            <dt className="mt-1.5 text-sm text-white/70">questions</dt>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4">
+            <dd className="font-display text-4xl font-extrabold leading-none tabular-nums">{minutes ?? '–'}</dd>
+            <dt className="mt-1.5 text-sm text-white/70">{minutes ? 'minutes' : 'no time limit'}</dt>
+          </div>
+        </dl>
+
+        <h2 className="mt-8 text-sm font-semibold text-white/90">Exam rules</h2>
+        <ul className="mt-3 space-y-3.5 text-sm leading-6 text-white/80">
+          <li className="flex gap-3"><Expand className="mt-1 h-4 w-4 flex-none text-accent2-300" /> The exam opens full screen and stays there until you submit.</li>
+          <li className="flex gap-3"><AlertTriangle className="mt-1 h-4 w-4 flex-none text-amber-300" /> Leaving full screen or switching tabs or apps counts as a warning. After {MAX_WARNINGS} warnings your exam is submitted automatically.</li>
+          <li className="flex gap-3"><ShieldCheck className="mt-1 h-4 w-4 flex-none text-accent2-300" /> Copying, pasting and right-clicking are turned off. Warnings appear on your results.</li>
+          {minutes && <li className="flex gap-3"><Clock className="mt-1 h-4 w-4 flex-none text-accent2-300" /> The timer is already running and cannot be paused.</li>}
         </ul>
-        <Button className="mt-8 h-12 w-full rounded-xl text-base" onClick={onStart}>
-          Start exam
-        </Button>
+
+        <div className="mt-auto pt-8 sm:mt-10">
+          <Button
+            className="h-14 w-full rounded-2xl bg-accent2-400 text-base font-semibold text-brand-700 hover:bg-accent2-300"
+            onClick={onStart}
+          >
+            Start exam
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -241,21 +256,27 @@ export function ExamWarning({
 }) {
   const left = Math.max(0, MAX_WARNINGS - warnings);
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#022a49]/95 p-6" role="alertdialog" aria-modal="true" aria-labelledby="exam-warning-title">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl dark:bg-card">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#022a49]/95 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center" role="alertdialog" aria-modal="true" aria-labelledby="exam-warning-title">
+      <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-2xl dark:bg-card sm:p-8">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
           <AlertTriangle className="h-7 w-7" />
         </span>
-        <h2 id="exam-warning-title" className="mt-4 text-xl font-bold text-gray-950 dark:text-foreground">
+        <h2 id="exam-warning-title" className="mt-4 font-display text-xl font-bold text-gray-950 dark:text-foreground">
           {kind === 'left-tab' ? 'You left the exam' : 'You left full screen'}
         </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-muted-foreground">
+        {/* One pip per allowed warning, filled as they are used. */}
+        <div className="mt-4 flex justify-center gap-2" aria-hidden>
+          {Array.from({ length: MAX_WARNINGS }, (_, i) => (
+            <span key={i} className={i < warnings ? 'h-2 w-8 rounded-full bg-amber-500' : 'h-2 w-8 rounded-full bg-gray-200 dark:bg-white/10'} />
+          ))}
+        </div>
+        <p className="mt-3 text-sm text-gray-600 dark:text-muted-foreground">
           Warning {warnings} of {MAX_WARNINGS}.{' '}
           {left > 0
             ? `${left} more and your exam will be submitted automatically.`
             : 'Your exam is being submitted.'}
         </p>
-        <Button className="mt-6 h-11 w-full rounded-xl" onClick={onResume}>
+        <Button className="mt-6 h-12 w-full rounded-2xl text-[15px]" onClick={onResume}>
           Return to the exam
         </Button>
       </div>

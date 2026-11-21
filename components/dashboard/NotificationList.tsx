@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, BellOff, Check } from 'lucide-react';
+import { Bell, BellOff, Check, Circle } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -56,7 +56,7 @@ export default function NotificationList({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title={title}
         description={
@@ -68,7 +68,7 @@ export default function NotificationList({
           unread > 0 ? (
             <Button
               variant="outline"
-              className="rounded-full"
+              className="h-11 rounded-full"
               onClick={markAll}
             >
               <Check className="w-4 h-4 mr-2" />
@@ -79,65 +79,56 @@ export default function NotificationList({
       />
 
       {items.length === 0 ? (
-        <div className="bg-white dark:bg-card border border-dashed border-gray-300 dark:border-border rounded-2xl p-10 text-center">
-          <BellOff className="w-6 h-6 text-gray-400 dark:text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
-            {emptyTitle}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-            {emptyDescription}
-          </p>
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+          <BellOff className="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-muted-foreground" />
+          <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">{emptyTitle}</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-muted-foreground">{emptyDescription}</p>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:divide-border dark:border-border dark:bg-card">
           {items.map((n) => (
             <li
               key={n.id}
-              className={cn(
-                'bg-white dark:bg-card rounded-2xl border p-4 flex items-start gap-3 transition',
-                n.read ? 'border-gray-200' : 'border-brand/30 shadow-sm',
-              )}
+              className={cn('flex items-start gap-3 p-4', !n.read && 'bg-accent2-50/50 dark:bg-accent2-500/5')}
             >
               <div
                 className={cn(
-                  'w-9 h-9 rounded-full flex items-center justify-center shrink-0',
+                  'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
                   n.read
-                    ? 'bg-gray-100 dark:bg-white/10 text-gray-400'
-                    : 'bg-accent2-100 text-brand',
+                    ? 'bg-gray-100 text-gray-400 dark:bg-white/10'
+                    : 'bg-brand text-white dark:bg-accent2-500 dark:text-brand',
                 )}
               >
-                <Bell className="w-4 h-4" />
+                <Bell className="h-4 w-4" />
+                {!n.read && (
+                  <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-accent2-400 ring-2 ring-white dark:ring-card" aria-hidden />
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-3">
-                  <p
-                    className={cn(
-                      'text-sm font-semibold truncate',
-                      n.read
-                        ? 'text-gray-700 dark:text-foreground/80'
-                        : 'text-gray-900 dark:text-foreground',
-                    )}
-                  >
-                    {n.title}
-                  </p>
-                  <span className="text-[11px] text-gray-400 dark:text-muted-foreground shrink-0">
-                    {timeAgo(n.createdAt)}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                  {n.body}
+              <div className="min-w-0 flex-1">
+                <p
+                  className={cn(
+                    'text-sm font-semibold',
+                    n.read ? 'text-gray-700 dark:text-foreground/80' : 'text-gray-950 dark:text-foreground',
+                  )}
+                >
+                  {n.title}
                 </p>
+                <p className="mt-0.5 text-sm leading-6 text-gray-600 dark:text-muted-foreground">{n.body}</p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-muted-foreground">{timeAgo(n.createdAt)}</p>
               </div>
               <button
+                type="button"
                 onClick={() => toggle(n.id)}
+                aria-label={n.read ? `Mark "${n.title}" as unread` : `Mark "${n.title}" as read`}
+                title={n.read ? 'Mark unread' : 'Mark read'}
                 className={cn(
-                  'text-[11px] font-medium px-2 py-1 rounded-full shrink-0 transition',
+                  '-mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   n.read
-                    ? 'text-gray-500 dark:text-muted-foreground hover:bg-gray-100'
-                    : 'text-brand hover:bg-brand/10',
+                    ? 'text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+                    : 'text-brand hover:bg-brand/10 dark:text-accent2-400',
                 )}
               >
-                {n.read ? 'Mark unread' : 'Mark read'}
+                {n.read ? <Circle className="h-4 w-4" /> : <Check className="h-4 w-4" />}
               </button>
             </li>
           ))}

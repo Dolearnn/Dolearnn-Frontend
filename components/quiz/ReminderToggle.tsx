@@ -16,7 +16,7 @@ export default function ReminderToggle() {
   });
 
   return (
-    <section className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-border dark:bg-card">
+    <section className="mx-auto mt-4 flex max-w-3xl items-center justify-between gap-4 rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card">
       <div>
         <h2 id="reminders-title" className="font-semibold text-gray-900 dark:text-foreground">Email reminders</h2>
         <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">

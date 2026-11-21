@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import type { QuizCatalogExam, QuizCatalogSubject, QuizMode } from '@/lib/api/quiz';
 import { cn } from '@/lib/utils';
-import { idlePill, selectedPill } from './pills';
+import { idlePill, selectedPill, sheetContent, stickyFooter } from './pills';
 import { useStartQuiz } from './useStartQuiz';
 
 const MAX_SUBJECTS = 6;
@@ -118,7 +118,7 @@ export default function MixedQuizDialog({
 
   return (
     <Dialog open onOpenChange={(value) => !value && onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className={cn("max-h-[90vh] max-w-2xl overflow-y-auto", sheetContent)}>
         <DialogHeader>
           <DialogTitle>Mix subjects</DialogTitle>
           <DialogDescription>
@@ -200,7 +200,7 @@ export default function MixedQuizDialog({
                               <label
                                 key={topic.id}
                                 className={cn(
-                                  'flex items-center gap-2.5 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-border',
+                                  'flex min-h-11 items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-border',
                                   count === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
                                 )}
                               >
@@ -235,7 +235,7 @@ export default function MixedQuizDialog({
                   onClick={() => setPerSubject(choice)}
                   aria-pressed={perSubject === choice}
                   className={cn(
-                    'h-10 min-w-14 rounded-xl border px-4 text-sm font-semibold transition-colors',
+                    'h-11 min-w-14 rounded-xl border px-4 font-display text-sm font-bold tabular-nums transition-colors',
                     perSubject === choice ? selectedPill : idlePill,
                   )}
                 >
@@ -255,9 +255,9 @@ export default function MixedQuizDialog({
                   onClick={() => setMode(item.value)}
                   aria-pressed={mode === item.value}
                   className={cn(
-                    'rounded-xl border p-3 text-left transition-colors',
+                    'min-h-16 rounded-2xl border-2 p-3 text-left transition-colors',
                     mode === item.value
-                      ? 'border-brand bg-accent2-50 dark:border-accent2-400 dark:bg-accent2-500/15'
+                      ? 'border-brand bg-brand-50 dark:border-accent2-400 dark:bg-accent2-500/15'
                       : 'border-gray-200 hover:border-brand/50 dark:border-border',
                   )}
                 >
@@ -272,7 +272,7 @@ export default function MixedQuizDialog({
           </fieldset>
         </div>
 
-        <DialogFooter className="items-center gap-3 sm:justify-between">
+        <DialogFooter className={cn("items-center gap-3 sm:justify-between", stickyFooter)}>
           <p className="text-sm text-gray-600 dark:text-muted-foreground">
             {selected.length < 2
               ? 'Choose at least 2 subjects.'
@@ -282,7 +282,7 @@ export default function MixedQuizDialog({
             )}
           </p>
           <Button
-            className="h-11 w-full rounded-xl px-6 sm:w-auto"
+            className="h-12 w-full rounded-2xl px-6 text-[15px] sm:w-auto"
             disabled={selected.length < 2 || total === 0 || start.isPending}
             onClick={begin}
           >

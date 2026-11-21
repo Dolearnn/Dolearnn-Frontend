@@ -348,7 +348,8 @@ export default function DashboardShell({
         </header>
         <main
           className={cn(
-            'flex-1 p-4 lg:p-8 overflow-x-hidden',
+            // clip, not hidden: hidden would turn main into a scroll box and break sticky bars.
+            'flex-1 p-4 lg:p-8 overflow-x-clip',
             // Room for the bottom tab bar and the phone's home indicator.
             isLearner && 'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8',
           )}

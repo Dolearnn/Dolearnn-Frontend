@@ -18,7 +18,7 @@ import type {
   QuizMode,
 } from '@/lib/api/quiz';
 import { cn } from '@/lib/utils';
-import { idlePill, selectedPill } from './pills';
+import { idlePill, selectedPill, sheetContent, stickyFooter } from './pills';
 import { useStartQuiz } from './useStartQuiz';
 
 const COUNT_CHOICES = [10, 20, 40];
@@ -63,7 +63,7 @@ export default function StartQuizDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className={cn("max-h-[90vh] max-w-lg overflow-y-auto", sheetContent)}>
         <DialogHeader>
           <DialogTitle>Set up {subject.name}</DialogTitle>
           <DialogDescription>
@@ -85,9 +85,9 @@ export default function StartQuizDialog({
                   onClick={() => setMode(item.value)}
                   aria-pressed={mode === item.value}
                   className={cn(
-                    'rounded-xl border p-3 text-left transition-colors',
+                    'min-h-16 rounded-2xl border-2 p-3 text-left transition-colors',
                     mode === item.value
-                      ? 'border-brand bg-accent2-50 dark:border-accent2-400 dark:bg-accent2-500/15'
+                      ? 'border-brand bg-brand-50 dark:border-accent2-400 dark:bg-accent2-500/15'
                       : 'border-gray-200 hover:border-brand/50 dark:border-border',
                   )}
                 >
@@ -115,7 +115,7 @@ export default function StartQuizDialog({
                   onClick={() => setCount(choice)}
                   aria-pressed={count === choice}
                   className={cn(
-                    'h-10 min-w-14 rounded-xl border px-4 text-sm font-semibold transition-colors',
+                    'h-11 min-w-14 rounded-xl border px-4 font-display text-sm font-bold tabular-nums transition-colors',
                     count === choice ? selectedPill : idlePill,
                   )}
                 >
@@ -142,7 +142,7 @@ export default function StartQuizDialog({
                     <label
                       key={topic.id}
                       className={cn(
-                        'flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-border px-3 py-2 text-sm',
+                        'flex min-h-11 items-center gap-2.5 rounded-xl border border-gray-200 dark:border-border px-3 py-2 text-sm',
                         topicCount === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
                       )}
                     >
@@ -163,9 +163,9 @@ export default function StartQuizDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className={stickyFooter}>
           <Button
-            className="h-11 px-6 rounded-xl w-full sm:w-auto"
+            className="h-12 w-full rounded-2xl px-6 text-[15px] sm:w-auto"
             disabled={start.isPending}
             onClick={() =>
               start.mutate({
