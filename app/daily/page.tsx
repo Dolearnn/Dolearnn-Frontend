@@ -10,16 +10,16 @@ export const metadata: Metadata = {
 
 export default function DailyPage() {
   return (
-    <main className="min-h-screen bg-[#f4f8fb]">
-      <header className="flex items-center justify-between px-4 py-4 sm:px-6">
+    <main className="min-h-screen bg-gray-50">
+      <header className="flex h-14 items-center justify-between px-4 sm:px-6">
         <Link href="/" aria-label="DoLearnn home">
-          <Logo size="md" />
+          <Logo size="sm" />
         </Link>
-        <Link href="/student/arena" className="text-sm font-medium text-brand">
+        <Link href="/student/arena" className="-mr-2 inline-flex min-h-10 items-center rounded-full px-3 text-sm font-semibold text-brand hover:bg-brand-50">
           Arena
         </Link>
       </header>
-      <div className="mx-auto max-w-xl px-4 pb-16 pt-4">
+      <div className="mx-auto max-w-xl px-4 pb-[calc(4rem+env(safe-area-inset-bottom))] pt-2">
         <DailyPlay />
       </div>
     </main>

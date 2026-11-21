@@ -35,9 +35,9 @@ function Loading() {
   }, []);
 
   return (
-    <div role="status" className="flex h-96 flex-col items-center justify-center rounded-3xl border border-gray-200 bg-white p-8 text-center">
+    <div role="status" className="flex h-96 flex-col items-center justify-center rounded-[28px] border border-gray-200/80 bg-white p-8 text-center">
       <Loader2 className="h-10 w-10 animate-spin text-brand" aria-hidden />
-      <p className="mt-4 text-lg font-semibold text-gray-950">Loading today&apos;s quiz…</p>
+      <p className="mt-4 font-display text-lg font-bold text-gray-950">Loading today&apos;s quiz…</p>
       <p className="mt-1 max-w-xs text-sm text-gray-600">
         {slow ? 'Still working on it. This can take up to 30 seconds, so please keep this page open.' : 'This should only take a moment.'}
       </p>
@@ -73,16 +73,21 @@ function Question({
     return () => clearInterval(timer);
   }, [question.id, question.secondsLeft]);
 
+  // A bar that empties as the seconds run out, so the timer reads at a glance.
+  const timePercent = question.secondsLeft > 0 ? (left / question.secondsLeft) * 100 : 0;
+
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-medium text-gray-600">
-          Question {question.index + 1} of {question.total} · {CATEGORY[question.category]}
-        </span>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="flex items-baseline gap-1.5 text-gray-500">
+          <span className="font-display text-2xl font-extrabold tabular-nums text-brand">{question.index + 1}</span>
+          <span className="text-sm tabular-nums">of {question.total}</span>
+          <span className="ml-1 text-sm">in {CATEGORY[question.category]}</span>
+        </p>
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold tabular-nums',
-            left <= 5 ? 'bg-red-100 text-red-700' : 'bg-accent2-100 text-brand',
+            'inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 font-display text-base font-bold tabular-nums',
+            left <= 5 ? 'bg-red-100 text-red-700' : 'bg-brand text-white',
           )}
           role="timer"
           aria-label="Seconds left"
@@ -90,32 +95,37 @@ function Question({
           <Clock className="h-4 w-4" aria-hidden /> {left}s
         </span>
       </div>
-      <div className="mb-6 h-2 overflow-hidden rounded-full bg-gray-200">
-        <div className="h-full rounded-full bg-accent2-500 transition-all" style={{ width: `${(question.index / question.total) * 100}%` }} />
+      <div className="mb-6 h-2 overflow-hidden rounded-full bg-gray-200" aria-hidden>
+        <div
+          className={cn('h-full rounded-full transition-[width] duration-300 ease-linear motion-reduce:transition-none', left <= 5 ? 'bg-red-500' : 'bg-accent2-500')}
+          style={{ width: `${timePercent}%` }}
+        />
       </div>
-      <h1 className="whitespace-pre-line text-xl font-semibold leading-snug text-gray-950">{question.text}</h1>
-      <div className="mt-6 space-y-3">
-        {question.options.map((option) => {
-          const saving = busy && picked === option.id;
-          return (
-            <button
-              key={option.id}
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setPicked(option.id);
-                onAnswer(option.id);
-              }}
-              className={cn(
-                'flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left font-medium text-gray-900 transition-colors hover:border-brand hover:bg-accent2-50 disabled:opacity-60',
-                saving && 'border-brand bg-accent2-50 disabled:opacity-100',
-              )}
-            >
-              {option.text}
-              {saving && <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand" aria-hidden />}
-            </button>
-          );
-        })}
+      <div className="rounded-3xl border border-gray-200/80 bg-white p-5 sm:p-6">
+        <h1 className="whitespace-pre-line text-[19px] font-semibold leading-snug text-gray-950">{question.text}</h1>
+        <div className="mt-5 space-y-2.5">
+          {question.options.map((option) => {
+            const saving = busy && picked === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setPicked(option.id);
+                  onAnswer(option.id);
+                }}
+                className={cn(
+                  'flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border-2 border-gray-200/80 bg-white px-4 py-3 text-left text-[15px] font-medium text-gray-900 transition-[border-color,background-color,transform] hover:border-brand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99] disabled:opacity-60',
+                  saving && 'border-brand bg-brand-50 disabled:opacity-100',
+                )}
+              >
+                {option.text}
+                {saving && <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand" aria-hidden />}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {busy ? (
         <p role="status" className="mt-4 flex items-center justify-center gap-2 text-center text-sm font-medium text-brand">
@@ -135,15 +145,15 @@ function Share({ number, result }: { number: number; result: DailyResult }) {
   const text = `DoLearnn Daily #${number}: ${result.score}/${result.total}${rank}. Can you beat me? ${window.location.origin}/daily`;
 
   return (
-    <div className="mt-4 flex flex-wrap justify-center gap-2">
-      <Button asChild className="rounded-full">
+    <div className="grid gap-2 sm:flex sm:justify-center">
+      <Button asChild className="h-12 rounded-2xl bg-[#25D366] px-6 text-[15px] text-white hover:bg-[#1fb857]">
         <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
           Share on WhatsApp
         </a>
       </Button>
       <Button
         variant="outline"
-        className="rounded-full"
+        className="h-12 rounded-2xl px-6"
         onClick={async () => {
           await navigator.clipboard.writeText(text).catch(() => undefined);
           setCopied(true);
@@ -159,18 +169,19 @@ function Results({ number, result }: { number: number; result: DailyResult }) {
   const signedIn = Boolean(getAuthToken());
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl bg-brand p-7 text-center text-white">
-        <p className="text-sm font-semibold text-accent2-300">The Daily #{number}</p>
-        <p className="mt-2 text-6xl font-extrabold">
+    <div className="space-y-5">
+      <section className="relative overflow-hidden rounded-[28px] bg-brand p-7 text-center text-white shadow-[0_18px_40px_-24px_rgba(4,66,114,0.9)]">
+        <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent2-400/25 blur-3xl" />
+        <p className="relative text-sm font-semibold text-accent2-300">The Daily #{number}</p>
+        <p className="relative mt-2 font-display text-7xl font-extrabold leading-none tabular-nums">
           {result.score}
-          <span className="text-3xl text-white/60">/{result.total}</span>
+          <span className="text-3xl text-white/50">/{result.total}</span>
         </p>
-        <p className="mt-2 text-white/80">in {result.seconds} {result.seconds === 1 ? 'second' : 'seconds'}</p>
+        <p className="relative mt-3 text-white/75">in {result.seconds} {result.seconds === 1 ? 'second' : 'seconds'}</p>
         {result.flagged ? (
-          <p className="mt-3 text-sm text-white/80">Your score is being checked before it goes on the leaderboard.</p>
+          <p className="relative mt-3 text-sm text-white/80">Your score is being checked before it goes on the leaderboard.</p>
         ) : (
-          <p className="mt-3 text-lg font-semibold">
+          <p className="relative mx-auto mt-4 inline-block rounded-full bg-white/10 px-4 py-1.5 font-semibold">
             {result.ranked ? `You're #${result.rank} today` : `That would be #${result.rank} today`}
             {result.players > 1 && result.aheadPercent > 0 ? `, ahead of ${result.aheadPercent}% of players` : ''}
           </p>
@@ -178,10 +189,10 @@ function Results({ number, result }: { number: number; result: DailyResult }) {
       </section>
 
       {!result.ranked && !signedIn && (
-        <section className="rounded-2xl border border-accent2-200 bg-accent2-50 p-5 text-center">
-          <p className="font-semibold text-gray-950">Want more? Create a free account</p>
+        <section className="rounded-3xl bg-accent2-50 p-5 text-center">
+          <p className="font-display text-lg font-bold text-gray-950">Want more? Create a free account</p>
           <p className="mt-1 text-sm text-gray-600">Practise any subject, save today&apos;s score and pick a nickname for the leaderboard.</p>
-          <Button asChild className="mt-4 rounded-full">
+          <Button asChild className="mt-4 h-12 w-full rounded-2xl text-[15px] sm:w-auto sm:px-6">
             <Link href="/register">
               Create free account <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -195,14 +206,14 @@ function Results({ number, result }: { number: number; result: DailyResult }) {
       <DailyLeaderboard />
 
       <section aria-labelledby="daily-review-title">
-        <h2 id="daily-review-title" className="mb-3 text-lg font-semibold text-gray-950">Answers</h2>
+        <h2 id="daily-review-title" className="mb-3 font-display text-lg font-bold text-gray-950">Answers</h2>
         <ol className="space-y-3">
           {result.review.map((question) => {
             const correct = question.yourAnswer === question.correctOptionId;
             const right = question.options.find((option) => option.id === question.correctOptionId);
             const yours = question.options.find((option) => option.id === question.yourAnswer);
             return (
-              <li key={question.id} className="rounded-2xl border border-gray-200 bg-white p-4">
+              <li key={question.id} className="rounded-3xl border border-gray-200/80 bg-white p-4">
                 <p className="flex items-start gap-2 font-medium text-gray-950">
                   {correct ? (
                     <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" aria-label="Correct" />
@@ -215,7 +226,7 @@ function Results({ number, result }: { number: number; result: DailyResult }) {
                   <p className="mt-2 text-sm text-red-700">{yours ? `You chose: ${yours.text}` : 'Time ran out.'}</p>
                 )}
                 <p className="mt-1 text-sm font-medium text-emerald-700">Answer: {right?.text}</p>
-                {question.explanation && <p className="mt-1 text-sm text-gray-600">{question.explanation}</p>}
+                {question.explanation && <p className="mt-2 rounded-2xl bg-gray-50 px-3.5 py-2.5 text-sm leading-6 text-gray-600">{question.explanation}</p>}
                 <ReportQuestion kind="daily" questionId={question.id} />
               </li>
             );
@@ -274,7 +285,7 @@ export default function DailyPlay() {
     return (
       <div className="text-center">
         <p className="text-gray-700">Today&apos;s quiz could not load.</p>
-        <Button className="mt-4 rounded-full" disabled={loaded.isFetching} onClick={() => loaded.refetch()}>
+        <Button className="mt-4 h-12 rounded-2xl px-6" disabled={loaded.isFetching} onClick={() => loaded.refetch()}>
           {loaded.isFetching && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           {loaded.isFetching ? 'Trying again…' : 'Try again'}
         </Button>
@@ -285,25 +296,46 @@ export default function DailyPlay() {
   return (
     <>
       {failed && (
-        <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-center text-sm text-red-700">
+        <p role="alert" className="mb-4 rounded-2xl bg-red-50 p-3 text-center text-sm text-red-700">
           Your connection dropped. Tap your answer again.
         </p>
       )}
       {current.status === 'new' && (
-        <section className="text-center">
-          <p className="text-sm font-semibold text-accent2-600">The Daily #{current.number}</p>
-          <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-brand-700">One quiz. Everyone. Today.</h1>
-          <p className="mx-auto mt-4 max-w-md leading-7 text-gray-600">
-            {current.total} questions in English, Maths and History. About 3 minutes. You only get one attempt, so make it count.
-          </p>
-          <Button className="mt-7 h-12 rounded-full px-8 text-base" disabled={busy} onClick={() => run(startDaily)}>
-            {busy && <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden />}
-            {busy ? 'Starting…' : 'Start the quiz'}
-          </Button>
-          <p role="status" className="mt-3 text-sm text-gray-500">
-            {busy ? 'Getting your first question ready…' : 'The timer starts as soon as you tap.'}
-          </p>
-          <div className="mt-10 text-left">
+        <section>
+          <div className="relative overflow-hidden rounded-[28px] bg-brand p-6 text-white shadow-[0_18px_40px_-24px_rgba(4,66,114,0.9)] sm:p-8">
+            <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent2-400/25 blur-3xl" />
+            <p className="relative text-sm font-semibold text-accent2-300">The Daily #{current.number}</p>
+            <h1 className="relative mt-1 font-display text-[34px] font-extrabold leading-[1.05] tracking-tight sm:text-4xl">
+              One quiz. Everyone. Today.
+            </h1>
+            <dl className="relative mt-6 grid grid-cols-3 gap-2">
+              {[
+                [String(current.total), 'questions'],
+                ['~3', 'minutes'],
+                ['1', 'try'],
+              ].map(([value, label]) => (
+                <div key={label} className="rounded-2xl bg-white/10 px-3 py-3">
+                  <dd className="font-display text-3xl font-extrabold leading-none tabular-nums">{value}</dd>
+                  <dt className="mt-1 text-xs text-white/70">{label}</dt>
+                </div>
+              ))}
+            </dl>
+            <p className="relative mt-4 text-sm leading-6 text-white/75">
+              English, Maths and History. You only get one attempt, so make it count.
+            </p>
+            <Button
+              className="relative mt-6 h-14 w-full rounded-2xl bg-accent2-400 text-base font-semibold text-brand-700 hover:bg-accent2-300"
+              disabled={busy}
+              onClick={() => run(startDaily)}
+            >
+              {busy && <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden />}
+              {busy ? 'Starting…' : 'Start the quiz'}
+            </Button>
+            <p role="status" className="relative mt-3 text-center text-sm text-white/60">
+              {busy ? 'Getting your first question ready…' : 'The timer starts as soon as you tap.'}
+            </p>
+          </div>
+          <div className="mt-6">
             <DailyLeaderboard />
           </div>
         </section>
