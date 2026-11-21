@@ -95,7 +95,7 @@ export default function ReportsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Monthly report" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load your report right now. Please try again.
         </div>
       </div>
@@ -103,14 +103,14 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Monthly report"
         description="Your lessons and confirmations this month."
         action={
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger>
+              <SelectTrigger className="h-11 rounded-xl bg-white dark:bg-card" aria-label="Month">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -125,7 +125,7 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatTile
           icon={Calendar}
           label="Completed"
@@ -150,9 +150,6 @@ export default function ReportsPage() {
           value={report.awaitingConfirmation.length}
           sub="completed classes"
         />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <StatTile
           icon={CreditCard}
           label="Total sessions"
@@ -173,7 +170,7 @@ export default function ReportsPage() {
           empty="No completed sessions need confirmation."
           rows={report.awaitingConfirmation.map((session) => ({
             id: session.id,
-            label: `${session.childName ?? 'Student'} - ${session.subject}`,
+            label: session.subject,
             sub: `${new Date(session.startsAt).toLocaleDateString()} with ${session.teacherName ?? 'Teacher'}`,
             tone: 'warning',
           }))}
@@ -196,11 +193,11 @@ export default function ReportsPage() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+        <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Recent feedback
         </h2>
         {report.feedback.length === 0 ? (
-          <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-8 text-center">
+          <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-8 text-center dark:border-border dark:bg-card">
             <p className="text-sm text-gray-500 dark:text-muted-foreground">
               Feedback will appear after completed sessions.
             </p>
@@ -210,19 +207,16 @@ export default function ReportsPage() {
             {report.feedback.map((session) => (
               <div
                 key={session.id}
-                className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4"
+                className="rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card"
               >
-                <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
-                  {session.childName ?? 'Student'} - {session.subject}
+                <p className="text-sm font-semibold text-gray-900 dark:text-foreground">{session.subject}</p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-muted-foreground">
+                  {session.teacherName ?? 'Your teacher'}, {new Date(session.startsAt).toLocaleDateString()}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-                  {session.teacherName ?? 'Teacher'} -{' '}
-                  {new Date(session.startsAt).toLocaleDateString()}
-                </p>
-                <p className="text-xs text-gray-700 dark:text-foreground/90 mt-3 line-clamp-2">
+                <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-700 dark:text-foreground/90">
                   {session.note?.covered}
                 </p>
-                <p className="text-[11px] text-gray-500 dark:text-muted-foreground mt-2">
+                <p className="mt-2 text-xs text-gray-500 dark:text-muted-foreground">
                   Next: {session.note?.focusNext}
                 </p>
               </div>
@@ -234,6 +228,12 @@ export default function ReportsPage() {
   );
 }
 
+const TONE_LABEL: Record<string, string> = {
+  warning: 'Pending',
+  danger: 'Cancelled',
+  muted: 'Declined',
+};
+
 function ReportList({
   title,
   empty,
@@ -244,12 +244,12 @@ function ReportList({
   rows: Array<{ id: string; label: string; sub: string; tone: string }>;
 }) {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+    <div className="rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:p-5">
+      <h2 className="mb-3 font-display text-base font-bold text-gray-950 dark:text-foreground">
         {title}
       </h2>
       {rows.length === 0 ? (
-        <p className="text-xs text-gray-500 dark:text-muted-foreground">
+        <p className="text-sm text-gray-500 dark:text-muted-foreground">
           {empty}
         </p>
       ) : (
@@ -257,7 +257,7 @@ function ReportList({
           {rows.map((row) => (
             <div
               key={row.id}
-              className="flex items-start justify-between gap-3 rounded-xl bg-gray-50 dark:bg-background p-3"
+              className="flex items-start justify-between gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-white/5"
             >
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
@@ -269,13 +269,13 @@ function ReportList({
               </div>
               <span
                 className={cn(
-                  'text-[11px] font-medium px-2 py-0.5 rounded-full capitalize',
-                  row.tone === 'danger' && 'bg-red-50 text-red-600',
-                  row.tone === 'warning' && 'bg-amber-50 text-amber-700',
-                  row.tone === 'muted' && 'bg-gray-100 text-gray-500',
+                  'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                  row.tone === 'danger' && 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300',
+                  row.tone === 'warning' && 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+                  row.tone === 'muted' && 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-muted-foreground',
                 )}
               >
-                {row.tone}
+                {TONE_LABEL[row.tone] ?? row.tone}
               </span>
             </div>
           ))}

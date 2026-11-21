@@ -78,31 +78,31 @@ function IntakePageContent() {
       : undefined;
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Get a tutor"
         description="Tell us what you need and we'll pair you with the right teacher."
       />
       {/* What happens after the request, and what it costs. */}
-      <ol className="mb-5 grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 text-sm sm:grid-cols-3 dark:border-border dark:bg-border">
+      <ol className="mb-5 divide-y divide-gray-100 rounded-3xl border border-gray-200/80 bg-white text-sm dark:divide-border dark:border-border dark:bg-card sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {[
           ['1', 'Tell us your gaps', 'Subjects, weak topics and when you are free.'],
           ['2', 'We match a tutor', 'A qualified tutor who sees your practice results.'],
           ['3', 'Plan your lessons', '₦10,000 per 60-minute session.'],
         ].map(([step, title, text]) => (
-          <li key={step} className="flex gap-3 bg-white p-4 dark:bg-card">
-            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-brand text-xs font-bold text-white dark:bg-accent2-500 dark:text-brand">
+          <li key={step} className="flex gap-3 p-4">
+            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent2-100 font-display text-xs font-bold text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
               {step}
             </span>
             <span>
               <span className="block font-semibold text-gray-900 dark:text-foreground">{title}</span>
-              <span className="mt-0.5 block text-xs text-gray-500 dark:text-muted-foreground">{text}</span>
+              <span className="mt-0.5 block text-xs leading-5 text-gray-500 dark:text-muted-foreground">{text}</span>
             </span>
           </li>
         ))}
       </ol>
       {prefill && (
-        <div className="mb-4 flex items-start gap-3 rounded-xl border border-accent2-200 bg-accent2-50 dark:border-accent2-500/30 dark:bg-accent2-500/10 px-4 py-3">
+        <div className="mb-4 flex items-start gap-3 rounded-2xl bg-accent2-50 px-4 py-3 dark:bg-accent2-500/10">
           <ListChecks className="w-4 h-4 mt-0.5 shrink-0 text-brand dark:text-accent2-400" />
           <p className="text-sm text-gray-700 dark:text-foreground/90">
             We filled this in from your practice quiz results. Check it over and
@@ -110,7 +110,7 @@ function IntakePageContent() {
           </p>
         </div>
       )}
-      <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-6">
+      <div className="rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:p-6">
         <IntakeWizard childId={child.id} initial={child.intake} prefill={prefill} />
       </div>
     </div>

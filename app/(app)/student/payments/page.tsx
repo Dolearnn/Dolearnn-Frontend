@@ -49,7 +49,7 @@ export default function FamilyPaymentsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Payments" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load payments right now. Please try again.
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function FamilyPaymentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Payments"
         description="Your tutoring sessions, receipts and billing history in one place."
@@ -66,20 +66,20 @@ export default function FamilyPaymentsPage() {
       {activePlan ? (
         <PlanCard plan={activePlan} />
       ) : (
-        <div className="flex flex-col gap-4 rounded-3xl border border-accent2-100 bg-accent2-50 p-6 sm:flex-row sm:items-center sm:justify-between dark:border-accent2-500/30 dark:bg-accent2-500/10">
+        <div className="flex flex-col gap-4 rounded-3xl bg-accent2-50 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6 dark:bg-accent2-500/10">
           <div>
-            <p className="text-sm font-semibold text-brand dark:text-accent2-400">No tutoring sessions paid for yet</p>
+            <p className="font-display text-base font-bold text-brand dark:text-accent2-400">No tutoring sessions paid for yet</p>
             <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
               Tutoring is ₦10,000 per session. Request a tutor and we will confirm your lessons and how to pay.
             </p>
           </div>
-          <Button asChild className="shrink-0 rounded-full">
+          <Button asChild className="h-12 shrink-0 rounded-2xl px-5">
             <Link href="/student/tutor">Request a tutor</Link>
           </Button>
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SummaryTile
           icon={CreditCard}
           label="Lifetime spent"
@@ -103,11 +103,11 @@ export default function FamilyPaymentsPage() {
       </div>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+        <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Receipts
         </h2>
         {completedReceipts.length === 0 ? (
-          <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
+          <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-8 text-center dark:border-border dark:bg-card">
             <Receipt className="w-6 h-6 text-gray-400 dark:text-muted-foreground mx-auto mb-2" />
             <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
               No receipts yet
@@ -122,12 +122,12 @@ export default function FamilyPaymentsPage() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+        <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Purchases
         </h2>
-        <div className="space-y-2">
+        <div className="divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:divide-border dark:border-border dark:bg-card">
           {payments.length === 0 ? (
-            <p className="text-xs text-gray-500 dark:text-muted-foreground">
+            <p className="p-4 text-sm text-gray-500 dark:text-muted-foreground">
               No purchases yet.
             </p>
           ) : (
@@ -146,27 +146,29 @@ function PlanCard({ plan }: { plan: Payment }) {
       ? (plan.sessionsUsed / plan.sessionsIncluded) * 100
       : 0;
   return (
-    <section className="bg-brand text-white rounded-3xl p-6 lg:p-8 relative overflow-hidden">
-      <div className="absolute right-0 top-0 h-full w-28 bg-accent2-500/20" />
-      <div className="relative z-10 space-y-4">
-        <p className="text-xs uppercase tracking-wide text-accent2-400 font-semibold">
-          Current plan
+    <section className="relative overflow-hidden rounded-[28px] bg-brand p-5 text-white shadow-[0_18px_40px_-24px_rgba(4,66,114,0.9)] dark:bg-[hsl(208,70%,16%)] sm:p-7">
+      <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent2-400/25 blur-3xl" />
+      <div className="relative">
+        <p className="text-sm text-white/70">Current plan</p>
+        <h2 className="mt-1 font-display text-2xl font-extrabold">{plan.plan}</h2>
+        <p className="mt-1 text-sm text-white/70">
+          {naira(plan.amount)}, paid by {plan.gateway}
         </p>
-        <div className="flex items-baseline gap-3 flex-wrap">
-          <h2 className="text-2xl lg:text-3xl font-bold">{plan.plan}</h2>
-          <span className="text-sm text-white/70">
-            {plan.gateway} - {naira(plan.amount)}
+        <p className="mt-5 flex items-baseline gap-2">
+          <span className="font-display text-[56px] font-extrabold leading-none tabular-nums">{remaining}</span>
+          <span className="text-base text-white/80">
+            {remaining === 1 ? 'session left' : 'sessions left'}, {plan.sessionsUsed} of {plan.sessionsIncluded} used
           </span>
-        </div>
-        <p className="text-white/80 text-sm">
-          {plan.sessionsUsed} of {plan.sessionsIncluded} sessions used -{' '}
-          {remaining} remaining
         </p>
-        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-accent2-500 transition-all"
-            style={{ width: `${percent}%` }}
-          />
+        <div
+          className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/15"
+          role="progressbar"
+          aria-label="Sessions used"
+          aria-valuemin={0}
+          aria-valuemax={plan.sessionsIncluded}
+          aria-valuenow={plan.sessionsUsed}
+        >
+          <div className="h-full rounded-full bg-accent2-400 transition-[width]" style={{ width: `${percent}%` }} />
         </div>
       </div>
     </section>
@@ -183,82 +185,59 @@ function SummaryTile({
   value: string;
 }) {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4">
-      <div className="w-9 h-9 rounded-lg bg-accent2-100 text-brand flex items-center justify-center mb-3">
-        <Icon className="w-4 h-4" />
+    <div className="rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card">
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-accent2-100 text-brand dark:bg-accent2-500/15 dark:text-accent2-400">
+        <Icon className="h-4 w-4" />
       </div>
-      <p className="text-xs text-gray-500 dark:text-muted-foreground">{label}</p>
-      <p className="text-lg font-semibold text-gray-900 dark:text-foreground mt-1">
-        {value}
-      </p>
+      <p className="truncate font-display text-xl font-extrabold tabular-nums text-gray-950 dark:text-foreground">{value}</p>
+      <p className="mt-0.5 text-xs text-gray-500 dark:text-muted-foreground">{label}</p>
     </div>
   );
 }
 
+function formatDay(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// One row per paid session: a list that fits a phone, instead of a wide table.
 function ReceiptTable({ sessions }: { sessions: Session[] }) {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 dark:bg-background text-xs text-gray-500 dark:text-muted-foreground uppercase tracking-wide">
-          <tr>
-            <th className="text-left px-4 py-3 font-medium">Date</th>
-            <th className="text-left px-4 py-3 font-medium">Subject</th>
-            <th className="text-left px-4 py-3 font-medium">Teacher</th>
-            <th className="text-right px-4 py-3 font-medium">Amount</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {sessions.map((s) => (
-            <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-              <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                {new Date(s.startsAt).toLocaleDateString(undefined, {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </td>
-              <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                {s.subject}
-              </td>
-              <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                {s.teacherName ?? 'Teacher'}
-              </td>
-              <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                {naira(s.amount)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ul className="divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:divide-border dark:border-border dark:bg-card">
+      {sessions.map((s) => (
+        <li key={s.id} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">{s.subject}</p>
+            <p className="truncate text-xs text-gray-500 dark:text-muted-foreground">
+              {formatDay(s.startsAt)} with {s.teacherName ?? 'your teacher'}
+            </p>
+          </div>
+          <p className="shrink-0 font-display text-base font-bold tabular-nums text-gray-950 dark:text-foreground">
+            {naira(s.amount)}
+          </p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 function PurchaseRow({ payment }: { payment: Payment }) {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 flex items-center justify-between">
-      <div>
-        <p className="font-semibold text-gray-900 dark:text-foreground text-sm">
-          {payment.plan}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-muted-foreground">
-          {new Date(payment.createdAt).toLocaleDateString(undefined, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          })}{' '}
-          - {payment.gateway}
+    <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">{payment.plan}</p>
+        <p className="truncate text-xs text-gray-500 dark:text-muted-foreground">
+          {formatDay(payment.createdAt)}, {payment.gateway}
         </p>
       </div>
-      <div className="text-right">
-        <p className="font-semibold text-gray-900 dark:text-foreground">
+      <div className="shrink-0 text-right">
+        <p className="font-display text-base font-bold tabular-nums text-gray-950 dark:text-foreground">
           {naira(payment.amount)}
         </p>
         <p
           className={cn(
-            'text-[11px] font-medium',
+            'text-xs font-medium tabular-nums',
             payment.sessionsUsed < payment.sessionsIncluded
-              ? 'text-accent2-600'
+              ? 'text-accent2-600 dark:text-accent2-400'
               : 'text-gray-400',
           )}
         >

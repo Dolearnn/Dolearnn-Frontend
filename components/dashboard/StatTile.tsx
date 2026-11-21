@@ -49,7 +49,9 @@ export default function StatTile({
       </div>
       <p
         className={cn(
-          'font-display text-[28px] font-extrabold leading-none tracking-tight tabular-nums',
+          'font-display font-extrabold leading-none tracking-tight tabular-nums',
+          // Long values such as ₦10,000 step down so they fit a narrow phone.
+          String(value).length > 6 ? 'text-2xl' : 'text-[28px]',
           accent ? '' : 'text-gray-900 dark:text-foreground',
         )}
       >

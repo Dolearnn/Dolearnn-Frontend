@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -217,10 +218,10 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Sessions"
-        description="All your lessons - past, present and upcoming."
+        description="All your lessons: upcoming, completed and cancelled."
       />
 
       <CalendarRequestPanel
@@ -234,15 +235,15 @@ export default function SessionsPage() {
       />
 
       <Tabs defaultValue="Upcoming" className="space-y-4">
-        <TabsList className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-full p-1 w-fit">
+        <TabsList className="grid h-auto w-full grid-cols-3 rounded-full border border-gray-200/80 bg-white p-1 dark:border-border dark:bg-card sm:inline-grid sm:w-auto">
           {TAB_ORDER.map((status) => (
             <TabsTrigger
               key={status}
               value={status}
-              className="rounded-full px-4 text-sm data-[state=active]:bg-brand data-[state=active]:text-white"
+              className="min-h-10 rounded-full px-3 text-sm data-[state=active]:bg-brand data-[state=active]:text-white dark:data-[state=active]:bg-accent2-500 dark:data-[state=active]:text-brand sm:px-4"
             >
               {status}
-              <span className="ml-2 text-xs opacity-70">
+              <span className="ml-1.5 text-xs tabular-nums opacity-70">
                 {grouped[status].length}
               </span>
             </TabsTrigger>
@@ -340,7 +341,8 @@ function CalendarRequestPanel({
   );
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
-  const [sessionsRequested, setSessionsRequested] = useState('1');
+  // One lesson per request for now; the field that changed it was always locked.
+  const [sessionsRequested] = useState('1');
   const [day, timeBlock] = slot
     ? (slot.split(':') as [DayOfWeek, TimeBlock])
     : [undefined, undefined];
@@ -377,98 +379,110 @@ function CalendarRequestPanel({
     !exactTimeInvalid;
 
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <p className="font-semibold text-gray-900 dark:text-foreground">
+    <section
+      aria-labelledby="plan-lessons-heading"
+      className="space-y-4 rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:p-6"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="plan-lessons-heading" className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
             Plan your lessons
-          </p>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+          </h2>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-muted-foreground">
             Pick a regular weekly 60-minute slot for the sessions you have paid for.
           </p>
         </div>
-        <span className="text-xs font-medium rounded-full bg-brand/10 text-brand px-3 py-1">
-          {availableSessions} {availableSessions === 1 ? 'session' : 'sessions'} available
-        </span>
+        <p className="shrink-0 rounded-2xl bg-accent2-100 px-3 py-2 text-center text-brand dark:bg-accent2-500/15 dark:text-accent2-400">
+          <span className="block font-display text-xl font-extrabold leading-none tabular-nums">{availableSessions}</span>
+          <span className="mt-0.5 block text-[11px] font-medium">{availableSessions === 1 ? 'session' : 'sessions'} left</span>
+        </p>
       </div>
 
       {assignments.length === 0 ? (
         child.intake ? (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
+          <p className="rounded-2xl bg-amber-50 p-3.5 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
             We are matching you with a tutor for your subjects. Once you are matched, you can plan
             your lessons here.
           </p>
         ) : (
-          <div className="flex flex-col gap-3 rounded-xl border border-accent2-200 bg-accent2-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-accent2-500/30 dark:bg-accent2-500/10">
+          <div className="flex flex-col gap-3 rounded-2xl bg-accent2-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-accent2-500/10">
             <p className="text-sm text-gray-700 dark:text-foreground/90">
               Tell us what you need help with and we will match you with a tutor.
             </p>
             <Link
               href="/student/tutor"
-              className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-2xl bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-600"
             >
               Request a tutor
             </Link>
           </div>
         )
       ) : availability.length === 0 ? (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
+        <p className="rounded-2xl bg-amber-50 p-3.5 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
           Add your available days and times in your tutor request before picking lesson days.
         </p>
       ) : (
-        <div className="grid lg:grid-cols-5 gap-3">
-          <Select value={subject} onValueChange={setSubject}>
-            <SelectTrigger>
-              <SelectValue placeholder="Subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {assignments.map((assignment) => (
-                <SelectItem key={assignment.id} value={assignment.subject}>
-                  {assignment.subject}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={slot} onValueChange={setSlot}>
-            <SelectTrigger>
-              <SelectValue placeholder="Weekly slot" />
-            </SelectTrigger>
-            <SelectContent>
-              {availability.map(([itemDay, itemTime]) => (
-                <SelectItem key={`${itemDay}:${itemTime}`} value={`${itemDay}:${itemTime}`}>
-                  {itemDay} - {itemTime}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="date"
-            min={new Date().toISOString().slice(0, 10)}
-            value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
-          />
-          <Input
-            type="time"
-            value={startTime}
-            onChange={(event) => setStartTime(event.target.value)}
-          />
-          <Input
-            type="number"
-            min={1}
-            max={Math.max(1, availableSessions)}
-            value={sessionsRequested}
-            onChange={(event) => setSessionsRequested(event.target.value)}
-            placeholder="Hours"
-            disabled={true}
-          />
-          <div className="lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-            <p className="text-xs text-gray-500 dark:text-muted-foreground">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="plan-subject">Subject</Label>
+            <Select value={subject} onValueChange={setSubject}>
+              <SelectTrigger id="plan-subject" className="h-11 rounded-xl">
+                <SelectValue placeholder="Subject" />
+              </SelectTrigger>
+              <SelectContent>
+                {assignments.map((assignment) => (
+                  <SelectItem key={assignment.id} value={assignment.subject}>
+                    {assignment.subject}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="plan-slot">Weekly slot</Label>
+            <Select value={slot} onValueChange={setSlot}>
+              <SelectTrigger id="plan-slot" className="h-11 rounded-xl">
+                <SelectValue placeholder="Weekly slot" />
+              </SelectTrigger>
+              <SelectContent>
+                {availability.map(([itemDay, itemTime]) => (
+                  <SelectItem key={`${itemDay}:${itemTime}`} value={`${itemDay}:${itemTime}`}>
+                    {itemDay}, {itemTime.toLowerCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="plan-start-date">First lesson</Label>
+            <Input
+              id="plan-start-date"
+              type="date"
+              className="h-11 rounded-xl"
+              min={new Date().toISOString().slice(0, 10)}
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="plan-start-time">Start time</Label>
+            <Input
+              id="plan-start-time"
+              type="time"
+              className="h-11 rounded-xl"
+              value={startTime}
+              aria-invalid={exactTimeInvalid}
+              onChange={(event) => setStartTime(event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between lg:col-span-4">
+            <p className={cn('text-xs', exactTimeInvalid ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-muted-foreground')}>
               {exactTimeInvalid && timeBlock
                 ? `Start time must be inside the ${timeBlock.toLowerCase()} block.`
-                : 'Admin will review this request and create the calendar sessions.'}
+                : 'An admin reviews this request and adds the sessions to your calendar.'}
             </p>
             <Button
-              className="rounded-full bg-brand hover:bg-brand-600"
+              className="h-12 shrink-0 rounded-2xl px-6 text-[15px]"
               disabled={!canSubmit || submitting}
               onClick={() => {
                 if (!day || !timeBlock) return;
@@ -483,7 +497,7 @@ function CalendarRequestPanel({
                 });
               }}
             >
-              {submitting ? 'Sending...' : 'Send calendar request'}
+              {submitting ? 'Sending…' : 'Send calendar request'}
             </Button>
           </div>
         </div>
@@ -491,7 +505,7 @@ function CalendarRequestPanel({
 
       {requests.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-gray-700 dark:text-foreground/90">
+          <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
             Your lesson requests
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
@@ -500,14 +514,14 @@ function CalendarRequestPanel({
           {requests.slice(0, 3).map((request) => (
             <div
               key={request.id}
-              className="flex items-center justify-between gap-3 text-xs rounded-xl bg-gray-50 dark:bg-background px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-2xl bg-gray-50 px-3.5 py-2.5 text-xs dark:bg-white/5"
             >
               <span>
                 {request.sessionsRequested}x {request.subject} on {request.day}s at{' '}
                 {request.startTime}
               </span>
               <span className="text-right">
-                <span className="block font-medium text-brand">
+                <span className="block font-semibold text-brand dark:text-accent2-400">
                   {request.status === 'Pending' ? 'Waiting for admin' : request.status === 'Scheduled' ? 'Approved' : 'Declined'}
                 </span>
                 {request.declineReason && (
@@ -518,13 +532,13 @@ function CalendarRequestPanel({
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
 function EmptyState({ title, hint }: { title: string; hint: string }) {
   return (
-    <div className="bg-white dark:bg-card border border-dashed border-gray-300 dark:border-border rounded-2xl p-10 text-center">
+    <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-8 text-center dark:border-border dark:bg-card">
       <CalendarX2 className="w-6 h-6 text-gray-400 dark:text-muted-foreground mx-auto mb-2" />
       <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
         {title}

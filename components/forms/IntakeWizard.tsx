@@ -275,10 +275,11 @@ export default function IntakeWizard({
           {step === 1 && <StepB form={form} />}
           {step === 2 && <StepAvailability form={form} />}
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="grid grid-cols-[auto_1fr] gap-2 pt-2 sm:flex sm:justify-between">
             <Button
               type="button"
               variant="outline"
+              className="h-12 rounded-2xl px-5"
               onClick={back}
               disabled={step === 0}
             >
@@ -289,7 +290,7 @@ export default function IntakeWizard({
                 key="next"
                 type="button"
                 onClick={next}
-                className="bg-brand hover:bg-brand-600 rounded-full"
+                className="h-12 rounded-2xl px-6 text-[15px]"
               >
                 Next
               </Button>
@@ -302,7 +303,7 @@ export default function IntakeWizard({
                   sendPressStarted.current = true;
                 }}
                 onClick={handleSendClick}
-                className="bg-brand hover:bg-brand-600 rounded-full"
+                className="h-12 rounded-2xl px-6 text-[15px]"
               >
                 {mutation.isPending ? 'Sending...' : 'Send tutor request'}
               </Button>
@@ -321,10 +322,11 @@ function Stepper({ current }: { current: number }) {
         <li key={s.key} className="flex items-center gap-2">
           <span
             className={cn(
-              'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold',
+              'flex h-8 w-8 items-center justify-center rounded-full font-display text-sm font-bold',
               i <= current
-                ? 'bg-brand text-white'
-                : 'bg-gray-200 text-gray-500',
+                ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
+                : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-muted-foreground',
+              i === current && 'ring-4 ring-brand/15 dark:ring-accent2-500/20',
             )}
           >
             {i + 1}
@@ -332,13 +334,13 @@ function Stepper({ current }: { current: number }) {
           <span
             className={cn(
               'text-sm hidden sm:inline',
-              i === current ? 'text-brand font-medium' : 'text-gray-500',
+              i === current ? 'font-semibold text-brand dark:text-accent2-400' : 'text-gray-500 dark:text-muted-foreground',
             )}
           >
             {s.label}
           </span>
           {i < steps.length - 1 && (
-            <span className="w-6 sm:w-12 h-px bg-gray-200" />
+            <span className="h-px w-6 bg-gray-200 dark:bg-border sm:w-12" />
           )}
         </li>
       ))}
@@ -365,10 +367,10 @@ function StepA({ form }: { form: FormApi }) {
                     <label
                       key={subject}
                       className={cn(
-                        'flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer text-sm',
+                        'flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors',
                         checked
-                          ? 'border-brand bg-accent2-50 text-brand'
-                          : 'border-gray-200',
+                          ? 'border-brand bg-brand-50 text-brand dark:border-accent2-400 dark:bg-accent2-500/15 dark:text-accent2-300'
+                          : 'border-gray-200 hover:border-brand/40 dark:border-border',
                       )}
                     >
                       <Checkbox
@@ -448,7 +450,7 @@ function StepA({ form }: { form: FormApi }) {
                 {(['Struggling', 'Average', 'Above average'] as const).map((v) => (
                   <label
                     key={v}
-                    className="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer has-[input:checked]:border-brand has-[input:checked]:bg-accent2-50"
+                    className="flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors border-gray-200 hover:border-brand/40 has-[input:checked]:border-brand has-[input:checked]:bg-brand-50 dark:border-border dark:has-[input:checked]:border-accent2-400 dark:has-[input:checked]:bg-accent2-500/15"
                   >
                     <RadioGroupItem value={v} />
                     <span className="text-sm">{v}</span>
@@ -498,7 +500,7 @@ function StepB({ form }: { form: FormApi }) {
                 {(['No preference', 'Male', 'Female'] as const).map((v) => (
                   <label
                     key={v}
-                    className="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer has-[input:checked]:border-brand has-[input:checked]:bg-accent2-50"
+                    className="flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition-colors border-gray-200 hover:border-brand/40 has-[input:checked]:border-brand has-[input:checked]:bg-brand-50 dark:border-border dark:has-[input:checked]:border-accent2-400 dark:has-[input:checked]:bg-accent2-500/15"
                   >
                     <RadioGroupItem value={v} />
                     <span className="text-sm">{v}</span>
@@ -548,7 +550,7 @@ function StepAvailability({ form }: { form: FormApi }) {
                     <div
                       key={d}
                       className={cn(
-                        'grid grid-cols-[auto_1fr] sm:grid-cols-[120px_1fr] gap-3 items-center border rounded-lg px-3 py-3',
+                        'grid grid-cols-[auto_1fr] sm:grid-cols-[120px_1fr] gap-3 items-center rounded-2xl border px-3 py-3 dark:border-border',
                         checked
                           ? 'border-brand bg-accent2-50'
                           : 'border-gray-200',
@@ -696,7 +698,7 @@ function StepC({ form }: { form: FormApi }) {
                     <div
                       key={d}
                       className={cn(
-                        'grid grid-cols-[auto_1fr] sm:grid-cols-[120px_1fr] gap-3 items-center border rounded-lg px-3 py-3',
+                        'grid grid-cols-[auto_1fr] sm:grid-cols-[120px_1fr] gap-3 items-center rounded-2xl border px-3 py-3 dark:border-border',
                         checked
                           ? 'border-brand bg-accent2-50'
                           : 'border-gray-200',

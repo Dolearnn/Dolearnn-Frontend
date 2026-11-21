@@ -14,7 +14,7 @@ export function PageHeaderSkeleton() {
 
 export function StatTileSkeleton() {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 space-y-3">
+    <div className="bg-white dark:bg-card rounded-3xl border border-gray-200/80 dark:border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
         <Skeleton className="h-9 w-9 rounded-lg" />
         <Skeleton className="h-3 w-10" />
@@ -29,7 +29,7 @@ export function StatTileSkeleton() {
 
 export function SessionRowSkeleton() {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div className="bg-white dark:bg-card rounded-3xl border border-gray-200/80 dark:border-border p-4 flex flex-col sm:flex-row sm:items-center gap-4">
       <div className="flex-1 space-y-2">
         <div className="flex gap-2">
           <Skeleton className="h-4 w-16 rounded-full" />

@@ -17,8 +17,8 @@ export default function TutorTabs() {
   if (!TUTOR_TABS.some((tab) => pathname.startsWith(tab.href))) return null;
 
   return (
-    <nav aria-label="Tutoring" className="-mx-4 mb-6 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-      <ul className="flex w-max gap-1 rounded-full border border-gray-200 bg-white p-1 text-sm dark:border-border dark:bg-card">
+    <nav aria-label="Tutoring" className="-mx-4 mb-6 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:px-0 [&::-webkit-scrollbar]:hidden">
+      <ul className="flex w-max gap-1 rounded-full border border-gray-200/80 bg-white p-1 text-sm dark:border-border dark:bg-card">
         {TUTOR_TABS.map((tab) => {
           const active = pathname.startsWith(tab.href);
           return (
@@ -27,7 +27,7 @@ export default function TutorTabs() {
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'block whitespace-nowrap rounded-full px-4 py-1.5 font-medium transition-colors',
+                  'flex min-h-10 items-center whitespace-nowrap rounded-full px-4 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   active
                     ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
                     : 'text-gray-600 hover:text-brand dark:text-muted-foreground',

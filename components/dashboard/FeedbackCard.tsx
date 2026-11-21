@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { StarRating } from '@/components/ui/star-rating';
 import { cn } from '@/lib/utils';
 import type { Session } from '@/lib/types';
@@ -10,9 +9,9 @@ export default function FeedbackCard({ session }: { session: Session }) {
 
   if (!note) {
     return (
-      <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4">
-        <p className="text-xs text-gray-500 dark:text-muted-foreground">
-          Feedback pending. Teacher submits notes after the session.
+      <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-4 dark:border-border dark:bg-card">
+        <p className="text-sm text-gray-500 dark:text-muted-foreground">
+          Your teacher&apos;s notes will appear here after the lesson.
         </p>
       </div>
     );
@@ -26,20 +25,14 @@ export default function FeedbackCard({ session }: { session: Session }) {
         : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5"
-    >
+    <div className="rounded-3xl bg-accent2-50/60 p-4 dark:bg-accent2-500/5 sm:p-5">
       <div className="flex items-start justify-between mb-3 gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
             {session.teacherName ?? 'Teacher'}
           </p>
           <p className="text-xs text-gray-500 dark:text-muted-foreground">
-            {session.subject} -{' '}
+            {session.subject},{' '}
             {new Date(session.startsAt).toLocaleDateString(undefined, {
               day: 'numeric',
               month: 'short',
@@ -58,22 +51,20 @@ export default function FeedbackCard({ session }: { session: Session }) {
           {note.performance}
         </span>
       </div>
-      <div className="space-y-2 text-sm">
+      <div className="space-y-3 text-sm">
         <Row label="Covered" value={note.covered} />
         <Row label="Focus next" value={note.focusNext} />
         {note.concerns && <Row label="Concerns" value={note.concerns} />}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
-        {label}
-      </p>
-      <p className="text-gray-700 dark:text-foreground/90">{value}</p>
+      <p className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">{label}</p>
+      <p className="mt-0.5 leading-6 text-gray-800 dark:text-foreground/90">{value}</p>
     </div>
   );
 }
