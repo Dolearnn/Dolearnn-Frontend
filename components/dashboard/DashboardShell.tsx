@@ -67,6 +67,8 @@ type NavItem = {
   section?: string;
   // Other pages that belong to this item, so it stays highlighted on them.
   also?: string[];
+  // A shorter name for the phone tab bar.
+  short?: string;
 };
 
 // One account type for learners: practice, Arena, tutoring and payments together.
@@ -83,7 +85,7 @@ const teacherNav: NavItem[] = [
   { label: 'Home', href: '/teacher', icon: Home },
   { label: 'Schedule', href: '/teacher/schedule', icon: Calendar },
   { label: 'Students', href: '/teacher/students', icon: Users },
-  { label: 'Session Notes', href: '/teacher/notes', icon: ClipboardList },
+  { label: 'Session Notes', href: '/teacher/notes', icon: ClipboardList, short: 'Notes' },
   { label: 'Notifications', href: '/teacher/notifications', icon: Bell },
   { label: 'Earnings', href: '/teacher/earnings', icon: Wallet },
   { label: 'Reports', href: '/teacher/reports', icon: ChartNoAxesColumnIncreasing },
@@ -247,11 +249,19 @@ export default function DashboardShell({
     return <FullScreenLoader label="Loading your dashboard" />;
   }
 
-  // Learners get a bottom tab bar on phones; notifications move to the header bell.
+  // Learners and teachers get a bottom tab bar on phones; notifications move to
+  // the header bell. Teachers have more pages than fit, so the rest sit behind
+  // "More", which opens the full menu. Admins keep the menu button.
   const isLearner = role === 'student';
-  const tabItems = nav
-    .filter((item) => item.label !== 'Notifications')
-    .map((item) => ({ ...item, active: isActiveItem(item, pathname, role) }));
+  const hasTabBar = role !== 'admin';
+  const tabSource = nav.filter((item) => item.label !== 'Notifications');
+  const tabItems = (role === 'teacher' ? tabSource.slice(0, 4) : tabSource).map((item) => ({
+    label: item.short ?? item.label,
+    href: item.href,
+    icon: item.icon,
+    active: isActiveItem(item, pathname, role),
+  }));
+  const moreActive = role === 'teacher' && !tabItems.some((item) => item.active);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background flex">
@@ -269,7 +279,7 @@ export default function DashboardShell({
       {/* Sidebar — mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div className="lg:hidden fixed inset-0 z-50 flex">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -308,8 +318,8 @@ export default function DashboardShell({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 border-b border-gray-200/80 dark:border-border px-4 lg:px-8 h-14 flex items-center justify-between backdrop-blur-md bg-white/85 dark:bg-card/85">
           <div className="flex items-center gap-3">
-            {isLearner ? (
-              <Link href="/student" aria-label="DoLearnn, today" className="lg:hidden">
+            {hasTabBar ? (
+              <Link href={`/${role}`} aria-label="DoLearnn home" className="lg:hidden">
                 <Logo size="sm" />
               </Link>
             ) : (
@@ -321,14 +331,14 @@ export default function DashboardShell({
                 <Menu className="w-6 h-6" />
               </button>
             )}
-            <span className={cn('text-sm text-gray-500 dark:text-muted-foreground', isLearner && 'hidden lg:inline')}>
+            <span className={cn('text-sm text-gray-500 dark:text-muted-foreground', hasTabBar && 'hidden lg:inline')}>
               {roleLabel[role]} Dashboard
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            {isLearner && (
+            {hasTabBar && (
               <Link
-                href="/student/notifications"
+                href={`/${role}/notifications`}
                 aria-label={
                   unreadNotificationCount > 0
                     ? `Notifications, ${unreadNotificationCount} unread`
@@ -351,13 +361,19 @@ export default function DashboardShell({
             // clip, not hidden: hidden would turn main into a scroll box and break sticky bars.
             'flex-1 p-4 lg:p-8 overflow-x-clip',
             // Room for the bottom tab bar and the phone's home indicator.
-            isLearner && 'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8',
+            hasTabBar && 'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8',
           )}
         >
           <TutorTabs />
           {children}
         </main>
-        {isLearner && <BottomNav items={tabItems} />}
+        {hasTabBar && (
+          <BottomNav
+            items={tabItems}
+            onMore={role === 'teacher' ? () => setMobileOpen(true) : undefined}
+            moreActive={moreActive}
+          />
+        )}
       </div>
     </div>
   );

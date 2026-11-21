@@ -91,7 +91,7 @@ export default function TeacherEarningsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Earnings" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load earnings right now. Please try again.
         </div>
       </div>
@@ -99,7 +99,7 @@ export default function TeacherEarningsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Earnings"
         description="Your expected pay this month, based on verified sessions."
@@ -128,84 +128,60 @@ export default function TeacherEarningsPage() {
         <StatTile
           icon={TrendingUp}
           label="Your pay"
-          value={`${naira(teacher.hourlyRate)} per session`}
+          value={naira(teacher.hourlyRate)}
+          sub="per session"
         />
       </div>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+        <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Session earnings
         </h2>
         {rows.length === 0 ? (
-          <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
+          <div className="rounded-3xl border border-dashed border-gray-300 bg-white dark:border-border dark:bg-card p-10 text-center">
             <p className="text-sm text-gray-500 dark:text-muted-foreground">
               No session earnings yet. Completed classes will show up here.
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-background text-xs text-gray-500 dark:text-muted-foreground uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium">Date</th>
-                  <th className="text-left px-4 py-3 font-medium">Student</th>
-                  <th className="text-left px-4 py-3 font-medium">Subject</th>
-                  <th className="text-right px-4 py-3 font-medium">Duration</th>
-                  <th className="text-right px-4 py-3 font-medium">Amount</th>
-                  <th className="text-right px-4 py-3 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {rows.map((e) => (
-                  <tr
-                    key={e.sessionId}
-                    className="hover:bg-gray-50 dark:hover:bg-white/5"
-                  >
-                    <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                      {new Date(e.date).toLocaleDateString(undefined, {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                      {e.studentName}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-foreground/90">
-                      {e.subject}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-500 dark:text-muted-foreground">
-                      {e.durationMins} min
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                      {naira(e.amount)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={cn(
-                          'text-[11px] font-medium px-2 py-0.5 rounded-full',
-                          e.status === 'Verified'
-                            ? 'bg-accent2-50 text-accent2-700'
-                            : 'bg-amber-50 text-amber-700',
-                        )}
-                      >
-                        {e.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card overflow-hidden">
+            <ul className="divide-y divide-gray-100 dark:divide-border">
+              {rows.map((e) => (
+                <li key={e.sessionId} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">
+                      {e.studentName}, {e.subject}
+                    </p>
+                    <p className="truncate text-xs text-gray-500 dark:text-muted-foreground">
+                      {new Date(e.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}, {e.durationMins} min
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-display text-base font-bold tabular-nums text-gray-950 dark:text-foreground">{naira(e.amount)}</p>
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-0.5 text-xs font-medium',
+                        e.status === 'Verified'
+                          ? 'bg-accent2-50 text-accent2-700 dark:bg-accent2-500/15 dark:text-accent2-300'
+                          : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+                      )}
+                    >
+                      {e.status}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+        <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Payout history
         </h2>
         {payouts.length === 0 ? (
-          <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
+          <div className="rounded-3xl border border-dashed border-gray-300 bg-white dark:border-border dark:bg-card p-10 text-center">
             <p className="text-sm text-gray-500 dark:text-muted-foreground">
               No payouts have been recorded yet.
             </p>
@@ -215,7 +191,7 @@ export default function TeacherEarningsPage() {
             {payouts.map((payout) => (
               <div
                 key={payout.id}
-                className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 flex items-center justify-between"
+                className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4 flex items-center justify-between"
               >
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-foreground text-sm">
@@ -235,7 +211,7 @@ export default function TeacherEarningsPage() {
                   </p>
                   <span
                     className={cn(
-                      'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                      'rounded-full px-2 py-0.5 text-xs font-medium',
                       payout.status === 'Paid'
                         ? 'bg-accent2-50 text-accent2-700'
                         : 'bg-amber-50 text-amber-700',

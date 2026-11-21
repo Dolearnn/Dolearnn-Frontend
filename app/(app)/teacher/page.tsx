@@ -150,78 +150,63 @@ export default function TeacherHome() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
-        title={`Hi, ${me.name.split(' ')[0]}`}
+        title={`Hi, ${firstName(me.name)}`}
         description="Today's sessions, your students, and your earnings."
       />
 
       {nextSession ? (
-        <section className="bg-brand text-white rounded-3xl p-6 lg:p-8 relative overflow-hidden">
-          <div className="absolute right-0 top-0 h-full w-28 bg-accent2-500/20" />
-          <div className="relative z-10">
-            <p className="text-xs uppercase tracking-wide text-accent2-400 font-semibold mb-2">
-              {isSameDay(new Date(nextSession.startsAt), today)
-                ? 'Next up today'
-                : 'Next session'}
+        <section className="relative overflow-hidden rounded-[28px] bg-brand p-5 text-white shadow-[0_18px_40px_-24px_rgba(4,66,114,0.9)] dark:bg-[hsl(208,70%,16%)] sm:p-7">
+          <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent2-400/25 blur-3xl" />
+          <div className="relative">
+            <p className="text-sm font-medium text-accent2-300">
+              {isSameDay(new Date(nextSession.startsAt), today) ? 'Next up today' : 'Next session'}
             </p>
-            <h2 className="text-2xl lg:text-3xl font-bold mb-1">
-              {nextSession.subject} -{' '}
-              {new Date(nextSession.startsAt).toLocaleString(undefined, {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </h2>
-            <p className="text-white/80 text-sm mb-6">
-              {nextSession.durationMins} min -{' '}
-              {nextSession.childName ?? 'Student'}
+            <p className="mt-2 font-display text-[52px] font-extrabold leading-none tracking-tight tabular-nums">
+              {new Date(nextSession.startsAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
             </p>
-            <div className="flex flex-wrap gap-3">
+            <p className="mt-2 text-white/80">
+              {new Date(nextSession.startsAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+            </p>
+            <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white/10 p-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent2-400 font-display font-bold text-brand-700">
+                {(nextSession.childName ?? 'S').trim().charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{nextSession.childName ?? 'Student'}</p>
+                <p className="truncate text-sm text-white/70">
+                  {nextSession.subject}, {nextSession.durationMins} min
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 grid gap-2 sm:flex">
               {isSafeMeetingLink(nextSession.meetLink) ? (
-                <Link
-                  href={nextSession.meetLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button className="bg-accent2-500 text-brand hover:bg-accent2-400 rounded-full">
-                    <Video className="w-4 h-4 mr-2" />
+                <Button asChild className="h-12 rounded-2xl bg-accent2-400 px-6 text-[15px] font-semibold text-brand-700 hover:bg-accent2-300">
+                  <Link href={nextSession.meetLink} target="_blank" rel="noopener noreferrer">
+                    <Video className="mr-2 h-4 w-4" />
                     Start session
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               ) : (
-                <Button
-                  className="bg-accent2-500 text-brand rounded-full"
-                  disabled
-                >
-                  Awaiting admin link
+                <Button className="h-12 rounded-2xl bg-white/15 px-6 text-white" disabled>
+                  Waiting for the meeting link
                 </Button>
               )}
-              <Link href="/teacher/schedule">
-                <Button
-                  variant="outline"
-                  className="rounded-full border-white/30 text-white bg-transparent hover:bg-white/10"
-                >
-                  View schedule
-                </Button>
-              </Link>
+              <Button asChild variant="outline" className="h-12 rounded-2xl border-white/30 bg-transparent px-6 text-white hover:bg-white/10 hover:text-white">
+                <Link href="/teacher/schedule">View schedule</Link>
+              </Button>
             </div>
           </div>
         </section>
       ) : (
-        <section className="bg-accent2-50 border border-accent2-100 rounded-3xl p-6 lg:p-8 text-center">
-          <p className="text-sm text-brand font-semibold">
-            No upcoming sessions
-          </p>
-          <p className="text-xs text-gray-600 dark:text-muted-foreground mt-1">
-            Your next booking will show up here.
-          </p>
+        <section className="rounded-3xl bg-accent2-50 p-6 text-center dark:bg-accent2-500/10 lg:p-8">
+          <p className="font-display text-base font-bold text-brand dark:text-accent2-400">No upcoming sessions</p>
+          <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">Your next booking will show up here.</p>
         </section>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
           icon={CalendarDays}
           label="Sessions taught"
@@ -246,19 +231,19 @@ export default function TeacherHome() {
       <div className="grid lg:grid-cols-2 gap-4">
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+            <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
               Today
             </h2>
             <Link
               href="/teacher/schedule"
-              className="text-xs text-brand font-medium"
+              className="-my-2 inline-flex min-h-10 items-center text-sm font-medium text-brand dark:text-accent2-400"
             >
               Full schedule
             </Link>
           </div>
           <div className="space-y-3">
             {todays.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">
+              <p className="rounded-3xl border border-dashed border-gray-300 bg-white p-5 text-center text-sm text-gray-500 dark:border-border dark:bg-card dark:text-muted-foreground">
                 Nothing scheduled today.
               </p>
             ) : (
@@ -282,19 +267,19 @@ export default function TeacherHome() {
         </section>
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+            <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
               Coming up
             </h2>
             <Link
               href="/teacher/students"
-              className="text-xs text-brand font-medium"
+              className="-my-2 inline-flex min-h-10 items-center text-sm font-medium text-brand dark:text-accent2-400"
             >
               My students
             </Link>
           </div>
           <div className="space-y-3">
             {upcoming.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">
+              <p className="rounded-3xl border border-dashed border-gray-300 bg-white p-5 text-center text-sm text-gray-500 dark:border-border dark:bg-card dark:text-muted-foreground">
                 Nothing else scheduled.
               </p>
             ) : (
@@ -359,9 +344,9 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 hover:border-brand transition flex items-center gap-3"
+      className="flex min-h-16 items-center gap-3 rounded-3xl border border-gray-200/80 bg-white p-4 transition-[border-color,transform] hover:border-brand/40 active:scale-[0.98] dark:border-border dark:bg-card"
     >
-      <div className="w-10 h-10 rounded-lg bg-accent2-100 text-brand flex items-center justify-center">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent2-100 text-brand dark:bg-accent2-500/15 dark:text-accent2-400">
         <Icon className="w-4 h-4" />
       </div>
       <div>
@@ -372,4 +357,11 @@ function QuickLink({
       </div>
     </Link>
   );
+}
+
+// "Mrs Bisi Ade" greets as "Bisi", not "Mrs".
+function firstName(name: string) {
+  const words = name.trim().split(/\s+/);
+  const rest = words.filter((word) => !/^(mr|mrs|ms|miss|dr|prof)\.?$/i.test(word));
+  return (rest[0] ?? words[0] ?? '').trim();
 }

@@ -213,7 +213,7 @@ export default function TeacherNotesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Session notes"
         description="Share what was covered, how the student did, and what's next."
@@ -222,12 +222,12 @@ export default function TeacherNotesPage() {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <PenLine className="w-4 h-4 text-brand" />
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+          <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
             Pending notes ({needsNotes.length})
           </h2>
         </div>
         {needsNotes.length === 0 ? (
-          <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-8 text-center">
+          <div className="rounded-3xl border border-dashed border-gray-300 bg-white dark:border-border dark:bg-card p-8 text-center">
             <ClipboardCheck className="w-6 h-6 text-accent2-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
               All caught up
@@ -258,7 +258,7 @@ export default function TeacherNotesPage() {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <ClipboardList className="w-4 h-4 text-brand" />
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+          <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
             Submitted ({submittedNotes.length})
           </h2>
         </div>
@@ -308,7 +308,7 @@ function DraftCard({
       : 'Phone numbers are not allowed in feedback.';
 
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold text-gray-900 dark:text-foreground">
@@ -450,7 +450,7 @@ function SubmittedCard({
         ? 'bg-brand/10 text-brand'
         : 'bg-amber-50 text-amber-700';
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-5">
       <div className="flex items-center justify-between mb-3 gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
@@ -488,7 +488,7 @@ function SubmittedCard({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
+      <p className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">
         {label}
       </p>
       <p className="text-gray-700 dark:text-foreground/90">{value}</p>

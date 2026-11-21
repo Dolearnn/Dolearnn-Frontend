@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, Video } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -94,91 +93,94 @@ export default function StudentSessionRow({
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -2 }}
-        transition={{ duration: 0.22, ease: 'easeOut' }}
-        className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-brand/40 dark:hover:border-accent2-400/40 transition-colors"
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-accent2-600 dark:text-accent2-400 bg-accent2-50 dark:bg-accent2-500/10 px-2 py-0.5 rounded-full">
-              {session.subject}
-            </span>
-            <StatusBadge status={session.status} />
-            {cancellationPending && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-                Reschedule pending
-              </span>
+      <div className="flex flex-col gap-4 rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {/* A clock tile: the start time in big numbers. */}
+          <div
+            aria-hidden
+            className={cn(
+              'flex h-14 w-16 shrink-0 flex-col items-center justify-center rounded-2xl',
+              session.status === 'Upcoming'
+                ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
+                : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-muted-foreground',
             )}
+          >
+            <span className="font-display text-base font-extrabold leading-tight tabular-nums">
+              {new Date(session.startsAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M$/i, '')}
+            </span>
+            <span className="text-[10px] font-semibold uppercase leading-none tracking-wide opacity-80">
+              {new Date(session.startsAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+            </span>
           </div>
-          <p className="font-semibold text-gray-900 dark:text-foreground truncate">
-            {session.childName ?? 'Student'}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
-            {formatDate(session.startsAt)} - {session.durationMins} min
-          </p>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full bg-accent2-50 px-2 py-0.5 text-xs font-semibold text-accent2-700 dark:bg-accent2-500/10 dark:text-accent2-400">
+                {session.subject}
+              </span>
+              <StatusBadge status={session.status} />
+              {cancellationPending && (
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                  Reschedule pending
+                </span>
+              )}
+            </div>
+            <p className="truncate font-semibold text-gray-900 dark:text-foreground">
+              {session.childName ?? 'Student'}
+            </p>
+            <p className="mt-0.5 text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
+              {formatDate(session.startsAt)}, {session.durationMins} min
+            </p>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
           {session.status === 'Upcoming' && safeMeetingLink && (
-            <Link href={safeMeetingLink} target="_blank" rel="noopener noreferrer">
-              <Button
-                size="sm"
-                className="bg-brand hover:bg-brand-600 dark:bg-accent2-500 dark:hover:bg-accent2-400 dark:text-brand rounded-full"
-              >
-                <Video className="w-3.5 h-3.5 mr-1.5" />
-                Start
-              </Button>
-            </Link>
+            <Button asChild className="h-11 flex-1 rounded-2xl px-5 sm:flex-none">
+              <Link href={safeMeetingLink} target="_blank" rel="noopener noreferrer">
+                <Video className="mr-1.5 h-4 w-4" />
+                Start lesson
+              </Link>
+            </Button>
           )}
           {session.status === 'Upcoming' && !safeMeetingLink && (
-            <Button size="sm" variant="outline" className="rounded-full" disabled>
-              Awaiting link
+            <Button variant="outline" className="h-11 flex-1 rounded-2xl sm:flex-none" disabled>
+              Link coming soon
             </Button>
           )}
           {canConfirm && (
             <Button
-              size="sm"
               variant={teacherConfirmed ? 'outline' : 'default'}
-              className={cn(
-                'rounded-full',
-                !teacherConfirmed && 'bg-brand hover:bg-brand-600',
-              )}
+              className="h-11 flex-1 rounded-2xl px-5 sm:flex-none"
               disabled={teacherConfirmed || !onConfirmHeld || isConfirming}
               onClick={confirmHeld}
             >
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+              <CheckCircle2 className="mr-1.5 h-4 w-4" />
               {isConfirming
-                ? 'Confirming...'
+                ? 'Confirming…'
                 : teacherConfirmed
                   ? 'Confirmed'
-                  : 'Confirm held'}
+                  : 'Confirm it happened'}
             </Button>
           )}
           {session.status === 'Completed' && !session.noteId && (
-            <Link href="/teacher/notes">
-              <Button size="sm" variant="outline" className="rounded-full">
-                Add notes
-              </Button>
-            </Link>
+            <Button asChild variant="outline" className="h-11 flex-1 rounded-2xl px-5 sm:flex-none">
+              <Link href="/teacher/notes">Add notes</Link>
+            </Button>
           )}
           {session.status === 'Upcoming' &&
             !cancellationPending &&
             onRequestCancellation && (
               <Button
-                size="sm"
                 variant="ghost"
-                className="rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5"
+                className="h-11 w-11 shrink-0 rounded-2xl p-0 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
                 onClick={() => setCancelOpen(true)}
                 aria-label="Request reschedule"
                 title="Request reschedule"
               >
-                <XCircle className="w-4 h-4" />
+                <XCircle className="h-5 w-5" />
               </Button>
             )}
         </div>
-      </motion.div>
+      </div>
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>
@@ -224,7 +226,7 @@ function StatusBadge({ status }: { status: Session['status'] }) {
   return (
     <span
       className={cn(
-        'text-[11px] font-medium px-2 py-0.5 rounded-full',
+        'rounded-full px-2 py-0.5 text-xs font-medium',
         styles[status],
       )}
     >

@@ -129,7 +129,7 @@ export default function TeacherReportsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Monthly report" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load your report right now. Please try again.
         </div>
       </div>
@@ -137,7 +137,7 @@ export default function TeacherReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Monthly report"
         description="Your verified sessions, expected pay, attendance and cancellations."
@@ -213,59 +213,30 @@ export default function TeacherReportsPage() {
       </div>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+        <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Student breakdown
         </h2>
-        <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden">
+        <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[640px]">
-              <thead className="bg-gray-50 dark:bg-background text-xs text-gray-500 dark:text-muted-foreground uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium">Student</th>
-                  <th className="text-right px-4 py-3 font-medium">Sessions</th>
-                  <th className="text-right px-4 py-3 font-medium">Verified</th>
-                  <th className="text-right px-4 py-3 font-medium">
-                    Hours taught
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {report.byStudent.map((row) => (
-                  <tr
-                    key={row.studentId}
-                    className="hover:bg-gray-50 dark:hover:bg-white/5"
-                  >
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-gray-900 dark:text-foreground">
-                        {row.studentName}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                        Backend session record
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.sessions}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700 dark:text-foreground/90">
-                      {row.verifiedSessions}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-foreground">
-                      {row.hours.toFixed(1)}
-                    </td>
-                  </tr>
-                ))}
-                {report.byStudent.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-8 text-center text-sm text-gray-500 dark:text-muted-foreground"
-                    >
-                      No sessions for this month.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <ul className="divide-y divide-gray-100 dark:divide-border">
+              {report.byStudent.map((row) => (
+                <li key={row.studentId} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">{row.studentName}</p>
+                    <p className="text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
+                      {row.sessions} {row.sessions === 1 ? 'session' : 'sessions'}, {row.verifiedSessions} verified
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-right">
+                    <span className="font-display text-xl font-extrabold tabular-nums text-gray-950 dark:text-foreground">{row.hours.toFixed(1)}</span>
+                    <span className="block text-xs text-gray-500 dark:text-muted-foreground">hours</span>
+                  </p>
+                </li>
+              ))}
+              {report.byStudent.length === 0 && (
+                <li className="px-4 py-8 text-center text-sm text-gray-500 dark:text-muted-foreground">No sessions for this month.</li>
+              )}
+            </ul>
           </div>
         </div>
       </section>
@@ -311,8 +282,8 @@ function ReportList({
   rows: Array<{ id: string; label: string; sub: string; tone: string }>;
 }) {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-4">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90 mb-3">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
+      <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
         {title}
       </h2>
       {rows.length === 0 ? (
@@ -324,7 +295,7 @@ function ReportList({
           {rows.map((row) => (
             <div
               key={row.id}
-              className="flex items-start justify-between gap-3 rounded-xl bg-gray-50 dark:bg-background p-3"
+              className="flex items-start justify-between gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-white/5"
             >
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">

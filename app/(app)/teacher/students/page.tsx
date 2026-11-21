@@ -100,7 +100,7 @@ export default function TeacherStudentsPage() {
           title="My students"
           description="Students you're currently assigned to."
         />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load your students right now. Please try again.
         </div>
       </div>
@@ -114,7 +114,7 @@ export default function TeacherStudentsPage() {
           title="My students"
           description="Students you're currently assigned to."
         />
-        <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white dark:border-border dark:bg-card p-10 text-center">
           <Users className="w-6 h-6 text-gray-400 dark:text-muted-foreground mx-auto mb-2" />
           <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
             No students yet
@@ -128,7 +128,7 @@ export default function TeacherStudentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="My students"
         description={`You're currently assigned to ${students.length} student${students.length === 1 ? '' : 's'}.`}
@@ -168,7 +168,7 @@ function StudentCard({
   const latestNote = notes[0];
 
   return (
-    <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-5">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-semibold">
           {student.fullName
@@ -199,7 +199,7 @@ function StudentCard({
       </div>
 
       {student.goal && (
-        <div className="bg-gray-50 dark:bg-background rounded-xl p-3 mb-4">
+        <div className="rounded-2xl bg-gray-50 p-3 dark:bg-white/5 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Target className="w-4 h-4 text-brand" />
             <p className="text-xs font-semibold text-gray-700 dark:text-foreground/90">
@@ -259,7 +259,7 @@ function StudentCard({
       {latestNote && (
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-border">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
+            <p className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">
               Latest feedback
             </p>
             <StarRating value={latestNote.rating} readOnly size="sm" />
@@ -337,7 +337,7 @@ function LearningSummaryPanel({ summary }: { summary: LearningSummary | null }) 
           )}
           {summary.recentAttempts.length > 0 && (
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground mb-1">
+              <p className="mb-1 text-xs font-semibold text-gray-500 dark:text-muted-foreground">
                 Latest practice
               </p>
               <ul className="space-y-0.5">
@@ -379,7 +379,7 @@ function TopicList({
 }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground mb-1">
+      <p className="mb-1 text-xs font-semibold text-gray-500 dark:text-muted-foreground">
         {title}
       </p>
       <ul className="flex flex-wrap gap-1.5">
@@ -412,12 +412,12 @@ function Stat({
   value: number | string;
 }) {
   return (
-    <div className="bg-gray-50 dark:bg-background rounded-xl p-3">
+    <div className="rounded-2xl bg-gray-50 p-3 dark:bg-white/5">
       <div className="flex items-center justify-center gap-1 text-gray-500 dark:text-muted-foreground mb-1">
         {Icon && <Icon className="w-3 h-3" />}
-        <p className="text-[10px] uppercase tracking-wide">{label}</p>
+        <p className="text-xs">{label}</p>
       </div>
-      <p className="text-base font-semibold text-gray-900 dark:text-foreground">
+      <p className="font-display text-lg font-bold tabular-nums text-gray-900 dark:text-foreground">
         {value}
       </p>
     </div>
@@ -427,7 +427,7 @@ function Stat({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <span className="text-gray-400 dark:text-muted-foreground uppercase tracking-wide text-[10px] w-14 shrink-0 pt-0.5">
+      <span className="w-16 shrink-0 pt-0.5 text-xs font-semibold text-gray-500 dark:text-muted-foreground">
         {label}
       </span>
       <span className="text-gray-700 dark:text-foreground/90">{value}</span>

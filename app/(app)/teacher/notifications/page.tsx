@@ -35,7 +35,7 @@ export default function TeacherNotificationsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Notifications" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           <p>We could not load notifications right now.</p>
           <button
             type="button"

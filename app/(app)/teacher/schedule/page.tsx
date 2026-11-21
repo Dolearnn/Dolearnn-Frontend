@@ -120,22 +120,22 @@ export default function TeacherSchedulePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Schedule"
-        description="Every lesson you're booked for - past, present and upcoming."
+        description="Every lesson you are booked for: upcoming, completed and cancelled."
       />
 
       <Tabs defaultValue="Upcoming" className="space-y-4">
-        <TabsList className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-full p-1 w-fit">
+        <TabsList className="grid h-auto w-full grid-cols-3 rounded-full border border-gray-200/80 bg-white p-1 dark:border-border dark:bg-card sm:inline-grid sm:w-auto">
           {TAB_ORDER.map((status) => (
             <TabsTrigger
               key={status}
               value={status}
-              className="rounded-full px-4 text-sm data-[state=active]:bg-brand data-[state=active]:text-white"
+              className="min-h-10 rounded-full px-3 text-sm data-[state=active]:bg-brand data-[state=active]:text-white dark:data-[state=active]:bg-accent2-500 dark:data-[state=active]:text-brand sm:px-4"
             >
               {status}
-              <span className="ml-2 text-xs opacity-70">
+              <span className="ml-1.5 text-xs tabular-nums opacity-70">
                 {grouped[status].length}
               </span>
             </TabsTrigger>
@@ -151,7 +151,7 @@ export default function TeacherSchedulePage() {
           ) : (
             byDay.map(([day, items]) => (
               <div key={day} className="space-y-2">
-                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground font-medium">
+                <p className="font-display text-sm font-bold text-gray-950 dark:text-foreground">
                   {day}
                 </p>
                 <div className="space-y-3">
@@ -198,7 +198,7 @@ export default function TeacherSchedulePage() {
 
 function EmptyState({ title, hint }: { title: string; hint: string }) {
   return (
-    <div className="bg-white dark:bg-card border border-dashed border-gray-300 dark:border-border rounded-2xl p-10 text-center">
+    <div className="rounded-3xl border border-dashed border-gray-300 bg-white dark:border-border dark:bg-card p-10 text-center">
       <CalendarX2 className="w-6 h-6 text-gray-400 dark:text-muted-foreground mx-auto mb-2" />
       <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
         {title}

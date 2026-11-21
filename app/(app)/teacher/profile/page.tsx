@@ -135,7 +135,7 @@ export default function TeacherProfilePage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Profile" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load your profile right now. Please try again.
         </div>
       </div>
@@ -143,14 +143,14 @@ export default function TeacherProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Profile"
         description="Keep your subjects, bio and availability up to date."
       />
 
       {!hasPayoutAccount && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+        <section className="rounded-3xl bg-amber-50 p-4 dark:bg-amber-500/10 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-700 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-amber-900">
@@ -164,7 +164,7 @@ export default function TeacherProfilePage() {
         </section>
       )}
 
-      <section className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 flex items-center gap-4">
+      <section className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-5 flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-brand text-white flex items-center justify-center text-xl font-bold">
           {me.name
             .split(' ')
@@ -204,8 +204,8 @@ export default function TeacherProfilePage() {
         />
       </div>
 
-      <section className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+      <section className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-5 space-y-4">
+        <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
           About you
         </h2>
         <div className="space-y-2">
@@ -236,7 +236,7 @@ export default function TeacherProfilePage() {
             </Label>
             <div
               id="rate"
-              className="h-10 rounded-md border border-gray-200 dark:border-border bg-gray-50 dark:bg-background px-3 flex items-center text-sm font-semibold text-gray-900 dark:text-foreground"
+              className="h-11 rounded-xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-white/5 px-3 flex items-center text-sm font-semibold text-gray-900 dark:text-foreground"
             >
               {naira(me.hourlyRate)} per session
             </div>
@@ -262,8 +262,8 @@ export default function TeacherProfilePage() {
         </div>
       </section>
 
-      <section className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+      <section className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-5 space-y-4">
+        <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Payout account
         </h2>
         <div className="grid sm:grid-cols-3 gap-3">
@@ -317,8 +317,8 @@ export default function TeacherProfilePage() {
         </div>
       </section>
 
-      <section className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+      <section className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-5 space-y-4">
+        <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Availability
         </h2>
         <div>
