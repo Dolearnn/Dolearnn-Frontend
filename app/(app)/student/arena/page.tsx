@@ -48,25 +48,33 @@ const RESULT_LABEL: Record<ArenaResult, { text: string; className: string }> = {
 function BattleRow({ battle }: { battle: ArenaBattleListItem }) {
   const base = useLearnerBase();
   const label = RESULT_LABEL[battle.result];
+  const scored = battle.myScorePercent !== null && battle.opponentScorePercent !== null;
   return (
     <Link
       href={`${base}/arena/${battle.code}`}
-      className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-border bg-white dark:bg-card px-4 py-3 hover:border-brand transition-colors"
+      className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:hover:bg-white/5"
     >
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-foreground truncate">
-          {battle.subject.name} · {battle.totalQuestions} questions
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">
+          {battle.subject.name}, {battle.totalQuestions} questions
         </p>
-        <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">
-          {battle.myName} vs {battle.opponentName ?? 'waiting for a rival'}
-          {battle.myScorePercent !== null && battle.opponentScorePercent !== null
-            ? ` · ${battle.myScorePercent}% to ${battle.opponentScorePercent}%`
-            : ''}
+        <p className="truncate text-xs text-gray-500 dark:text-muted-foreground">
+          You vs {battle.opponentName ?? 'a friend (not joined yet)'}
         </p>
       </div>
-      <span className={cn('shrink-0 rounded-full px-3 py-1 text-xs font-semibold', label.className)}>
-        {label.text}
-      </span>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', label.className)}>{label.text}</span>
+        {scored && (
+          <span
+            className="font-display text-sm font-bold tabular-nums text-gray-950 dark:text-foreground"
+            aria-label={`You ${battle.myScorePercent}%, rival ${battle.opponentScorePercent}%`}
+          >
+            {battle.myScorePercent}
+            <span className="mx-1 font-medium text-gray-300 dark:text-white/30">–</span>
+            {battle.opponentScorePercent}
+          </span>
+        )}
+      </div>
     </Link>
   );
 }
@@ -135,58 +143,65 @@ export default function ArenaHubPage() {
   const battles = battlesQuery.data?.battles ?? [];
 
   return (
-    <div className="max-w-5xl">
+    <div className="mx-auto max-w-5xl">
       <PageHeader
         title="Arena"
-        description="Challenge a friend. You both answer the same questions, then the scores are compared."
+        description="Challenge a friend. You both answer the same questions, then your scores are compared."
       />
 
-      <DailyCard className="mb-4" />
-      <DailyLeaderboard className="mb-8" />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-brand text-white dark:bg-accent2-500 dark:text-brand flex items-center justify-center">
-              <Swords className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 dark:text-foreground">
-                Start a battle
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                You play first, then send your friend the code.
-              </p>
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+        <section
+          aria-labelledby="start-battle-heading"
+          className="relative overflow-hidden rounded-[28px] bg-brand p-5 text-white shadow-[0_18px_40px_-24px_rgba(4,66,114,0.9)] dark:bg-[hsl(208,70%,16%)] sm:p-6"
+        >
+          <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent2-400/25 blur-3xl" />
+          <div className="relative flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent2-400 text-brand-700">
+              <Swords className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <h2 id="start-battle-heading" className="font-display text-xl font-bold">Start a battle</h2>
+              <p className="text-sm text-white/70">You play first, then send your friend the code.</p>
             </div>
           </div>
 
           {catalogQuery.isLoading ? (
-            <Skeleton className="h-40 rounded-xl" />
+            <Skeleton className="relative mt-5 h-40 rounded-2xl bg-white/10" />
           ) : playable.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-muted-foreground">
-              Battles open as soon as quiz questions are available.
-            </p>
+            <p className="relative mt-5 text-sm text-white/75">Battles open as soon as quiz questions are available.</p>
           ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="arena-subject">Subject</Label>
-                <Select value={chosenSubject} onValueChange={setSubjectId}>
-                  <SelectTrigger id="arena-subject" className="bg-white dark:bg-card">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {playable.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="relative mt-5 space-y-5">
+              <div>
+                <p id="arena-subject-label" className="mb-2 text-sm font-medium text-white/80">Subject</p>
+                {/* Swipe sideways through subjects on phones. */}
+                <div
+                  role="radiogroup"
+                  aria-labelledby="arena-subject-label"
+                  className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
+                >
+                  {playable.map((subject) => (
+                    <button
+                      key={subject.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={chosenSubject === subject.id}
+                      onClick={() => setSubjectId(subject.id)}
+                      className={cn(
+                        'min-h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent2-300',
+                        chosenSubject === subject.id
+                          ? 'bg-white text-brand'
+                          : 'bg-white/10 text-white/85 hover:bg-white/15',
+                      )}
+                    >
+                      {subject.name}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Questions</Label>
-                <div className="flex gap-2" role="radiogroup" aria-label="Number of questions">
+              <div>
+                <p id="arena-count-label" className="mb-2 text-sm font-medium text-white/80">Questions</p>
+                <div role="radiogroup" aria-labelledby="arena-count-label" className="grid grid-cols-3 gap-1 rounded-2xl bg-white/10 p-1">
                   {COUNTS.map((option) => (
                     <button
                       key={option}
@@ -195,10 +210,8 @@ export default function ArenaHubPage() {
                       aria-checked={count === option}
                       onClick={() => setCount(option)}
                       className={cn(
-                        'h-10 min-w-14 rounded-xl border px-4 text-sm font-medium transition-colors',
-                        count === option
-                          ? 'border-brand bg-brand text-white dark:border-accent2-500 dark:bg-accent2-500 dark:text-brand'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-brand/50 dark:border-border dark:bg-card dark:text-foreground',
+                        'min-h-11 rounded-xl font-display text-base font-bold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent2-300',
+                        count === option ? 'bg-white text-brand' : 'text-white/80 hover:bg-white/10',
                       )}
                     >
                       {option}
@@ -209,9 +222,9 @@ export default function ArenaHubPage() {
 
               {children.length > 0 && (
                 <div className="space-y-2">
-                  <Label htmlFor="arena-learner">Who is playing</Label>
+                  <Label htmlFor="arena-learner" className="text-white/80">Who is playing</Label>
                   <Select value={learner} onValueChange={setLearner}>
-                    <SelectTrigger id="arena-learner" className="bg-white dark:bg-card">
+                    <SelectTrigger id="arena-learner" className="h-11 rounded-xl border-white/20 bg-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -227,7 +240,7 @@ export default function ArenaHubPage() {
               )}
 
               <Button
-                className="h-11 w-full rounded-xl"
+                className="h-12 w-full rounded-2xl bg-accent2-400 text-[15px] font-semibold text-brand-700 hover:bg-accent2-300"
                 disabled={create.isPending || !chosenSubject}
                 onClick={() =>
                   create.mutate({
@@ -237,78 +250,86 @@ export default function ArenaHubPage() {
                   })
                 }
               >
-                {create.isPending ? 'Starting...' : 'Start battle'}
+                {create.isPending ? 'Starting…' : 'Start battle'}
               </Button>
             </div>
           )}
         </section>
 
-        <section className="rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-5">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-foreground">
+        <section
+          aria-labelledby="join-battle-heading"
+          className="rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card"
+        >
+          <h2 id="join-battle-heading" className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
             Join with a code
           </h2>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5 mb-4">
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-muted-foreground">
             Got a code from a friend? Enter it to play the same questions.
           </p>
-          <form onSubmit={handleJoin} className="space-y-3">
-            <Label htmlFor="arena-code">Battle code</Label>
+          <form onSubmit={handleJoin} className="mt-4 flex gap-2">
+            <Label htmlFor="arena-code" className="sr-only">Battle code</Label>
             <Input
               id="arena-code"
               value={code}
               onChange={(event) => setCode(cleanBattleCode(event.target.value))}
-              placeholder="e.g. K7M2QX"
+              placeholder="K7M2QX"
               autoComplete="off"
               autoCapitalize="characters"
-              className="h-11 tracking-[0.3em] text-center text-lg font-semibold uppercase"
+              inputMode="text"
+              className="h-12 min-w-0 flex-1 rounded-2xl text-center font-display text-lg font-bold uppercase tracking-[0.3em] placeholder:font-medium placeholder:text-gray-300 dark:placeholder:text-white/25"
             />
             <Button
               type="submit"
-              variant="outline"
-              className="h-11 w-full rounded-xl"
+              className="h-12 shrink-0 rounded-2xl px-5"
               disabled={code.length !== 6}
             >
-              Find battle <ChevronRight className="w-4 h-4 ml-1" />
+              Join <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </form>
         </section>
       </div>
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-foreground mb-3">
+      <section className="mt-9" aria-labelledby="your-battles-heading">
+        <h2 id="your-battles-heading" className="mb-3 font-display text-xl font-bold text-gray-950 dark:text-foreground">
           Your battles
         </h2>
         {battlesQuery.isLoading ? (
-          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-3xl" />
         ) : battlesQuery.isError ? (
           <p className="text-sm text-gray-500 dark:text-muted-foreground">
-            Your battles could not be loaded right now.
+            Your battles could not be loaded. Check your connection and refresh the page.
           </p>
         ) : battles.length === 0 ? (
           // How a battle works, shown until the learner has played one.
-          <ol className="grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 text-sm sm:grid-cols-3 dark:border-border dark:bg-border">
+          <ol className="divide-y divide-gray-100 rounded-3xl border border-gray-200/80 bg-white text-sm dark:divide-border dark:border-border dark:bg-card sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {[
               ['1', 'Start a battle', 'Pick a subject and how many questions. You play first.'],
               ['2', 'Send the code', 'Share the 6-letter code with a friend, on WhatsApp or anywhere.'],
               ['3', 'Compare scores', 'Your friend answers the same questions. Highest score wins, and both earn XP.'],
             ].map(([step, title, text]) => (
-              <li key={step} className="flex gap-3 bg-white p-4 dark:bg-card">
-                <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent2-100 text-xs font-bold text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
+              <li key={step} className="flex gap-3 p-4">
+                <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent2-100 font-display text-xs font-bold text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
                   {step}
                 </span>
                 <span>
                   <span className="block font-semibold text-gray-900 dark:text-foreground">{title}</span>
-                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-muted-foreground">{text}</span>
+                  <span className="mt-0.5 block text-xs leading-5 text-gray-500 dark:text-muted-foreground">{text}</span>
                 </span>
               </li>
             ))}
           </ol>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:divide-border dark:border-border dark:bg-card">
             {battles.map((battle) => (
               <BattleRow key={battle.code} battle={battle} />
             ))}
           </div>
         )}
+      </section>
+
+      <section className="mt-9 space-y-4" aria-label="The Daily">
+        <DailyCard />
+        <DailyLeaderboard />
       </section>
     </div>
   );

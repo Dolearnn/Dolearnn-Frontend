@@ -56,25 +56,23 @@ function CodeCard({ code, subject }: { code: string; subject: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-accent2-200 bg-accent2-50 dark:border-accent2-500/30 dark:bg-accent2-500/10 p-5 text-center">
-      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-        Battle code
-      </p>
-      <p className="mt-1 text-4xl font-bold tracking-[0.3em] text-brand dark:text-accent2-400">
+    <div className="rounded-3xl border border-gray-200/80 bg-white p-5 text-center dark:border-border dark:bg-card">
+      <p className="text-sm text-gray-500 dark:text-muted-foreground">Battle code</p>
+      <p className="mt-1 font-display text-[40px] font-extrabold leading-none tracking-[0.25em] text-brand dark:text-accent2-400">
         {code}
       </p>
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
-        <Button asChild className="h-10 px-4 rounded-xl">
+      <div className="mt-5 grid gap-2 sm:flex sm:justify-center">
+        <Button asChild className="h-12 rounded-2xl bg-[#25D366] px-5 text-[15px] text-white hover:bg-[#1fb857]">
           <a
             href={`https://wa.me/?text=${encodeURIComponent(shareMessage(code, subject, base))}`}
             target="_blank"
             rel="noreferrer"
           >
-            <Share2 className="w-4 h-4 mr-2" /> Send on WhatsApp
+            <Share2 className="mr-2 h-4 w-4" /> Send on WhatsApp
           </a>
         </Button>
-        <Button variant="outline" className="h-10 px-4 rounded-xl" onClick={copy}>
-          {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+        <Button variant="outline" className="h-12 rounded-2xl px-5" onClick={copy}>
+          {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
           {copied ? 'Copied' : 'Copy invite'}
         </Button>
       </div>
@@ -91,44 +89,44 @@ function PlayerCard({
 }) {
   if (!entry) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 dark:border-border bg-white dark:bg-card p-5 text-center">
-        <p className="text-sm font-semibold text-gray-500 dark:text-muted-foreground">
-          Waiting for a rival
-        </p>
-        <p className="text-xs text-gray-400 mt-1">Share the code above.</p>
+      <div className="min-w-0 flex-1 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-white/30 font-display text-lg font-bold text-white/40">
+          ?
+        </span>
+        <p className="mt-2 text-sm font-semibold text-white/70">Waiting for a rival</p>
+        <p className="mt-0.5 text-xs text-white/50">Share the code below</p>
       </div>
     );
   }
 
-  const tone = entry.scorePercent !== null ? toneClasses[scoreTone(entry.scorePercent)] : null;
-
   return (
-    <div
-      className={cn(
-        'rounded-2xl border p-5 text-center bg-white dark:bg-card',
-        isWinner
-          ? 'border-emerald-400 dark:border-emerald-500/60'
-          : 'border-gray-200 dark:border-border',
-      )}
-    >
-      <p className="text-sm font-semibold text-gray-900 dark:text-foreground flex items-center justify-center gap-1.5">
-        {isWinner && <Trophy className="w-4 h-4 text-amber-500" />}
+    <div className="min-w-0 flex-1 text-center">
+      <span
+        className={cn(
+          'mx-auto flex h-12 w-12 items-center justify-center rounded-full font-display text-lg font-bold',
+          isWinner ? 'bg-accent2-400 text-brand-700' : 'bg-white/15 text-white',
+        )}
+      >
+        {isWinner ? <Trophy className="h-5 w-5" aria-label="Winner" /> : entry.playerName.trim().charAt(0).toUpperCase()}
+      </span>
+      <p className="mt-2 truncate text-sm font-semibold">
         {entry.playerName}
-        {entry.isMine && <span className="text-xs font-normal text-gray-500">(you)</span>}
+        {entry.isMine && <span className="font-normal text-white/60"> (you)</span>}
       </p>
       {entry.scorePercent !== null ? (
         <>
-          <p className={cn('mt-2 text-4xl font-bold tabular-nums', tone?.text)}>
-            {entry.scorePercent}%
+          <p className={cn('mt-1 font-display text-[44px] font-extrabold leading-none tabular-nums', isWinner ? 'text-accent2-300' : 'text-white')}>
+            {entry.scorePercent}
+            <span className="text-xl">%</span>
           </p>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
+          <p className="mt-1 text-xs tabular-nums text-white/60">
             {entry.correctCount} correct
-            {entry.secondsTaken !== null ? ` · ${formatClock(entry.secondsTaken)}` : ''}
+            {entry.secondsTaken !== null ? `, ${formatClock(entry.secondsTaken)}` : ''}
           </p>
         </>
       ) : (
-        <p className="mt-3 text-sm text-gray-500 dark:text-muted-foreground">
-          {entry.status === 'FINISHED' ? 'Finished. Score unlocks when you finish.' : 'Playing...'}
+        <p className="mt-2 text-xs text-white/60">
+          {entry.status === 'FINISHED' ? 'Finished. You see the score once you finish.' : 'Playing…'}
         </p>
       )}
     </div>
@@ -165,37 +163,42 @@ function BattleResult({ battle }: { battle: ArenaBattle }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
-          {challenge.subject.name} · {challenge.totalQuestions} questions
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-brand dark:text-accent2-400">{headline}</h1>
-        {detail && (
-          <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">{detail}</p>
-        )}
-      </div>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <section
+        aria-labelledby="battle-headline"
+        className="relative overflow-hidden rounded-[28px] bg-brand p-5 text-white shadow-[0_18px_40px_-24px_rgba(4,66,114,0.9)] dark:bg-[hsl(208,70%,16%)] sm:p-7"
+      >
+        <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent2-400/25 blur-3xl" />
+        <div className="relative text-center">
+          <p className="text-sm text-white/70">
+            {challenge.subject.name}, {challenge.totalQuestions} questions
+          </p>
+          <h1 id="battle-headline" className="mt-1 font-display text-2xl font-extrabold sm:text-3xl">{headline}</h1>
+          {detail && <p className="mt-1 text-sm text-white/75">{detail}</p>}
+        </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <PlayerCard entry={first} isWinner={outcome?.winnerSlot === 1} />
-        <PlayerCard entry={second} isWinner={outcome?.winnerSlot === 2} />
-      </div>
+        <div className="relative mt-6 flex items-start gap-2">
+          <PlayerCard entry={first} isWinner={outcome?.winnerSlot === 1} />
+          <span aria-hidden className="mt-3 shrink-0 font-display text-sm font-extrabold text-white/40">VS</span>
+          <PlayerCard entry={second} isWinner={outcome?.winnerSlot === 2} />
+        </div>
+      </section>
 
       {!second && !challenge.isExpired && (
         <CodeCard code={challenge.code} subject={challenge.subject.name} />
       )}
 
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="grid gap-2 sm:flex sm:justify-center">
+        <Button asChild className="h-12 rounded-2xl px-5 text-[15px]">
+          <Link href={`${base}/arena`}>
+            <Swords className="mr-2 h-4 w-4" /> New battle
+          </Link>
+        </Button>
         {myFirstAttempt && (
-          <Button asChild variant="outline" className="h-10 px-4 rounded-xl">
+          <Button asChild variant="outline" className="h-12 rounded-2xl px-5">
             <Link href={attemptReviewPath(base, myFirstAttempt)}>Review my answers</Link>
           </Button>
         )}
-        <Button asChild className="h-10 px-4 rounded-xl">
-          <Link href={`${base}/arena`}>
-            <Swords className="w-4 h-4 mr-2" /> New battle
-          </Link>
-        </Button>
       </div>
     </div>
   );
@@ -223,7 +226,7 @@ function PlayEntry({ code, attemptId }: { code: string; attemptId: string }) {
 
   if (attemptQuery.isError) {
     return (
-      <div className="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-8 text-center">
+      <div className="mx-auto max-w-md rounded-3xl border border-gray-200/80 bg-white p-8 text-center dark:border-border dark:bg-card">
         <p className="text-base font-semibold text-gray-900 dark:text-foreground">
           We could not open your game
         </p>
@@ -238,7 +241,7 @@ function PlayEntry({ code, attemptId }: { code: string; attemptId: string }) {
   }
 
   if (!data || isSubmittedView(data)) {
-    return <Skeleton className="h-64 max-w-3xl mx-auto rounded-2xl" />;
+    return <Skeleton className="h-64 max-w-3xl mx-auto rounded-[28px]" />;
   }
 
   return <QuizRunner view={data} />;
@@ -280,7 +283,7 @@ function JoinPanel({ battle, code }: { battle: ArenaBattle; code: string }) {
   });
 
   return (
-    <div className="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-6 text-center">
+    <div className="mx-auto max-w-md rounded-3xl border border-gray-200/80 bg-white p-6 text-center dark:border-border dark:bg-card">
       <div className="w-12 h-12 mx-auto rounded-2xl bg-brand text-white dark:bg-accent2-500 dark:text-brand flex items-center justify-center">
         <Swords className="w-6 h-6" />
       </div>
@@ -350,12 +353,12 @@ export default function BattlePage() {
   });
 
   if (battleQuery.isLoading) {
-    return <Skeleton className="h-64 max-w-3xl mx-auto rounded-2xl" />;
+    return <Skeleton className="h-64 max-w-3xl mx-auto rounded-[28px]" />;
   }
 
   if (battleQuery.isError || !battleQuery.data) {
     return (
-      <div className="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-border bg-white dark:bg-card p-8 text-center">
+      <div className="mx-auto max-w-md rounded-3xl border border-gray-200/80 bg-white p-8 text-center dark:border-border dark:bg-card">
         <p className="text-base font-semibold text-gray-900 dark:text-foreground">
           We could not find that battle
         </p>

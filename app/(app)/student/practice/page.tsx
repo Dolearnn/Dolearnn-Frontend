@@ -35,28 +35,32 @@ function AttemptRow({ attempt, practicePath }: { attempt: QuizHistoryItem; pract
   return (
     <Link
       href={`${practicePath}/attempt/${attempt.id}`}
-      className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-accent2-50 dark:border-border dark:bg-card dark:hover:bg-accent2-500/10"
+      className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:hover:bg-white/5"
     >
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-gray-900 dark:text-foreground">
-          {attempt.subject.name}
-        </p>
+        <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">{attempt.subject.name}</p>
         <p className="text-xs text-gray-500 dark:text-muted-foreground">
-          {attempt.mode === 'MOCK' ? 'Exam mode' : 'Practice'} · {attempt.totalQuestions} questions ·{' '}
-          {formatDate(attempt.startedAt)}
+          {attempt.mode === 'MOCK' ? 'Exam mode' : 'Practice'}, {attempt.totalQuestions} questions, {formatDate(attempt.startedAt)}
         </p>
       </div>
       {inProgress ? (
-        <span className="shrink-0 bg-accent2-100 px-3 py-1 text-xs font-medium text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
+        <span className="shrink-0 rounded-full bg-accent2-100 px-3 py-1 text-xs font-semibold text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
           Resume
         </span>
       ) : (
-        <span className={cn('shrink-0 px-3 py-1 text-xs font-semibold tabular-nums', tone?.soft)}>
+        <span className={cn('min-w-[3.25rem] shrink-0 rounded-full px-2.5 py-1 text-center font-display text-sm font-bold tabular-nums', tone?.soft)}>
           {attempt.scorePercent ?? 0}%
         </span>
       )}
     </Link>
   );
+}
+
+/** Two letters that stand for a subject, e.g. "En" for Use of English. */
+function monogram(name: string) {
+  const words = name.replace(/^Use of\s+/i, '').split(/\s+/).filter(Boolean);
+  if (words.length > 1 && !/^(and|&|in)$/i.test(words[1])) return (words[0][0] + words[1][0]).toUpperCase();
+  return words[0].slice(0, 2).replace(/^./, (c) => c.toUpperCase());
 }
 
 export default function QuizHubPage() {
@@ -129,7 +133,7 @@ export default function QuizHubPage() {
           leaderboard live on the Today page. */}
 
       {(overviewQuery.data?.learningPlan?.unavailableExams.length ?? 0) > 0 && (
-        <aside className="mb-8 border-l-4 border-amber-400 bg-amber-50 p-4 dark:bg-amber-500/10" aria-label="Examination content availability">
+        <aside className="mb-6 rounded-2xl bg-amber-50 p-4 dark:bg-amber-500/10" aria-label="Examination content availability">
           <p className="text-sm font-semibold text-gray-950 dark:text-foreground">
             Content is still being prepared for{' '}
             {overviewQuery.data?.learningPlan?.unavailableExams.join(', ')}.
@@ -141,9 +145,11 @@ export default function QuizHubPage() {
       )}
 
       {overviewQuery.isLoading ? (
-        <div className="grid grid-cols-1 gap-0 border-y border-gray-200 dark:border-border sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-36 rounded-none" />
+        <div className="space-y-3">
+          <Skeleton className="h-11 w-full rounded-full" />
+          <Skeleton className="h-24 w-full rounded-3xl" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-2xl" />
           ))}
         </div>
       ) : overviewQuery.isError ? (
@@ -151,7 +157,7 @@ export default function QuizHubPage() {
           {overviewQuery.error instanceof Error ? overviewQuery.error.message : 'Could not load practice.'}
         </p>
       ) : !catalog || catalog.exams.length === 0 ? (
-        <div className="border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
           <BookOpenCheck className="mx-auto mb-2 h-8 w-8 text-gray-400 dark:text-muted-foreground" />
           <p className="text-sm font-medium text-gray-700 dark:text-foreground/90">Quizzes are coming soon</p>
           <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
@@ -160,184 +166,198 @@ export default function QuizHubPage() {
         </div>
       ) : (
         <section id="choose-subject" className="scroll-mt-24" aria-labelledby="choose-subject-heading">
-          <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-muted-foreground">
-                Question bank
-              </p>
-              <h2 id="choose-subject-heading" className="mt-1 text-2xl font-semibold text-gray-950 dark:text-foreground">
-                {hasAttempts ? 'Choose another subject' : 'Choose your first subject'}
-              </h2>
-            </div>
-            <div className="flex flex-col items-start gap-2 sm:items-end">
-              <div className="inline-flex rounded-full border border-gray-200 bg-white p-1 text-sm dark:border-border dark:bg-card" role="tablist" aria-label="Which subjects to show">
-                {([['plan', 'My plan'], ['all', 'All subjects']] as const).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    role="tab"
-                    aria-selected={scope === value}
-                    onClick={() => {
-                      setScope(value);
-                      setExamId(null);
-                    }}
-                    className={cn(
-                      'rounded-full px-4 py-1.5 font-medium transition-colors',
-                      scope === value
-                        ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
-                        : 'text-gray-600 hover:text-brand dark:text-muted-foreground',
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <p className="max-w-sm text-xs leading-5 text-gray-500 dark:text-muted-foreground sm:text-right">
-                Choose a subject, focus on certain topics, or mix subjects for a full exam.
-              </p>
-            </div>
+          <div
+            className="mb-3 grid grid-cols-2 rounded-full border border-gray-200/80 bg-white p-1 text-sm dark:border-border dark:bg-card sm:inline-grid sm:w-72"
+            role="tablist"
+            aria-label="Which subjects to show"
+          >
+            {([['plan', 'My plan'], ['all', 'All subjects']] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={scope === value}
+                onClick={() => {
+                  setScope(value);
+                  setExamId(null);
+                }}
+                className={cn(
+                  'min-h-10 rounded-full px-4 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  scope === value
+                    ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
+                    : 'text-gray-600 hover:text-brand dark:text-muted-foreground',
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            {catalog.exams.length > 1 && (
-              <div className="flex flex-wrap gap-2" role="tablist" aria-label="Exam">
-                {catalog.exams.map((exam) => (
-                  <button
-                    key={exam.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeExam?.id === exam.id}
-                    onClick={() => setExamId(exam.id)}
-                    className={cn(
-                      'px-4 py-1.5 text-sm font-medium transition-colors',
-                      activeExam?.id === exam.id
-                        ? 'bg-brand text-white dark:bg-accent2-500 dark:text-brand'
-                        : 'border border-gray-200 bg-white text-gray-700 hover:border-brand/50 dark:border-border dark:bg-card dark:text-foreground',
-                    )}
-                  >
-                    {exam.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            {activeExam && (
-              <p className="text-sm text-gray-600 dark:text-muted-foreground">
-                <span className="font-semibold text-gray-900 dark:text-foreground">{activeExam.name}</span>
-                {activeExam.description ? ` · ${activeExam.description}` : ''}
-              </p>
-            )}
-          </div>
+          {catalog.exams.length > 1 && (
+            // Swipe sideways through exams on phones.
+            <div
+              className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:px-0 [&::-webkit-scrollbar]:hidden"
+              role="tablist"
+              aria-label="Exam"
+            >
+              {catalog.exams.map((exam) => (
+                <button
+                  key={exam.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeExam?.id === exam.id}
+                  onClick={() => setExamId(exam.id)}
+                  className={cn(
+                    'min-h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    activeExam?.id === exam.id
+                      ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950'
+                      : 'border border-gray-200 bg-white text-gray-700 hover:border-brand/40 dark:border-border dark:bg-card dark:text-foreground',
+                  )}
+                >
+                  {exam.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           {subjects.filter((row) => row.available > 0).length >= 2 && (
             <button
               type="button"
               onClick={() => setMixing(true)}
-              className="group mb-4 flex w-full items-center gap-4 border border-brand/15 bg-gradient-to-r from-accent2-50 to-white p-4 text-left transition-colors hover:border-brand/40 dark:border-border dark:from-accent2-500/10 dark:to-card"
+              className="group relative mb-6 flex w-full items-center gap-4 overflow-hidden rounded-3xl bg-brand p-5 text-left text-white shadow-[0_18px_40px_-26px_rgba(4,66,114,0.9)] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent2-400 focus-visible:ring-offset-2 active:scale-[0.99] dark:bg-[hsl(208,70%,16%)]"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center bg-brand text-white dark:bg-accent2-500 dark:text-brand">
+              <span aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-accent2-400/25 blur-3xl" />
+              <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent2-400 text-brand-700">
                 <Layers className="h-5 w-5" />
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-base font-semibold text-gray-900 dark:text-foreground">Mix subjects</span>
-                <span className="block text-sm text-gray-600 dark:text-muted-foreground">
-                  Build one {activeExam?.name ?? 'exam'} from several subjects and topics, like the real paper.
+              <span className="relative min-w-0 flex-1">
+                <span className="block font-display text-lg font-bold leading-snug">Full {activeExam?.name ?? 'exam'} paper</span>
+                <span className="block text-sm leading-5 text-white/75">
+                  Mix your subjects and topics into one paper, like the real exam.
                 </span>
               </span>
-              <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 transition-colors group-hover:text-brand" />
+              <ChevronRight className="relative h-5 w-5 shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5" />
             </button>
           )}
 
-          <div className="grid grid-cols-1 border-y border-gray-200 dark:border-border sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 id="choose-subject-heading" className="font-display text-xl font-bold text-gray-950 dark:text-foreground">
+              {hasAttempts ? 'Practise a subject' : 'Choose your first subject'}
+            </h2>
+            {activeExam && (
+              <p className="truncate text-xs text-gray-500 dark:text-muted-foreground">{activeExam.name} questions</p>
+            )}
+          </div>
+
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {subjects.map(({ subject, available }) => {
               const ready = available > 0;
               return (
-                <button
-                  key={subject.id}
-                  type="button"
-                  disabled={!ready}
-                  onClick={() => setChosenSubject(subject)}
-                  className={cn(
-                    'group min-h-36 border-b border-gray-200 p-5 text-left transition-colors dark:border-border sm:border-r',
-                    ready
-                      ? 'bg-white hover:bg-accent2-50 dark:bg-card dark:hover:bg-accent2-500/10'
-                      : 'cursor-not-allowed bg-gray-50 opacity-60 dark:bg-card/50',
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
-                      <BookOpenCheck className="h-5 w-5" />
-                    </div>
-                    {ready && <ChevronRight className="h-4 w-4 text-gray-400 transition-colors group-hover:text-brand" />}
-                  </div>
-                  <p className="mt-3 text-base font-semibold text-gray-900 dark:text-foreground">{subject.name}</p>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-muted-foreground">
-                    {ready ? `${available} questions · ${subject.topics.length} topics` : 'Coming soon'}
-                  </p>
-                </button>
+                <li key={subject.id}>
+                  <button
+                    type="button"
+                    disabled={!ready}
+                    onClick={() => setChosenSubject(subject)}
+                    className={cn(
+                      'group flex w-full items-center gap-3 rounded-2xl border p-3 pr-4 text-left transition-[transform,border-color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      ready
+                        ? 'border-gray-200/80 bg-white hover:border-brand/30 active:scale-[0.98] dark:border-border dark:bg-card dark:hover:border-accent2-500/40'
+                        : 'cursor-not-allowed border-dashed border-gray-200 bg-transparent opacity-60 dark:border-border',
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-display text-base font-extrabold',
+                        ready
+                          ? 'bg-accent2-100 text-brand dark:bg-accent2-500/15 dark:text-accent2-400'
+                          : 'bg-gray-100 text-gray-400 dark:bg-white/5',
+                      )}
+                    >
+                      {monogram(subject.name)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-gray-900 dark:text-foreground">{subject.name}</span>
+                      <span className="block text-xs text-gray-500 dark:text-muted-foreground">
+                        {ready ? (
+                          <>
+                            <span className="font-semibold tabular-nums text-gray-700 dark:text-foreground/80">{available}</span> questions,{' '}
+                            <span className="tabular-nums">{subject.topics.length}</span> topics
+                          </>
+                        ) : (
+                          'Questions on the way'
+                        )}
+                      </span>
+                    </span>
+                    {ready && (
+                      <ChevronRight className="h-5 w-5 shrink-0 text-gray-300 transition-colors group-hover:text-brand dark:text-white/30" />
+                    )}
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </section>
       )}
 
       {weakTopics.length > 0 && (
         <section className="mt-10" aria-labelledby="learning-map-heading">
-          <div className="mb-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-muted-foreground">
-              From your results
-            </p>
-            <h2 id="learning-map-heading" className="mt-1 text-xl font-semibold text-gray-950 dark:text-foreground">
-              Topics to strengthen
-            </h2>
-          </div>
-          <div className="border-y border-gray-200 bg-white dark:border-border dark:bg-card">
+          <h2 id="learning-map-heading" className="font-display text-xl font-bold text-gray-950 dark:text-foreground">
+            Topics to strengthen
+          </h2>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-muted-foreground">Your lowest scores so far</p>
+          <ul className="mt-3 divide-y divide-gray-100 rounded-3xl border border-gray-200/80 bg-white dark:divide-border dark:border-border dark:bg-card">
             {weakTopics.map((topic) => (
-              <div key={topic.topicId} className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0 dark:border-border">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900 dark:text-foreground">{topic.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                    {topic.subject.name} · {topic.correct}/{topic.attempted} correct
+              <li key={topic.topicId} className="flex items-center gap-3 px-4 py-3">
+                <span
+                  className={cn(
+                    'w-12 shrink-0 font-display text-xl font-extrabold tabular-nums',
+                    toneClasses[scoreTone(topic.accuracyPercent)].text,
+                  )}
+                >
+                  {topic.accuracyPercent}
+                  <span className="text-xs font-bold">%</span>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-foreground">{topic.name}</p>
+                  <p className="truncate text-xs text-gray-500 dark:text-muted-foreground">
+                    {topic.subject.name}, <span className="tabular-nums">{topic.correct}/{topic.attempted}</span> right
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <span className={cn('text-sm font-semibold tabular-nums', toneClasses.weak.text)}>
-                    {topic.accuracyPercent}%
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 px-3"
-                    disabled={start.isPending}
-                    onClick={() =>
-                      start.mutate({
-                        subjectId: topic.subject.id,
-                        topicIds: [topic.topicId],
-                        count: 10,
-                        mode: 'PRACTICE',
-                        studentId: studentId ?? undefined,
-                      })
-                    }
-                  >
-                    <Target className="mr-1.5 h-3.5 w-3.5" /> Practise
-                  </Button>
-                </div>
-              </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-10 shrink-0 rounded-full px-4"
+                  disabled={start.isPending}
+                  onClick={() =>
+                    start.mutate({
+                      subjectId: topic.subject.id,
+                      topicIds: [topic.topicId],
+                      count: 10,
+                      mode: 'PRACTICE',
+                      studentId: studentId ?? undefined,
+                    })
+                  }
+                >
+                  <Target className="mr-1.5 h-3.5 w-3.5" /> Practise
+                </Button>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )}
 
       {hasAttempts && (
         <section className="mt-10" aria-labelledby="recent-practice-heading">
           <div className="mb-3 flex items-end justify-between gap-4">
-            <h2 id="recent-practice-heading" className="text-xl font-semibold text-gray-950 dark:text-foreground">
+            <h2 id="recent-practice-heading" className="font-display text-xl font-bold text-gray-950 dark:text-foreground">
               Recent practice
             </h2>
-            <Link href={progressPath} className="text-sm font-medium text-brand hover:underline dark:text-accent2-400">
+            <Link href={progressPath} className="-my-2 inline-flex min-h-10 items-center text-sm font-medium text-brand hover:underline dark:text-accent2-400">
               See progress
             </Link>
           </div>
-          <div className="border-t border-gray-200 dark:border-border md:grid md:grid-cols-2">
+          <div className="divide-y divide-gray-100 overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:divide-border dark:border-border dark:bg-card">
             {history.map((attempt) => <AttemptRow key={attempt.id} attempt={attempt} practicePath={practicePath} />)}
           </div>
         </section>
