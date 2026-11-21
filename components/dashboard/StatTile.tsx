@@ -1,7 +1,6 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export default function StatTile({
@@ -18,16 +17,12 @@ export default function StatTile({
   accent?: boolean;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+    <div
       className={cn(
-        'rounded-2xl p-4 border transition-colors',
+        'rounded-3xl p-4 border transition-colors',
         accent
           ? 'bg-brand text-white border-brand dark:bg-accent2-500 dark:border-accent2-500 dark:text-brand'
-          : 'bg-white border-gray-200 dark:bg-card dark:border-border',
+          : 'bg-white border-gray-200/80 dark:bg-card dark:border-border',
       )}
     >
       <div className="flex items-center justify-between mb-3">
@@ -54,7 +49,7 @@ export default function StatTile({
       </div>
       <p
         className={cn(
-          'text-2xl font-bold',
+          'font-display text-[28px] font-extrabold leading-none tracking-tight tabular-nums',
           accent ? '' : 'text-gray-900 dark:text-foreground',
         )}
       >
@@ -72,6 +67,6 @@ export default function StatTile({
           {sub}
         </p>
       )}
-    </motion.div>
+    </div>
   );
 }

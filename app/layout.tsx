@@ -1,6 +1,6 @@
 import './globals.css';
-import type { Metadata } from 'next';
-import { inter } from '@/lib/fonts';
+import type { Metadata, Viewport } from 'next';
+import { inter, montserrat } from '@/lib/fonts';
 import AppProviders from '@/components/providers/AppProviders';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -31,6 +31,15 @@ export const metadata: Metadata = {
   },
 };
 
+// Phones: colour the browser bar to match the page, and let the bottom tab bar
+// sit above the home indicator (see env(safe-area-inset-bottom)).
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0c1521' },
+  ],
+  viewportFit: 'cover',
+};
 
 export default function RootLayout({
   children,
@@ -39,7 +48,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${montserrat.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

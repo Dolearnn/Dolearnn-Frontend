@@ -123,7 +123,18 @@ async function drawCard(input: { days: number; firstName: string; level: string;
   );
 }
 
-export default function ShareStreak({ days, level, xp }: { days: number; level: string; xp: number }) {
+export default function ShareStreak({
+  days,
+  level,
+  xp,
+  compact = false,
+}: {
+  days: number;
+  level: string;
+  xp: number;
+  // An icon-only trigger, for tight spaces such as the phone stat row.
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -187,9 +198,19 @@ export default function ShareStreak({ days, level, xp }: { days: number; level: 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-8 rounded-full px-3 text-xs">
-          <Share2 className="mr-1.5 h-3.5 w-3.5" /> Share
-        </Button>
+        {compact ? (
+          <button
+            type="button"
+            aria-label={`Share your ${days}-day streak`}
+            className="-m-2 inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 dark:text-muted-foreground dark:hover:bg-white/10 dark:hover:text-accent2-400"
+          >
+            <Share2 className="h-4 w-4" aria-hidden />
+          </button>
+        ) : (
+          <Button size="sm" variant="outline" className="h-8 rounded-full px-3 text-xs">
+            <Share2 className="mr-1.5 h-3.5 w-3.5" /> Share
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>

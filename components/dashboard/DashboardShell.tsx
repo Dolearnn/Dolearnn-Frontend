@@ -50,6 +50,7 @@ import { Logo } from '@/components/brand/Logo';
 import { claimGuestDaily } from '@/lib/api/daily';
 import { trackPageView } from '@/lib/api/activity';
 import TutorTabs, { TUTOR_TABS } from '@/components/dashboard/TutorTabs';
+import BottomNav from '@/components/dashboard/BottomNav';
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -145,6 +146,14 @@ function pageTitle(nav: NavItem[], path: string) {
   return best?.label;
 }
 
+function isActiveItem(item: NavItem, pathname: string, role: Role) {
+  return (
+    pathname === item.href ||
+    (item.href !== `/${role}` && pathname.startsWith(item.href)) ||
+    Boolean(item.also?.some((path) => pathname.startsWith(path)))
+  );
+}
+
 const roleLabel: Record<Role, string> = {
   student: 'Learner',
   teacher: 'Teacher',
@@ -238,6 +247,12 @@ export default function DashboardShell({
     return <FullScreenLoader label="Loading your dashboard" />;
   }
 
+  // Learners get a bottom tab bar on phones; notifications move to the header bell.
+  const isLearner = role === 'student';
+  const tabItems = nav
+    .filter((item) => item.label !== 'Notifications')
+    .map((item) => ({ ...item, active: isActiveItem(item, pathname, role) }));
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background flex">
       {/* Sidebar — desktop */}
@@ -291,28 +306,57 @@ export default function DashboardShell({
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 border-b border-gray-200 dark:border-border px-4 lg:px-8 py-3 flex items-center justify-between backdrop-blur-md bg-white/80 dark:bg-card/80">
+        <header className="sticky top-0 z-30 border-b border-gray-200/80 dark:border-border px-4 lg:px-8 h-14 flex items-center justify-between backdrop-blur-md bg-white/85 dark:bg-card/85">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden -m-2 p-2 text-gray-700 dark:text-gray-200 hover:text-brand dark:hover:text-accent2-400 transition"
-              aria-label="Open menu"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <span className="text-sm text-gray-500 dark:text-muted-foreground">
+            {isLearner ? (
+              <Link href="/student" aria-label="DoLearnn, today" className="lg:hidden">
+                <Logo size="sm" />
+              </Link>
+            ) : (
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="lg:hidden -m-2 p-2 text-gray-700 dark:text-gray-200 hover:text-brand dark:hover:text-accent2-400 transition"
+                aria-label="Open menu"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            )}
+            <span className={cn('text-sm text-gray-500 dark:text-muted-foreground', isLearner && 'hidden lg:inline')}>
               {roleLabel[role]} Dashboard
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {isLearner && (
+              <Link
+                href="/student/notifications"
+                aria-label={
+                  unreadNotificationCount > 0
+                    ? `Notifications, ${unreadNotificationCount} unread`
+                    : 'Notifications'
+                }
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 dark:text-white/80 dark:hover:bg-white/10 lg:hidden"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-card" />
+                )}
+              </Link>
+            )}
             <ThemeToggle />
             <UserMenu user={authUser} onLogout={handleLogout} />
           </div>
         </header>
-        <main className="flex-1 p-4 lg:p-8 overflow-x-hidden">
+        <main
+          className={cn(
+            'flex-1 p-4 lg:p-8 overflow-x-hidden',
+            // Room for the bottom tab bar and the phone's home indicator.
+            isLearner && 'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8',
+          )}
+        >
           <TutorTabs />
           {children}
         </main>
+        {isLearner && <BottomNav items={tabItems} />}
       </div>
     </div>
   );
@@ -341,21 +385,13 @@ function SidebarContents({
         <p className="text-xs text-white/60 mt-1 capitalize">{role} workspace</p>
       </div>
       <nav className="flex-1 p-4 space-y-1">
-        {nav.map((item, i) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== `/${role}` && pathname.startsWith(item.href)) ||
-            Boolean(item.also?.some((path) => pathname.startsWith(path)));
+        {nav.map((item) => {
+          const active = isActiveItem(item, pathname, role);
           const hasUnreadNotifications =
             item.label === 'Notifications' && unreadNotificationCount > 0;
           const Icon = item.icon;
           return (
-            <motion.div
-              key={item.href}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, delay: i * 0.04, ease: 'easeOut' }}
-            >
+            <div key={item.href}>
               {item.section && (
                 <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
                   {item.section}
@@ -389,7 +425,7 @@ function SidebarContents({
                   )}
                 </span>
               </Link>
-            </motion.div>
+            </div>
           );
         })}
       </nav>

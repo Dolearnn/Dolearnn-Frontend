@@ -19,6 +19,8 @@ const config: Config = {
       minWidth: { 14: '3.5rem' },
       fontFamily: {
         campton: ['Campton', 'sans-serif'],
+        // Montserrat, the brand face: headings and the big numbers on dashboards.
+        display: ['var(--font-display)', 'Segoe UI', 'Arial', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

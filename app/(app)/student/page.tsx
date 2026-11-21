@@ -4,14 +4,13 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BookOpenCheck, CalendarDays, Pencil, Target, TrendingUp } from 'lucide-react';
-import ExamPlanCard from '@/components/quiz/ExamPlanCard';
+import { TrendingUp } from 'lucide-react';
+import ExamCountdown from '@/components/quiz/ExamCountdown';
 import FirstQuizCard from '@/components/quiz/FirstQuizCard';
 import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
 import AchievementsPanel from '@/components/quiz/AchievementsPanel';
 import DailyCard from '@/components/daily/DailyCard';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAuthUser } from '@/lib/api/auth-storage';
 import { getQuizPracticeOverview, quizKeys } from '@/lib/api/quiz';
@@ -26,15 +25,6 @@ function greeting(hour: number) {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
-}
-
-function Chip({ icon: Icon, children }: { icon: typeof Target; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 dark:border-border dark:bg-card dark:text-foreground/90">
-      <Icon className="h-3.5 w-3.5 text-brand dark:text-accent2-400" aria-hidden />
-      {children}
-    </span>
-  );
 }
 
 export default function StudentDashboardPage() {
@@ -61,16 +51,23 @@ export default function StudentDashboardPage() {
   }, [profileQuery.data, router]);
 
   if (profileQuery.isLoading || (profileQuery.data && !profileQuery.data.onboardingCompleted)) {
-    return <div className="max-w-5xl space-y-4"><Skeleton className="h-20 w-full" /><Skeleton className="h-48 w-full" /></div>;
+    return (
+      <div className="mx-auto max-w-5xl space-y-4">
+        <Skeleton className="h-10 w-2/3 rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-[28px]" />
+        <Skeleton className="h-[104px] w-full rounded-3xl" />
+      </div>
+    );
   }
 
   if (profileQuery.isError || !profileQuery.data) {
-    return <p className="text-sm text-red-600">Could not load your learning plan.</p>;
+    return <p className="text-sm text-red-600">Could not load your learning plan. Check your connection and refresh the page.</p>;
   }
 
   const profile = profileQuery.data;
   const progress = overviewQuery.data?.progress;
   const examDays = daysUntil(profile.examDate);
+  const examName = profile.externalExams.join(' and ') || 'Your exam';
   const sessions = progress?.totalAttempts ?? 0;
   // A new learner sees one clear step instead of empty rewards and leaderboards.
   const isNewLearner = overviewQuery.isSuccess && sessions === 0;
@@ -81,60 +78,72 @@ export default function StudentDashboardPage() {
     .sort((a, b) => b.changePoints - a.changePoints)[0];
 
   return (
-    <div className="max-w-5xl">
-      {/* Greeting and plan at a glance. */}
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-brand dark:text-accent2-400">
-            {hello}{firstName ? `, ${firstName}` : ''}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
-            {sessions > 0
-              ? `${sessions} practice ${sessions === 1 ? 'session' : 'sessions'} so far. Here is what to do next.`
-              : 'Welcome to DoLearnn. Your first step is below.'}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Chip icon={Target}>{profile.externalExams.join(' · ') || 'No exam chosen'}</Chip>
-            <Chip icon={CalendarDays}>
-              {examDays === null ? 'No exam date' : examDays === 0 ? 'Exam today' : `${examDays} days to your exam`}
-            </Chip>
-            {profile.subjects.length > 0 && (
-              <Chip icon={BookOpenCheck}>{profile.subjects.map((subject) => subject.name).join(' · ')}</Chip>
-            )}
-          </div>
-        </div>
-        <Button asChild variant="outline" size="sm" className="self-start rounded-full sm:self-auto">
-          <Link href="/student/onboarding"><Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit plan</Link>
-        </Button>
+    <div className="mx-auto max-w-5xl">
+      <header className="mb-5">
+        <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-gray-950 dark:text-foreground sm:text-3xl">
+          {hello}{firstName ? `, ${firstName}` : ''}
+        </h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
+          {sessions > 0
+            ? `${sessions} practice ${sessions === 1 ? 'session' : 'sessions'} so far. Here is what to do next.`
+            : 'Welcome to DoLearnn. Your first step is below.'}
+        </p>
       </header>
 
       {isNewLearner && overviewQuery.data ? (
-        <FirstQuizCard
-          catalog={overviewQuery.data.catalog}
-          warmUpTopics={profile.guestBaseline?.weakTopics ?? []}
-        />
-      ) : (
-        <>
-          {biggestGain && (
-            <p className="mb-5 flex items-start gap-3 rounded-2xl border border-accent2-200 bg-accent2-50 p-4 text-sm text-gray-800 dark:border-accent2-500/30 dark:bg-accent2-500/10 dark:text-foreground/90">
-              <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-accent2-600 dark:text-accent2-400" aria-hidden />
-              <span>
-                <strong className="font-semibold">It&apos;s working.</strong> {biggestGain.name} went from{' '}
-                <strong className="font-semibold">{biggestGain.baselinePercent}%</strong> to{' '}
-                <strong className="font-semibold">{biggestGain.latestPercent}%</strong> since you started.
-              </span>
+        <div className="space-y-4">
+          <FirstQuizCard
+            catalog={overviewQuery.data.catalog}
+            warmUpTopics={profile.guestBaseline?.weakTopics ?? []}
+          />
+          {examDays !== null && (
+            <p className="text-sm text-gray-600 dark:text-muted-foreground">
+              <strong className="font-display font-bold tabular-nums text-gray-950 dark:text-foreground">{examDays}</strong>{' '}
+              {examDays === 1 ? 'day' : 'days'} to {examName}.{' '}
+              <Link href="/student/onboarding" className="font-medium text-brand underline underline-offset-2 dark:text-accent2-400">
+                Edit plan
+              </Link>
             </p>
           )}
-          <RewardsStrip studentId={null} className="mb-4" />
-          <DailyCard className="mb-8" />
-          <NextActions
-            studentId={null}
-            actions={overviewQuery.data?.actions ?? []}
-            isLoading={overviewQuery.isLoading}
-            readyTomorrow={overviewQuery.data?.mistakes?.tomorrow ?? 0}
-          />
-          {overviewQuery.data?.examPlan && <ExamPlanCard plan={overviewQuery.data.examPlan} />}
-          <AchievementsPanel studentId={null} className="mt-2" />
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 xl:grid-cols-[1.25fr_1fr] xl:items-start">
+            {overviewQuery.isLoading ? (
+              <Skeleton className="h-64 w-full rounded-[28px]" />
+            ) : (
+              <ExamCountdown examName={examName} daysLeft={examDays} plan={overviewQuery.data?.examPlan} />
+            )}
+            <div className="space-y-4">
+              <RewardsStrip studentId={null} />
+              {biggestGain && (
+                <p className="flex items-start gap-3 rounded-3xl bg-accent2-50 p-4 text-sm leading-6 text-gray-800 dark:bg-accent2-500/10 dark:text-foreground/90">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent2-400 text-brand-700">
+                    <TrendingUp className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span>
+                    <strong className="font-semibold">It&apos;s working.</strong> {biggestGain.name} went from{' '}
+                    <strong className="font-display font-bold tabular-nums">{biggestGain.baselinePercent}%</strong> to{' '}
+                    <strong className="font-display font-bold tabular-nums text-accent2-700 dark:text-accent2-400">
+                      {biggestGain.latestPercent}%
+                    </strong>{' '}
+                    since you started.
+                  </span>
+                </p>
+              )}
+              <DailyCard />
+            </div>
+          </div>
+
+          <div className="mt-9">
+            <NextActions
+              studentId={null}
+              actions={overviewQuery.data?.actions ?? []}
+              isLoading={overviewQuery.isLoading}
+              readyTomorrow={overviewQuery.data?.mistakes?.tomorrow ?? 0}
+            />
+          </div>
+          <AchievementsPanel studentId={null} />
         </>
       )}
     </div>

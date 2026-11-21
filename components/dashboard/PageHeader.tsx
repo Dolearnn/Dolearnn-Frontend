@@ -19,7 +19,7 @@ export default function PageHeader({
       className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6"
     >
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-brand dark:text-accent2-400">
+        <h1 className="font-display text-[26px] lg:text-3xl font-bold tracking-tight text-gray-950 dark:text-foreground">
           {title}
         </h1>
         {description && (

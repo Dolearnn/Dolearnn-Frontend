@@ -56,69 +56,72 @@ function StartAction({
   const start = useStartQuiz();
   const Icon = ICONS[action.type];
 
-  return (
-    <article
-      className={
-        prominent
-          ? 'relative overflow-hidden bg-brand p-5 text-white dark:bg-accent2-500 dark:text-brand sm:p-7'
-          : 'border-t border-gray-200 py-4 first:border-t-0 dark:border-border'
-      }
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div
-          className={
-            prominent
-              ? 'flex h-11 w-11 shrink-0 items-center justify-center bg-white/15 dark:bg-brand/10'
-              : 'flex h-10 w-10 shrink-0 items-center justify-center bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400'
-          }
-        >
+  const run = () =>
+    action.start &&
+    start.mutate({
+      ...action.start,
+      studentId: studentId ?? undefined,
+    });
+  const label = start.isPending ? 'Starting…' : START_LABEL[action.type];
+
+  if (!prominent) {
+    // A compact row: the plan stays short on a phone screen.
+    return (
+      <article className="flex items-center gap-3 border-t border-gray-100 py-3.5 dark:border-border">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent2-100 text-brand dark:bg-accent2-500/15 dark:text-accent2-400">
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p
-            className={
-              prominent
-                ? 'text-[11px] font-semibold uppercase tracking-[0.18em] text-accent2-300 dark:text-brand/65'
-                : 'text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-muted-foreground'
-            }
-          >
-            {EYEBROWS[action.type]}
-          </p>
-          <h3 className="mt-1 text-lg font-semibold">{action.title}</h3>
-          <p
-            className={
-              prominent
-                ? 'mt-1 max-w-2xl text-sm leading-6 text-white/75 dark:text-brand/70'
-                : 'mt-1 max-w-2xl text-sm leading-6 text-gray-600 dark:text-muted-foreground'
-            }
-          >
-            {action.reason}
-          </p>
+          <h3 className="truncate text-[15px] font-semibold text-gray-950 dark:text-foreground">{action.title}</h3>
+          <p className="line-clamp-2 text-xs leading-5 text-gray-500 dark:text-muted-foreground">{action.reason}</p>
         </div>
         {action.start ? (
           <Button
             size="sm"
-            variant={prominent ? 'secondary' : 'default'}
-            className="h-11 shrink-0 px-5"
+            variant="outline"
+            className="h-10 shrink-0 rounded-full px-4"
             disabled={start.isPending}
-            onClick={() =>
-              start.mutate({
-                ...action.start!,
-                studentId: studentId ?? undefined,
-              })
-            }
+            onClick={run}
           >
-            {start.isPending ? 'Starting…' : START_LABEL[action.type]}
-            {!start.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
+            {label}
           </Button>
         ) : (
-          <Button asChild size="sm" variant="secondary" className="h-11 shrink-0 px-5">
-            <Link href={`${practicePath}#choose-subject`}>
-              {START_LABEL[action.type]} <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
+          <Button asChild size="sm" variant="outline" className="h-10 shrink-0 rounded-full px-4">
+            <Link href={`${practicePath}#choose-subject`}>{label}</Link>
           </Button>
         )}
+      </article>
+    );
+  }
+
+  return (
+    <article className="pb-5 pt-1">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand text-accent2-300 dark:bg-accent2-500 dark:text-brand">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-brand dark:text-accent2-400">{EYEBROWS[action.type]}</p>
+          <h3 className="mt-0.5 font-display text-lg font-bold leading-snug text-gray-950 dark:text-foreground">{action.title}</h3>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-600 dark:text-muted-foreground">{action.reason}</p>
+        </div>
       </div>
+      {action.start ? (
+        <Button
+          className="mt-4 h-12 w-full rounded-2xl text-[15px] sm:w-auto sm:px-6"
+          disabled={start.isPending}
+          onClick={run}
+        >
+          {label}
+          {!start.isPending && <ArrowRight className="ml-2 h-4 w-4" />}
+        </Button>
+      ) : (
+        <Button asChild className="mt-4 h-12 w-full rounded-2xl text-[15px] sm:w-auto sm:px-6">
+          <Link href={`${practicePath}#choose-subject`}>
+            {label} <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      )}
     </article>
   );
 }
@@ -149,7 +152,7 @@ export default function NextActions({
   });
 
   if (providedLoading || (providedActions === undefined && query.isLoading)) {
-    return <Skeleton className="mb-9 h-44 w-full" />;
+    return <Skeleton className="mb-9 h-56 w-full rounded-3xl" />;
   }
 
   const actions = providedActions ?? query.data?.actions ?? [];
@@ -164,12 +167,10 @@ export default function NextActions({
     <section className="mb-10" aria-labelledby="next-move-heading">
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-accent2-400">
-            Based on your results
-          </p>
-          <h2 id="next-move-heading" className="mt-1 text-2xl font-semibold text-gray-950 dark:text-foreground">
+          <h2 id="next-move-heading" className="font-display text-xl font-bold text-gray-950 dark:text-foreground sm:text-2xl">
             Today&apos;s plan
           </h2>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-muted-foreground">Picked from your latest results</p>
         </div>
         <Link
           href={progressPath}
@@ -179,15 +180,12 @@ export default function NextActions({
         </Link>
       </div>
 
-      <div className="overflow-hidden border border-gray-200 bg-white dark:border-border dark:bg-card">
+      <div className="rounded-3xl border border-gray-200/80 bg-white px-4 pt-4 dark:border-border dark:bg-card sm:px-6 sm:pt-5">
         {primary && <StartAction action={primary} studentId={studentId} practicePath={practicePath} prominent />}
-        {secondary.length > 0 && (
-          <div className="px-5 sm:px-7">
-            {secondary.map((action) => (
-              <StartAction key={action.id} action={action} studentId={studentId} practicePath={practicePath} />
-            ))}
-          </div>
-        )}
+        {secondary.map((action) => (
+          <StartAction key={action.id} action={action} studentId={studentId} practicePath={practicePath} />
+        ))}
+        {secondary.length > 0 && <div className="h-1" />}
       </div>
 
       {readyTomorrow > 0 && (

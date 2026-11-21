@@ -38,7 +38,7 @@ export default function AchievementsPanel({
     staleTime: 30_000,
   });
 
-  if (isLoading) return <Skeleton className={cn('h-72 w-full rounded-2xl', className)} />;
+  if (isLoading) return <Skeleton className={cn('h-72 w-full rounded-3xl', className)} />;
   if (isError || !data) return null;
 
   const earned = data.badges.filter((badge) => badge.earned).length;
@@ -47,21 +47,19 @@ export default function AchievementsPanel({
     <div className={cn('grid gap-4 lg:grid-cols-[1.2fr_1fr]', className)}>
       <section
         aria-labelledby="missions-title"
-        className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-border dark:bg-card"
+        className="rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:p-5"
       >
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 id="missions-title" className="flex items-center gap-2 text-lg font-semibold text-gray-950 dark:text-foreground">
-            <Target className="h-5 w-5 text-brand dark:text-accent2-400" aria-hidden />
-            This week&apos;s missions
-          </h2>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground">New every Monday</p>
-        </div>
+        <h2 id="missions-title" className="flex items-center gap-2 font-display text-lg font-bold text-gray-950 dark:text-foreground">
+          <Target className="h-5 w-5 text-brand dark:text-accent2-400" aria-hidden />
+          This week&apos;s missions
+        </h2>
+        <p className="mt-0.5 pl-7 text-xs text-gray-500 dark:text-muted-foreground">New ones every Monday</p>
 
-        <ul className="mt-4 space-y-3">
+        <ul className="mt-2 divide-y divide-gray-100 dark:divide-border">
           {data.missions.map((mission) => {
             const percent = Math.round((mission.current / mission.target) * 100);
             return (
-              <li key={mission.id} className="rounded-xl border border-gray-100 p-3 dark:border-border">
+              <li key={mission.id} className="py-3 last:pb-0">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 dark:text-foreground">
@@ -73,7 +71,7 @@ export default function AchievementsPanel({
                   {!mission.done && (
                     <Link
                       href={actionHref(base, mission.action)}
-                      className="-my-2 inline-flex shrink-0 items-center gap-1 py-2 text-xs font-semibold text-brand hover:underline dark:text-accent2-400"
+                      className="-my-2 -mr-2 inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold text-brand hover:bg-brand-50 dark:text-accent2-400 dark:hover:bg-white/5"
                     >
                       {ACTION_LABEL[mission.action]} <ArrowRight className="h-3 w-3" aria-hidden />
                     </Link>
@@ -81,7 +79,7 @@ export default function AchievementsPanel({
                 </div>
                 <div className="mt-2 flex items-center gap-2">
                   <div
-                    className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10"
+                    className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10"
                     role="progressbar"
                     aria-valuemin={0}
                     aria-valuemax={mission.target}
@@ -93,8 +91,8 @@ export default function AchievementsPanel({
                       style={{ width: `${percent}%` }}
                     />
                   </div>
-                  <span className="text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
-                    {mission.current}/{mission.target}
+                  <span className="min-w-[2.75rem] text-right text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
+                    <strong className="font-semibold text-gray-900 dark:text-foreground">{mission.current}</strong>/{mission.target}
                   </span>
                 </div>
               </li>
@@ -105,25 +103,26 @@ export default function AchievementsPanel({
 
       <section
         aria-labelledby="badges-title"
-        className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-border dark:bg-card"
+        className="min-w-0 rounded-3xl border border-gray-200/80 bg-white py-4 dark:border-border dark:bg-card sm:py-5"
       >
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 id="badges-title" className="flex items-center gap-2 text-lg font-semibold text-gray-950 dark:text-foreground">
+        <div className="flex items-baseline justify-between gap-3 px-4 sm:px-5">
+          <h2 id="badges-title" className="flex items-center gap-2 font-display text-lg font-bold text-gray-950 dark:text-foreground">
             <Award className="h-5 w-5 text-brand dark:text-accent2-400" aria-hidden />
             Badges
           </h2>
-          <p className="text-xs text-gray-500 dark:text-muted-foreground">
+          <p className="text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
             {earned} of {data.badges.length} earned
           </p>
         </div>
 
-        <ul className="mt-4 grid grid-cols-2 gap-2">
+        {/* Swipe sideways on phones; a grid on larger screens. */}
+        <ul className="mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-px-4 px-4 pb-1 [scrollbar-width:none] sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-5 [&::-webkit-scrollbar]:hidden">
           {data.badges.map((badge) => (
             <li
               key={badge.id}
               title={badge.description}
               className={cn(
-                'rounded-xl border p-3',
+                'w-40 shrink-0 snap-start rounded-2xl border p-3 sm:w-auto',
                 badge.earned
                   ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
                   : 'border-gray-100 dark:border-border',
