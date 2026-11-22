@@ -2,8 +2,8 @@ import ChangePasswordForm from '@/components/forms/ChangePasswordForm';
 
 export default function ChangePasswordPage() {
   return (
-    <div className="bg-white dark:bg-card rounded-2xl shadow-sm p-8 border border-gray-100 dark:border-border">
-      <h1 className="text-2xl font-bold text-brand dark:text-accent2-400 mb-1">
+    <div className="rounded-3xl border border-gray-200/80 bg-white p-6 shadow-sm dark:border-border dark:bg-card sm:p-8">
+      <h1 className="mb-1 font-display text-[26px] font-bold tracking-tight text-gray-950 dark:text-foreground">
         Change your password
       </h1>
       <p className="text-sm text-gray-600 dark:text-muted-foreground mb-6">

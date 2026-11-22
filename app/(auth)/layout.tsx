@@ -34,7 +34,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <Wordmark light />
 
         <div className="relative max-w-xl">
-          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.14em] text-accent2-300">
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-accent2-300">
             {loop.map((step, index) => (
               <li key={step} className="flex items-center gap-2">
                 {step}
@@ -50,10 +50,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             then reassess to see the change.
           </p>
 
-          <figure className="mt-10 rounded-2xl border border-white/15 bg-white/[0.06] p-6 backdrop-blur-sm">
-            <figcaption className="flex items-center justify-between border-b border-white/15 pb-4 font-mono text-[10px] uppercase tracking-wider text-white/60">
+          <figure className="mt-10 rounded-3xl border border-white/15 bg-white/[0.06] p-6 backdrop-blur-sm">
+            <figcaption className="flex items-center justify-between border-b border-white/15 pb-4 text-sm font-medium text-white/70">
               Your topic map
-              <span className="rounded-full bg-accent2-400 px-2 py-0.5 text-[9px] font-semibold text-[#022a49]">Example</span>
+              <span className="rounded-full bg-accent2-400 px-2 py-0.5 text-xs font-semibold text-[#022a49]">Example</span>
             </figcaption>
             <ul className="mt-5 space-y-3 text-sm">
               {gaps.map((row) => (
@@ -81,7 +81,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </aside>
 
       <section className="flex min-h-screen flex-col">
-        <header className="flex w-full items-center justify-between px-6 py-4">
+        <header className="flex h-14 w-full items-center justify-between px-4 sm:px-6">
           <span className="lg:hidden">
             <Wordmark />
           </span>
@@ -93,7 +93,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </Link>
           <ThemeToggle />
         </header>
-        <div className="flex flex-1 items-center justify-center px-6 pb-12">
+        <div className="flex flex-1 items-start justify-center px-4 pb-12 pt-2 sm:items-center sm:px-6 sm:pt-0">
           <div className="w-full max-w-md">{children}</div>
         </div>
       </section>

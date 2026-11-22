@@ -158,7 +158,7 @@ export default function GoogleAuthButton({ mode, nextPath, accountType }: Google
       <Button
         type="button"
         variant="outline"
-        className="w-full rounded-full border-gray-300 dark:border-border bg-white dark:bg-card text-gray-800 dark:text-foreground hover:bg-gray-50 dark:hover:bg-white/5"
+        className="h-12 w-full rounded-2xl border-gray-300 dark:border-border bg-white dark:bg-card text-gray-800 dark:text-foreground hover:bg-gray-50 dark:hover:bg-white/5"
         onClick={() =>
           toast({
             title: 'Google sign-in is not configured',
@@ -180,7 +180,7 @@ export default function GoogleAuthButton({ mode, nextPath, accountType }: Google
         disabled={mutation.isPending}
         tabIndex={-1}
         aria-hidden="true"
-        className="w-full rounded-full border-gray-300 dark:border-border bg-white dark:bg-card text-gray-800 dark:text-foreground hover:bg-gray-50 dark:hover:bg-white/5"
+        className="h-12 w-full rounded-2xl border-gray-300 dark:border-border bg-white dark:bg-card text-gray-800 dark:text-foreground hover:bg-gray-50 dark:hover:bg-white/5"
       >
         <GoogleMark />
         {mutation.isPending

@@ -79,7 +79,7 @@ export default function LoginForm({ nextPath }: { nextPath?: string }) {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="you@example.com" {...field} />
+                  <Input className="h-12 rounded-xl" type="email" placeholder="you@example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -92,7 +92,7 @@ export default function LoginForm({ nextPath }: { nextPath?: string }) {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <PasswordInput {...field} />
+                  <PasswordInput className="h-12 rounded-xl" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -109,7 +109,7 @@ export default function LoginForm({ nextPath }: { nextPath?: string }) {
           <Button
             type="submit"
             disabled={mutation.isPending}
-            className="w-full bg-brand hover:bg-brand-600 rounded-full"
+            className="h-12 w-full rounded-2xl text-[15px]"
           >
             {mutation.isPending ? 'Logging in...' : 'Log in'}
           </Button>

@@ -64,7 +64,7 @@ export default function ForgotPasswordForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="you@example.com" {...field} />
+                <Input className="h-12 rounded-xl" type="email" placeholder="you@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -73,7 +73,7 @@ export default function ForgotPasswordForm() {
         <Button
           type="submit"
           disabled={mutation.isPending}
-          className="w-full rounded-full bg-brand hover:bg-brand-600"
+          className="h-12 w-full rounded-2xl text-[15px]"
         >
           {mutation.isPending ? 'Sending...' : 'Send reset link'}
         </Button>

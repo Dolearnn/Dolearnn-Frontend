@@ -95,7 +95,7 @@ export default function ResetPasswordForm() {
             <FormItem>
               <FormLabel>New password</FormLabel>
               <FormControl>
-                <PasswordInput {...field} />
+                <PasswordInput className="h-12 rounded-xl" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -108,7 +108,7 @@ export default function ResetPasswordForm() {
             <FormItem>
               <FormLabel>Confirm new password</FormLabel>
               <FormControl>
-                <PasswordInput {...field} />
+                <PasswordInput className="h-12 rounded-xl" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -117,7 +117,7 @@ export default function ResetPasswordForm() {
         <Button
           type="submit"
           disabled={mutation.isPending}
-          className="w-full rounded-full bg-brand hover:bg-brand-600"
+          className="h-12 w-full rounded-2xl text-[15px]"
         >
           {mutation.isPending ? 'Resetting...' : 'Reset password'}
         </Button>

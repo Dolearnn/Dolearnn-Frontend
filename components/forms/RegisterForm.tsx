@@ -100,7 +100,7 @@ export default function RegisterForm({ nextPath = '/student/onboarding' }: { nex
               <FormItem>
                 <FormLabel>Full name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Amara Okafor" {...field} />
+                  <Input className="h-12 rounded-xl" placeholder="Amara Okafor" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -114,6 +114,7 @@ export default function RegisterForm({ nextPath = '/student/onboarding' }: { nex
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
+                    className="h-12 rounded-xl"
                     type="email"
                     placeholder="you@example.com"
                     {...field}
@@ -132,7 +133,7 @@ export default function RegisterForm({ nextPath = '/student/onboarding' }: { nex
                   WhatsApp number <span className="font-normal text-gray-500">(optional, for tutoring)</span>
                 </FormLabel>
                 <FormControl>
-                  <Input type="tel" placeholder="+234 800 000 0000" {...field} />
+                  <Input className="h-12 rounded-xl" type="tel" placeholder="+234 800 000 0000" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -145,7 +146,7 @@ export default function RegisterForm({ nextPath = '/student/onboarding' }: { nex
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <PasswordInput {...field} />
+                  <PasswordInput className="h-12 rounded-xl" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -158,7 +159,7 @@ export default function RegisterForm({ nextPath = '/student/onboarding' }: { nex
               <FormItem>
                 <FormLabel>Confirm password</FormLabel>
                 <FormControl>
-                  <PasswordInput {...field} />
+                  <PasswordInput className="h-12 rounded-xl" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -167,7 +168,7 @@ export default function RegisterForm({ nextPath = '/student/onboarding' }: { nex
           <Button
             type="submit"
             disabled={mutation.isPending}
-            className="w-full bg-brand hover:bg-brand-600 rounded-full"
+            className="h-12 w-full rounded-2xl text-[15px]"
           >
             {mutation.isPending ? 'Creating account...' : 'Create account'}
           </Button>
