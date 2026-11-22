@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { inter, montserrat } from '@/lib/fonts';
 import AppProviders from '@/components/providers/AppProviders';
 import { ThemeProvider } from '@/components/theme-provider';
+import RegisterServiceWorker from '@/components/providers/RegisterServiceWorker';
 
 
 export const metadata: Metadata = {
@@ -14,7 +15,13 @@ export const metadata: Metadata = {
   icons: {
     icon: '/logo.png',
     shortcut: '/logo.png',
-    apple: '/logo.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
+  // Opened from the home screen, iPhones show it full screen like an app.
+  appleWebApp: {
+    capable: true,
+    title: 'DoLearnn',
+    statusBarStyle: 'default',
   },
 
   openGraph: {
@@ -56,6 +63,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AppProviders>{children}</AppProviders>
+          <RegisterServiceWorker />
         </ThemeProvider>
       </body>
     </html>

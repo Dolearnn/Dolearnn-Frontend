@@ -11,6 +11,7 @@ import NextActions from '@/components/quiz/NextActions';
 import RewardsStrip from '@/components/quiz/RewardsStrip';
 import AchievementsPanel from '@/components/quiz/AchievementsPanel';
 import DailyCard from '@/components/daily/DailyCard';
+import InstallAppCard from '@/components/dashboard/InstallAppCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAuthUser } from '@/lib/api/auth-storage';
 import { getQuizPracticeOverview, quizKeys } from '@/lib/api/quiz';
@@ -89,6 +90,8 @@ export default function StudentDashboardPage() {
             : 'Welcome to DoLearnn. Your first step is below.'}
         </p>
       </header>
+
+      <InstallAppCard className="mb-4" />
 
       {isNewLearner && overviewQuery.data ? (
         <div className="space-y-4">
