@@ -277,6 +277,8 @@ export interface StartQuizInput {
   studentId?: string;
   // Re-ask questions the learner got wrong on an earlier day.
   reviewMistakes?: boolean;
+  // A full UTME paper: English 60 + 40 for each of three subjects, 2 hours, exam mode.
+  utme?: boolean;
   // Re-test the weak topics of this submitted attempt (the server picks topics and count).
   retakeOfAttemptId?: string;
 }

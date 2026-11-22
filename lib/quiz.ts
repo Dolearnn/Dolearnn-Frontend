@@ -81,11 +81,14 @@ export const toneClasses = {
   },
 } as const;
 
+/** 09:05 under an hour, 1:58:38 from an hour up (a full UTME paper runs 2 hours). */
 export function formatClock(totalSeconds: number) {
   const safe = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(safe / 60);
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
   const seconds = safe % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const mmss = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return hours > 0 ? `${hours}:${mmss}` : mmss;
 }
 
 export function scoreMessage(percent: number) {

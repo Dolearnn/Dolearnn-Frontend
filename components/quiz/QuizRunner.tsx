@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ChevronLeft, ChevronRight, Clock, Send } from 'lucide-react';
+import { AlertTriangle, Calculator, ChevronLeft, ChevronRight, Clock, LayoutGrid, Send, X } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { ExamGate, ExamWarning, MAX_WARNINGS, exitFullscreen, useExamLockdown } from './ExamLockdown';
 import {
@@ -26,6 +26,7 @@ import {
 import { formatClock } from '@/lib/quiz';
 import { cn } from '@/lib/utils';
 import ReportQuestion from './ReportQuestion';
+import CbtCalculator from './CbtCalculator';
 
 interface SavedProgress {
   answers?: Record<string, string>;
@@ -42,6 +43,9 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
   const [index, setIndex] = useState(0);
   const [restored, setRestored] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Exam mode only: the calculator and, on phones, the question grid sheet.
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [gridOpen, setGridOpen] = useState(false);
 
   const total = questions.length;
   const question = questions[index];
@@ -193,10 +197,13 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
       const target = event.target as HTMLElement | null;
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
 
-      if (event.key === 'ArrowRight') {
+      const key = event.key.toUpperCase();
+      if (event.key === 'ArrowRight' || (exam && key === 'N')) {
         setIndex((current) => Math.min(total - 1, current + 1));
-      } else if (event.key === 'ArrowLeft') {
+      } else if (event.key === 'ArrowLeft' || (exam && key === 'P')) {
         setIndex((current) => Math.max(0, current - 1));
+      } else if (exam && key === 'S') {
+        setConfirmOpen(true);
       } else {
         const option = question?.options.find(
           (item) => item.id.toUpperCase() === event.key.toUpperCase(),
@@ -207,7 +214,7 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmOpen, submit.isPending, question, total]);
+  }, [confirmOpen, submit.isPending, question, total, exam]);
 
   if (!question) return null;
 
@@ -225,6 +232,32 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
 
   const unanswered = total - answeredCount;
   const lowTime = remaining !== null && remaining <= 60;
+
+  const confirmDialog = (
+    <>
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          {/* Above the full-screen exam layer (z-60). */}
+          <AlertDialogContent className="z-[80]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Submit your quiz?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {unanswered > 0
+                  ? `You have ${unanswered} unanswered ${
+                      unanswered === 1 ? 'question' : 'questions'
+                    }. Unanswered questions count as wrong.`
+                  : 'You have answered every question.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep going</AlertDialogCancel>
+              <AlertDialogAction onClick={() => submit.mutate()}>
+                Submit now
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+    </>
+  );
 
   const content = (
     <div className="mx-auto max-w-3xl">
@@ -430,55 +463,288 @@ export default function QuizRunner({ view }: { view: QuizInProgressView }) {
         </p>
       </div>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        {/* Above the full-screen exam layer (z-60). */}
-        <AlertDialogContent className="z-[80]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Submit your quiz?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {unanswered > 0
-                ? `You have ${unanswered} unanswered ${
-                    unanswered === 1 ? 'question' : 'questions'
-                  }. Unanswered questions count as wrong.`
-                : 'You have answered every question.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep going</AlertDialogCancel>
-            <AlertDialogAction onClick={() => submit.mutate()}>
-              Submit now
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {confirmDialog}
     </div>
   );
 
   if (!exam) return content;
 
-  // Exam mode covers the whole app: no sidebar, header or navigation.
+  // Exam mode covers the whole app, laid out like a CBT centre screen: timer and
+  // calculator on top, subject tabs, the question, and a numbered question grid.
+  const sectionFirst = currentSection?.first ?? 0;
+  const sectionLast = currentSection?.last ?? total - 1;
+  const sectionSize = sectionLast - sectionFirst + 1;
+  const sectionNumber = index - sectionFirst + 1;
+  const sectionDone = questions
+    .slice(sectionFirst, sectionLast + 1)
+    .filter((item) => answers[item.id] !== undefined).length;
+  const timeTone =
+    remaining === null ? '' : remaining <= 60 ? 'bg-red-500 text-white' : remaining <= 300 ? 'bg-amber-400 text-gray-950' : 'bg-white/15 text-white';
+
+  const questionGrid = (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1.5">
+      {questions.slice(sectionFirst, sectionLast + 1).map((item, offset) => {
+        const i = sectionFirst + offset;
+        const isAnswered = Boolean(answers[item.id]);
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => {
+              go(i);
+              setGridOpen(false);
+            }}
+            aria-label={`Question ${offset + 1}${isAnswered ? ', answered' : ', not answered'}`}
+            aria-current={i === index ? 'true' : undefined}
+            className={cn(
+              'h-10 rounded-lg text-sm font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              isAnswered
+                ? 'bg-accent2-500 text-white dark:text-brand'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-muted-foreground',
+              i === index && 'ring-2 ring-brand ring-offset-2 dark:ring-accent2-400 dark:ring-offset-card',
+            )}
+          >
+            {offset + 1}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const gridLegend = (
+    <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-accent2-500" aria-hidden /> Answered</span>
+      <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-gray-200 dark:bg-white/10" aria-hidden /> Not answered</span>
+    </p>
+  );
+
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#f4f8fb] dark:bg-background">
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-border dark:bg-card/90 sm:px-8">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="hidden sm:block"><Logo size="sm" /></span>
-          <span className="truncate rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white dark:bg-accent2-500 dark:text-brand">
-            {examName && (attempt.subjects?.length ?? 0) > 1 ? examName : examName ? `${examName} · ${attempt.subject.name}` : attempt.subject.name}
-          </span>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-background">
+      <header className="flex items-center gap-2 bg-brand px-3 py-2.5 text-white dark:bg-[hsl(208,70%,14%)] sm:gap-3 sm:px-6">
+        <span className="hidden sm:block"><Logo tone="light" size="sm" /></span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs text-white/70">{examName ? `${examName}, exam mode` : 'Exam mode'}</p>
+          <p className="truncate font-display text-sm font-bold sm:text-base">
+            {(attempt.subjects?.length ?? 0) > 1 ? `${attempt.subjects!.length} subjects` : attempt.subject.name}
+          </p>
         </div>
         <span
           className={cn(
-            'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold',
-            lockdown.record.warnings > 0
-              ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
-              : 'bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400',
+            'hidden shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-flex',
+            lockdown.record.warnings > 0 ? 'bg-amber-400 text-gray-950' : 'bg-white/10 text-white/80',
           )}
         >
-          <AlertTriangle className="h-3.5 w-3.5" />
-          {lockdown.record.warnings}/{MAX_WARNINGS} warnings
+          <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+          {lockdown.record.warnings}/{MAX_WARNINGS}
         </span>
+        <button
+          type="button"
+          onClick={() => setCalculatorOpen((open) => !open)}
+          aria-pressed={calculatorOpen}
+          aria-label="Calculator"
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent2-300',
+            calculatorOpen ? 'bg-accent2-400 text-brand-700' : 'bg-white/10 text-white hover:bg-white/20',
+          )}
+        >
+          <Calculator className="h-5 w-5" />
+        </button>
+        {remaining !== null && (
+          <span
+            role="timer"
+            aria-label="Time remaining"
+            className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-lg font-extrabold tabular-nums', timeTone)}
+          >
+            <Clock className="h-4 w-4" aria-hidden />
+            {formatClock(remaining)}
+          </span>
+        )}
       </header>
-      <div className="px-4 py-6 sm:py-10">{content}</div>
+
+      {sections.length > 1 && (
+        <nav
+          aria-label="Subjects"
+          className="flex gap-1 overflow-x-auto border-b border-gray-200 bg-white px-2 [scrollbar-width:none] dark:border-border dark:bg-card sm:px-4 [&::-webkit-scrollbar]:hidden"
+        >
+          {sections.map((section) => {
+            const active = section.id === currentSection?.id;
+            const done = questions
+              .slice(section.first, section.last + 1)
+              .filter((item) => answers[item.id] !== undefined).length;
+            return (
+              <button
+                key={section.id}
+                type="button"
+                aria-current={active ? 'true' : undefined}
+                onClick={() => setIndex(section.first)}
+                className={cn(
+                  'flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-semibold transition-colors',
+                  active
+                    ? 'border-brand text-brand dark:border-accent2-400 dark:text-accent2-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-muted-foreground dark:hover:text-foreground',
+                )}
+              >
+                {section.name}
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-600 dark:bg-white/10 dark:text-muted-foreground">
+                  {done}/{section.count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto grid max-w-6xl gap-4 p-3 sm:p-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+          <section aria-label="Question" className="rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card sm:p-7">
+            <p className="flex items-baseline gap-1.5 text-gray-500 dark:text-muted-foreground">
+              <span className="text-sm">Question</span>
+              <span className="font-display text-2xl font-extrabold tabular-nums text-brand dark:text-accent2-400">{sectionNumber}</span>
+              <span className="text-sm tabular-nums">of {sectionSize}</span>
+              {currentSection && <span className="ml-1 truncate text-sm">in {currentSection.name}</span>}
+            </p>
+            <p className="mt-3 whitespace-pre-line text-[17px] font-medium leading-relaxed text-gray-950 dark:text-foreground sm:text-lg">
+              {question.text}
+            </p>
+            {question.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={question.imageUrl}
+                alt="Diagram for this question"
+                className="mt-4 max-h-64 rounded-xl border border-gray-200 dark:border-border"
+              />
+            )}
+            <div role="radiogroup" aria-label="Answer options" className="mt-5 space-y-2.5">
+              {question.options.map((option) => {
+                const selected = answers[question.id] === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => select(option.id)}
+                    className={cn(
+                      'flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-left transition-[border-color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      selected
+                        ? 'border-brand bg-brand-50 dark:border-accent2-400 dark:bg-accent2-500/15'
+                        : 'border-gray-200/80 hover:border-brand/40 hover:bg-gray-50 dark:border-border dark:hover:bg-white/5',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 font-display text-sm font-bold',
+                        selected
+                          ? 'border-brand bg-brand text-white dark:border-accent2-500 dark:bg-accent2-500 dark:text-brand'
+                          : 'border-gray-300 text-gray-600 dark:border-border dark:text-muted-foreground',
+                      )}
+                    >
+                      {option.id}
+                    </span>
+                    <span className="text-[15px] leading-snug text-gray-900 dark:text-foreground sm:text-base">{option.text}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-6 hidden items-center justify-between gap-3 lg:flex">
+              <Button type="button" variant="outline" className="h-12 rounded-2xl px-5" onClick={() => go(index - 1)} disabled={index === 0}>
+                <ChevronLeft className="mr-1 h-5 w-5" /> Previous
+              </Button>
+              <p className="hidden text-xs text-gray-500 dark:text-muted-foreground xl:block">
+                Keys: A–D to answer, N next, P previous, S submit
+              </p>
+              <Button type="button" className="h-12 rounded-2xl px-6" onClick={() => go(index + 1)} disabled={index === total - 1}>
+                Next <ChevronRight className="ml-1 h-5 w-5" />
+              </Button>
+            </div>
+          </section>
+
+          <aside className="hidden space-y-4 rounded-3xl border border-gray-200/80 bg-white p-5 dark:border-border dark:bg-card lg:sticky lg:top-6 lg:block">
+            <div className="flex items-baseline justify-between">
+              <p className="font-display text-base font-bold text-gray-950 dark:text-foreground">
+                {currentSection ? currentSection.name : 'Questions'}
+              </p>
+              <p className="text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
+                {sectionDone}/{sectionSize} answered
+              </p>
+            </div>
+            {questionGrid}
+            {gridLegend}
+            <Button
+              type="button"
+              className="h-12 w-full rounded-2xl bg-accent2-500 text-[15px] text-brand-700 hover:bg-accent2-400"
+              onClick={() => setConfirmOpen(true)}
+              disabled={submit.isPending}
+            >
+              <Send className="mr-2 h-4 w-4" /> {submit.isPending ? 'Submitting…' : 'Submit exam'}
+            </Button>
+            <p className="text-center text-xs tabular-nums text-gray-500 dark:text-muted-foreground">
+              {answeredCount} of {total} answered in all
+            </p>
+          </aside>
+        </div>
+      </div>
+
+      {/* Phones: navigation stays under the thumb. */}
+      <footer className="grid grid-cols-[auto_1fr_auto] items-center gap-2 border-t border-gray-200 bg-white px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 dark:border-border dark:bg-card lg:hidden">
+        <Button type="button" variant="outline" className="h-12 w-12 rounded-2xl p-0" onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous question">
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <Button type="button" variant="outline" className="h-12 rounded-2xl" onClick={() => setGridOpen(true)}>
+          <LayoutGrid className="mr-2 h-4 w-4" />
+          <span className="tabular-nums">{sectionDone}/{sectionSize} answered</span>
+        </Button>
+        {index < total - 1 ? (
+          <Button type="button" className="h-12 rounded-2xl px-5" onClick={() => go(index + 1)}>
+            Next <ChevronRight className="ml-1 h-5 w-5" />
+          </Button>
+        ) : (
+          <Button type="button" className="h-12 rounded-2xl bg-accent2-500 px-5 text-brand-700 hover:bg-accent2-400" onClick={() => setConfirmOpen(true)}>
+            Submit
+          </Button>
+        )}
+      </footer>
+
+      {gridOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end bg-black/40 lg:hidden" onClick={() => setGridOpen(false)}>
+          <div
+            role="dialog"
+            aria-label="Question grid"
+            className="max-h-[80vh] w-full overflow-y-auto rounded-t-[28px] bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] dark:bg-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
+                {currentSection ? currentSection.name : 'Questions'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setGridOpen(false)}
+                aria-label="Close question grid"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {questionGrid}
+            <div className="mt-3">{gridLegend}</div>
+            <Button
+              type="button"
+              className="mt-5 h-12 w-full rounded-2xl bg-accent2-500 text-[15px] text-brand-700 hover:bg-accent2-400"
+              onClick={() => {
+                setGridOpen(false);
+                setConfirmOpen(true);
+              }}
+              disabled={submit.isPending}
+            >
+              <Send className="mr-2 h-4 w-4" /> Submit exam ({answeredCount} of {total} answered)
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {calculatorOpen && <CbtCalculator onClose={() => setCalculatorOpen(false)} />}
+      {confirmDialog}
       {lockdown.notice && !submit.isPending && (
         <ExamWarning
           kind={lockdown.notice}

@@ -53,7 +53,11 @@ const fullscreenSupported = () =>
 async function enterFullscreen() {
   if (!fullscreenSupported() || document.fullscreenElement) return;
   try {
-    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    // Some browsers leave the request hanging; never let that block the exam.
+    await Promise.race([
+      document.documentElement.requestFullscreen({ navigationUI: 'hide' }),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
   } catch {
     // Refused (e.g. not from a click): the full-page overlay still applies.
   }

@@ -20,6 +20,13 @@ import { useStartQuiz } from './useStartQuiz';
 const MAX_SUBJECTS = 6;
 const PER_SUBJECT_CHOICES = [5, 10, 20, 40];
 
+// A full JAMB UTME paper, as the server builds it (see quiz.schemas.ts).
+const UTME_ENGLISH_SLUG = 'use-of-english';
+const UTME_ENGLISH_QUESTIONS = 60;
+const UTME_SUBJECT_QUESTIONS = 40;
+const UTME_SUBJECTS = 4;
+const UTME_MINUTES = 120;
+
 const modes: Array<{ value: QuizMode; title: string; hint: string }> = [
   { value: 'PRACTICE', title: 'Guided practice', hint: 'No timer. Review explanations after.' },
   { value: 'MOCK', title: 'Exam mode', hint: 'Full screen and timed, 1 minute per question.' },
@@ -50,11 +57,15 @@ export default function MixedQuizDialog({
 }) {
   const start = useStartQuiz();
   const ready = subjects.filter((row) => row.available > 0);
-  const [chosen, setChosen] = useState<string[]>([]);
+  const isJamb = /jamb|utme/i.test(exam?.name ?? '');
+  const english = ready.find((row) => row.subject.slug === UTME_ENGLISH_SLUG);
+  // JAMB learners start on the full paper, with English already chosen.
+  const [chosen, setChosen] = useState<string[]>(() => (isJamb && english ? [english.subject.id] : []));
   const [topics, setTopics] = useState<Record<string, string[]>>({});
   const [open, setOpen] = useState<string | null>(null);
   const [perSubject, setPerSubject] = useState(10);
   const [mode, setMode] = useState<QuizMode>('PRACTICE');
+  const [utme, setUtme] = useState(isJamb && Boolean(english));
 
   const byId = new Map(ready.map((row) => [row.subject.id, row]));
   // The catalog can refetch while the dialog is open. A subject or topic that
@@ -78,7 +89,18 @@ export default function MixedQuizDialog({
   // comes up short when the whole mix runs out of questions.
   const total = Math.min(requested, availableTotal);
   const short = selected.length >= 2 && total < requested;
-  const isJamb = /jamb|utme/i.test(exam?.name ?? '');
+  const utmeReady =
+    utme && selected.length === UTME_SUBJECTS && Boolean(english && selected.includes(english.subject.id));
+  // Questions the full paper will have: fewer only if a subject is short.
+  const utmeTotal = selected.reduce(
+    (sum, id) =>
+      sum +
+      Math.min(
+        byId.get(id)?.subject.slug === UTME_ENGLISH_SLUG ? UTME_ENGLISH_QUESTIONS : UTME_SUBJECT_QUESTIONS,
+        byId.get(id)?.available ?? 0,
+      ),
+    0,
+  );
 
   const toggleSubject = (id: string) => {
     if (open === id) setOpen(null);
@@ -93,7 +115,7 @@ export default function MixedQuizDialog({
     setChosen((current) => {
       const kept = current.filter((item) => byId.has(item));
       if (kept.includes(id)) return kept.filter((item) => item !== id);
-      return kept.length >= MAX_SUBJECTS ? kept : [...kept, id];
+      return kept.length >= (utme ? UTME_SUBJECTS : MAX_SUBJECTS) ? kept : [...kept, id];
     });
   };
 
@@ -107,44 +129,93 @@ export default function MixedQuizDialog({
     });
 
   const begin = () =>
-    start.mutate({
-      subjectIds: selected,
-      topicIds: selected.flatMap(pickedTopics),
-      examId: exam?.id,
-      count: total,
-      mode,
-      studentId: studentId ?? undefined,
-    });
+    utme
+      ? start.mutate({
+          subjectIds: selected,
+          examId: exam?.id,
+          count: utmeTotal,
+          mode: 'MOCK',
+          utme: true,
+          studentId: studentId ?? undefined,
+        })
+      : start.mutate({
+          subjectIds: selected,
+          topicIds: selected.flatMap(pickedTopics),
+          examId: exam?.id,
+          count: total,
+          mode,
+          studentId: studentId ?? undefined,
+        });
 
   return (
     <Dialog open onOpenChange={(value) => !value && onClose()}>
       <DialogContent className={cn("max-h-[90vh] max-w-2xl overflow-y-auto", sheetContent)}>
         <DialogHeader>
-          <DialogTitle>Mix subjects</DialogTitle>
+          <DialogTitle>{utme ? 'Full UTME paper' : 'Mix subjects'}</DialogTitle>
           <DialogDescription>
-            {exam ? `${exam.name} · ` : ''}Pick up to {MAX_SUBJECTS} subjects. Questions are shared equally and grouped by subject.
-            {isJamb ? ' JAMB UTME is English plus three subjects.' : ''}
+            {utme
+              ? `Use of English (${UTME_ENGLISH_QUESTIONS} questions) plus three subjects (${UTME_SUBJECT_QUESTIONS} each), ${UTME_MINUTES / 60} hours, in exam mode.`
+              : `${exam ? `${exam.name}. ` : ''}Pick up to ${MAX_SUBJECTS} subjects. Questions are shared equally and grouped by subject.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          {isJamb && english && (
+            <div className="grid grid-cols-2 gap-1 rounded-2xl bg-gray-100 p-1 dark:bg-white/5" role="radiogroup" aria-label="Paper type">
+              {([
+                [true, 'Full UTME paper'],
+                [false, 'Custom mix'],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={label}
+                  type="button"
+                  role="radio"
+                  aria-checked={utme === value}
+                  onClick={() => {
+                    setUtme(value);
+                    if (value) {
+                      setTopics({});
+                      setOpen(null);
+                      // English is always part of the UTME, so it starts selected.
+                      setChosen((current) => {
+                        const rest = current.filter((id) => id !== english.subject.id && byId.has(id));
+                        return [english.subject.id, ...rest].slice(0, UTME_SUBJECTS);
+                      });
+                    }
+                  }}
+                  className={cn(
+                    'min-h-11 rounded-xl text-sm font-semibold transition-colors',
+                    utme === value ? 'bg-white text-gray-950 shadow-sm dark:bg-card dark:text-foreground' : 'text-gray-600 dark:text-muted-foreground',
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           <fieldset>
             <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">
-              Subjects <span className="font-normal text-gray-500 dark:text-muted-foreground">({selected.length} chosen)</span>
+              {utme ? 'English plus three subjects' : 'Subjects'}{' '}
+              <span className="font-normal text-gray-500 dark:text-muted-foreground">
+                ({selected.length}{utme ? ` of ${UTME_SUBJECTS}` : ''} chosen)
+              </span>
             </legend>
             <div className="flex flex-wrap gap-2">
               {ready.map(({ subject }) => {
                 const on = selected.includes(subject.id);
-                const full = !on && selected.length >= MAX_SUBJECTS;
+                const full = !on && selected.length >= (utme ? UTME_SUBJECTS : MAX_SUBJECTS);
+                // English can't be removed from a UTME paper.
+                const locked = utme && on && subject.slug === UTME_ENGLISH_SLUG;
                 return (
                   <button
                     key={subject.id}
                     type="button"
                     aria-pressed={on}
-                    disabled={full}
+                    disabled={full || locked}
                     onClick={() => toggleSubject(subject.id)}
                     className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors disabled:opacity-40',
+                      'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors disabled:opacity-40',
+                      locked && 'disabled:opacity-100',
                       on ? selectedPill : idlePill,
                     )}
                   >
@@ -156,7 +227,7 @@ export default function MixedQuizDialog({
             </div>
           </fieldset>
 
-          {selected.length > 0 && (
+          {!utme && selected.length > 0 && (
             <fieldset>
               <legend className="mb-1 text-sm font-medium text-gray-900 dark:text-foreground">Topics (optional)</legend>
               <p className="mb-2 text-xs text-gray-500 dark:text-muted-foreground">
@@ -225,69 +296,77 @@ export default function MixedQuizDialog({
             </fieldset>
           )}
 
-          <fieldset>
-            <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">Questions per subject</legend>
-            <div className="flex flex-wrap gap-2">
-              {PER_SUBJECT_CHOICES.map((choice) => (
-                <button
-                  key={choice}
-                  type="button"
-                  onClick={() => setPerSubject(choice)}
-                  aria-pressed={perSubject === choice}
-                  className={cn(
-                    'h-11 min-w-14 rounded-xl border px-4 font-display text-sm font-bold tabular-nums transition-colors',
-                    perSubject === choice ? selectedPill : idlePill,
-                  )}
-                >
-                  {choice}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {!utme && (
+            <fieldset>
+              <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">Questions per subject</legend>
+              <div className="flex flex-wrap gap-2">
+                {PER_SUBJECT_CHOICES.map((choice) => (
+                  <button
+                    key={choice}
+                    type="button"
+                    onClick={() => setPerSubject(choice)}
+                    aria-pressed={perSubject === choice}
+                    className={cn(
+                      'h-11 min-w-14 rounded-xl border px-4 font-display text-sm font-bold tabular-nums transition-colors',
+                      perSubject === choice ? selectedPill : idlePill,
+                    )}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
-          <fieldset>
-            <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">Mode</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {modes.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setMode(item.value)}
-                  aria-pressed={mode === item.value}
-                  className={cn(
-                    'min-h-16 rounded-2xl border-2 p-3 text-left transition-colors',
-                    mode === item.value
-                      ? 'border-brand bg-brand-50 dark:border-accent2-400 dark:bg-accent2-500/15'
-                      : 'border-gray-200 hover:border-brand/50 dark:border-border',
-                  )}
-                >
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 dark:text-foreground">
-                    {item.value === 'MOCK' && <Clock className="h-3.5 w-3.5" />}
-                    {item.title}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-muted-foreground">{item.hint}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {!utme && (
+            <fieldset>
+              <legend className="mb-2 text-sm font-medium text-gray-900 dark:text-foreground">Mode</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {modes.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setMode(item.value)}
+                    aria-pressed={mode === item.value}
+                    className={cn(
+                      'min-h-16 rounded-2xl border-2 p-3 text-left transition-colors',
+                      mode === item.value
+                        ? 'border-brand bg-brand-50 dark:border-accent2-400 dark:bg-accent2-500/15'
+                        : 'border-gray-200 hover:border-brand/50 dark:border-border',
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 dark:text-foreground">
+                      {item.value === 'MOCK' && <Clock className="h-3.5 w-3.5" />}
+                      {item.title}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-gray-500 dark:text-muted-foreground">{item.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
         </div>
 
         <DialogFooter className={cn("items-center gap-3 sm:justify-between", stickyFooter)}>
           <p className="text-sm text-gray-600 dark:text-muted-foreground">
-            {selected.length < 2
-              ? 'Choose at least 2 subjects.'
-              : `${selected.length} subjects · ${total} questions${mode === 'MOCK' ? ` · ${total} min` : ''}`}
-            {short && (
+            {utme
+              ? utmeReady
+                ? `${utmeTotal} questions, ${UTME_MINUTES / 60} hours`
+                : `Choose ${UTME_SUBJECTS - selected.length} more ${UTME_SUBJECTS - selected.length === 1 ? 'subject' : 'subjects'}.`
+              : selected.length < 2
+                ? 'Choose at least 2 subjects.'
+                : `${selected.length} subjects, ${total} questions${mode === 'MOCK' ? `, ${total} min` : ''}`}
+            {!utme && short && (
               <span className="block text-xs">Only {availableTotal} questions are available for this mix.</span>
             )}
           </p>
           <Button
             className="h-12 w-full rounded-2xl px-6 text-[15px] sm:w-auto"
-            disabled={selected.length < 2 || total === 0 || start.isPending}
+            disabled={(utme ? !utmeReady || utmeTotal === 0 : selected.length < 2 || total === 0) || start.isPending}
             onClick={begin}
           >
             <Play className="mr-2 h-4 w-4" />
-            {start.isPending ? 'Starting…' : mode === 'MOCK' ? 'Start timed exam' : 'Start mixed quiz'}
+            {start.isPending ? 'Starting…' : utme ? 'Start UTME paper' : mode === 'MOCK' ? 'Start timed exam' : 'Start mixed quiz'}
           </Button>
         </DialogFooter>
       </DialogContent>

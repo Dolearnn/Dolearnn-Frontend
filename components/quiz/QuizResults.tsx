@@ -104,6 +104,9 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
   const missed = review.filter((question) => question.yourAnswer && !question.isCorrect).length;
 
   const mixed = (attempt.subjects?.length ?? 0) > 1;
+  // A full UTME paper runs for exactly 2 hours over four subjects; taking it
+  // again should build another full paper, not an even mix.
+  const fullUtme = attempt.mode === 'MOCK' && attempt.timeLimitSecs === 2 * 60 * 60 && attempt.subjects?.length === 4;
   const base = {
     subjectId: attempt.subject.id,
     subjectIds: mixed ? attempt.subjects!.map((subject) => subject.id) : undefined,
@@ -310,10 +313,11 @@ export default function QuizResults({ view }: { view: QuizSubmittedView }) {
                 ...base,
                 count: Math.max(5, attempt.totalQuestions),
                 mode: attempt.mode,
+                utme: fullUtme || undefined,
               })
             }
           >
-            <RotateCcw className="mr-2 h-4 w-4" /> {mixed ? 'Take this mix again' : 'Test this subject again'}
+            <RotateCcw className="mr-2 h-4 w-4" /> {fullUtme ? 'Take another UTME paper' : mixed ? 'Take this mix again' : 'Test this subject again'}
           </Button>
           <Button asChild variant="ghost" className="h-12 rounded-2xl px-5">
             <Link href={practicePath}>Back to practice</Link>
