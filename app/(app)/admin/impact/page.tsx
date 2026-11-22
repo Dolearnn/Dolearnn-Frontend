@@ -12,6 +12,7 @@ import {
 import PageHeader from '@/components/dashboard/PageHeader';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import StatTile from '@/components/dashboard/StatTile';
+import FunnelCard from '@/components/admin/FunnelCard';
 import { getImpactReport, impactKeys } from '@/lib/api/reports';
 import { naira } from '@/lib/money';
 
@@ -75,6 +76,8 @@ export default function AdminImpactPage() {
           generatedAt,
         ).toLocaleTimeString()}. Nothing here is estimated or projected.`}
       />
+
+      <FunnelCard />
 
       <Section title="Reach">
         <StatTile icon={Users} label="Accounts registered" value={n(people.families)} />

@@ -103,3 +103,27 @@ export async function getImpactReport() {
   const response = await apiFetch<{ impact: ImpactReport }>('/admin/reports/impact');
   return response.impact;
 }
+
+export type FunnelPeriod = 7 | 30 | 90;
+
+export interface FunnelStep {
+  key: 'signedUp' | 'onboarded' | 'firstQuiz' | 'cameBack' | 'tutorRequested';
+  label: string;
+  count: number;
+  percentOfSignups: number;
+}
+
+export interface FunnelReport {
+  days: FunnelPeriod;
+  since: string;
+  steps: FunnelStep[];
+  // Guests who played the Daily without an account (yet) in the same period.
+  guestDailyPlayers: number;
+}
+
+export const funnelKeys = { admin: (days: FunnelPeriod) => ['admin', 'funnel', days] as const };
+
+export async function getFunnelReport(days: FunnelPeriod) {
+  const response = await apiFetch<{ funnel: FunnelReport }>(`/admin/reports/funnel?days=${days}`);
+  return response.funnel;
+}
