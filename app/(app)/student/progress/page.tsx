@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArrowRight, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/dashboard/PageHeader';
+import ParentReportCard from '@/components/quiz/ParentReportCard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getQuizPracticeOverview, quizKeys } from '@/lib/api/quiz';
@@ -42,6 +43,8 @@ export default function StudentProgressPage() {
             <SummaryNumber value={progress.summary.subjectsImproved} of={progress.summary.subjectsCompared} label="subjects improved" />
             <SummaryNumber value={progress.summary.topicsImproved} label="topics up 10+ points" />
           </section>
+
+          <ParentReportCard />
 
           <div className="space-y-5">
             {progress.subjects.map((subject) => {
