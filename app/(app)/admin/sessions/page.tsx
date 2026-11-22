@@ -364,7 +364,7 @@ export default function AdminSessionsPage() {
       </div>
 
       {sessions.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
           <p className="text-sm text-gray-500 dark:text-muted-foreground">
             No sessions match this filter.
           </p>
@@ -658,10 +658,10 @@ function SessionTable({
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
+    <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card">
       <div className="overflow-x-auto">
         <table className="min-w-[720px] w-full text-sm">
-          <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
+          <thead className="bg-gray-50 text-xs font-semibold text-gray-500 dark:bg-white/5 dark:text-muted-foreground">
             <tr>
               <th className="px-4 py-3 text-left font-medium">When</th>
               <th className="px-4 py-3 text-left font-medium">Student</th>
@@ -955,13 +955,13 @@ function ScheduleSessionDialog({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Student timezone</Label>
-              <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
+              <div className="flex h-11 items-center rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-white/5 dark:text-foreground/90">
                 {studentTimezone}
               </div>
             </div>
             <div className="grid gap-2">
               <Label>Teacher timezone</Label>
-              <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
+              <div className="flex h-11 items-center rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-white/5 dark:text-foreground/90">
                 {teacherTimezone}
               </div>
             </div>
@@ -994,7 +994,7 @@ function ScheduleSessionDialog({
 
           <div className="grid gap-2">
             <Label>Duration</Label>
-            <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-background dark:text-foreground/90">
+            <div className="flex h-11 items-center rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 dark:border-border dark:bg-white/5 dark:text-foreground/90">
               60 minutes
             </div>
           </div>

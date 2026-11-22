@@ -18,7 +18,6 @@ import {
   Home,
   ListChecks,
   LogOut,
-  Menu,
   Settings,
   Swords,
   Target,
@@ -95,7 +94,7 @@ const teacherNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { label: 'Overview', href: '/admin', icon: Home },
   { label: 'Notifications', href: '/admin/notifications', icon: Bell },
-  { label: 'Tutor requests', href: '/admin/intakes', icon: ClipboardList, section: 'Tutoring' },
+  { label: 'Tutor requests', href: '/admin/intakes', icon: ClipboardList, section: 'Tutoring', short: 'Requests' },
   { label: 'Teachers', href: '/admin/teachers', icon: GraduationCap },
   { label: 'Sessions', href: '/admin/sessions', icon: Calendar },
   { label: 'Payments', href: '/admin/payments', icon: CreditCard },
@@ -249,19 +248,26 @@ export default function DashboardShell({
     return <FullScreenLoader label="Loading your dashboard" />;
   }
 
-  // Learners and teachers get a bottom tab bar on phones; notifications move to
-  // the header bell. Teachers have more pages than fit, so the rest sit behind
-  // "More", which opens the full menu. Admins keep the menu button.
-  const isLearner = role === 'student';
-  const hasTabBar = role !== 'admin';
+  // Every role gets a bottom tab bar on phones; notifications move to the
+  // header bell. Teachers and admins have more pages than fit, so the rest sit
+  // behind "More", which opens the full menu.
   const tabSource = nav.filter((item) => item.label !== 'Notifications');
-  const tabItems = (role === 'teacher' ? tabSource.slice(0, 4) : tabSource).map((item) => ({
+  const tabPicks: Record<Role, NavItem[]> = {
+    student: tabSource,
+    teacher: tabSource.slice(0, 4),
+    // The admin pages used most day to day.
+    admin: ['/admin', '/admin/intakes', '/admin/sessions', '/admin/payments']
+      .map((href) => tabSource.find((item) => item.href === href))
+      .filter((item): item is NavItem => Boolean(item)),
+  };
+  const hasMore = role !== 'student';
+  const tabItems = tabPicks[role].map((item) => ({
     label: item.short ?? item.label,
     href: item.href,
     icon: item.icon,
     active: isActiveItem(item, pathname, role),
   }));
-  const moreActive = role === 'teacher' && !tabItems.some((item) => item.active);
+  const moreActive = hasMore && !tabItems.some((item) => item.active);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background flex">
@@ -318,40 +324,28 @@ export default function DashboardShell({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 border-b border-gray-200/80 dark:border-border px-4 lg:px-8 h-14 flex items-center justify-between backdrop-blur-md bg-white/85 dark:bg-card/85">
           <div className="flex items-center gap-3">
-            {hasTabBar ? (
-              <Link href={`/${role}`} aria-label="DoLearnn home" className="lg:hidden">
-                <Logo size="sm" />
-              </Link>
-            ) : (
-              <button
-                onClick={() => setMobileOpen(true)}
-                className="lg:hidden -m-2 p-2 text-gray-700 dark:text-gray-200 hover:text-brand dark:hover:text-accent2-400 transition"
-                aria-label="Open menu"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-            )}
-            <span className={cn('text-sm text-gray-500 dark:text-muted-foreground', hasTabBar && 'hidden lg:inline')}>
+            <Link href={`/${role}`} aria-label="DoLearnn home" className="lg:hidden">
+              <Logo size="sm" />
+            </Link>
+            <span className="hidden text-sm text-gray-500 dark:text-muted-foreground lg:inline">
               {roleLabel[role]} Dashboard
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            {hasTabBar && (
-              <Link
-                href={`/${role}/notifications`}
-                aria-label={
-                  unreadNotificationCount > 0
-                    ? `Notifications, ${unreadNotificationCount} unread`
-                    : 'Notifications'
-                }
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 dark:text-white/80 dark:hover:bg-white/10 lg:hidden"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-card" />
-                )}
-              </Link>
-            )}
+            <Link
+              href={`/${role}/notifications`}
+              aria-label={
+                unreadNotificationCount > 0
+                  ? `Notifications, ${unreadNotificationCount} unread`
+                  : 'Notifications'
+              }
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 dark:text-white/80 dark:hover:bg-white/10 lg:hidden"
+            >
+              <Bell className="h-5 w-5" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-card" />
+              )}
+            </Link>
             <ThemeToggle />
             <UserMenu user={authUser} onLogout={handleLogout} />
           </div>
@@ -361,19 +355,17 @@ export default function DashboardShell({
             // clip, not hidden: hidden would turn main into a scroll box and break sticky bars.
             'flex-1 p-4 lg:p-8 overflow-x-clip',
             // Room for the bottom tab bar and the phone's home indicator.
-            hasTabBar && 'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8',
+            'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8',
           )}
         >
           <TutorTabs />
           {children}
         </main>
-        {hasTabBar && (
-          <BottomNav
-            items={tabItems}
-            onMore={role === 'teacher' ? () => setMobileOpen(true) : undefined}
-            moreActive={moreActive}
-          />
-        )}
+        <BottomNav
+          items={tabItems}
+          onMore={hasMore ? () => setMobileOpen(true) : undefined}
+          moreActive={moreActive}
+        />
       </div>
     </div>
   );

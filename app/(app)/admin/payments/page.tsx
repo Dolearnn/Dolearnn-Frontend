@@ -238,7 +238,7 @@ export default function AdminPaymentsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Payments" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load payments right now. Please try again.
         </div>
       </div>
@@ -284,7 +284,7 @@ export default function AdminPaymentsPage() {
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-foreground">
               Teacher payouts for {monthLabel}
             </h2>
             <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
@@ -292,10 +292,10 @@ export default function AdminPaymentsPage() {
             </p>
           </div>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card">
           <div className="overflow-x-auto">
             <table className="min-w-[760px] w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
+              <thead className="bg-gray-50 text-xs font-semibold text-gray-500 dark:bg-white/5 dark:text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Teacher</th>
                   <th className="px-4 py-3 text-right font-medium">Sessions</th>
@@ -377,7 +377,7 @@ export default function AdminPaymentsPage() {
       <section className="space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-foreground">
               Student lesson packages
             </h2>
             <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
@@ -467,7 +467,7 @@ export default function AdminPaymentsPage() {
       <section className="space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-foreground">
               Ledger
             </h2>
             <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
@@ -489,9 +489,10 @@ export default function AdminPaymentsPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead className="bg-gray-50 text-xs font-semibold text-gray-500 dark:bg-white/5 dark:text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
                 <th className="px-4 py-3 text-left font-medium">Type</th>
@@ -545,6 +546,7 @@ export default function AdminPaymentsPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
         {paymentsMeta && paymentsMeta.totalPages > 1 ? (
           <PaginationBar
@@ -561,8 +563,8 @@ export default function AdminPaymentsPage() {
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
-      <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
+      <div className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">
         {label}
       </div>
       <div className="mt-2 text-2xl font-semibold text-gray-900 dark:text-foreground">
@@ -629,7 +631,7 @@ function PackageRow({
       : 0;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-foreground">

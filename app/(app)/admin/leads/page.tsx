@@ -116,7 +116,7 @@ export default function AdminLeadsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Leads" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           {leadsQuery.error instanceof Error
             ? leadsQuery.error.message
             : 'Could not load leads.'}
@@ -242,9 +242,9 @@ export default function AdminLeadsPage() {
       </div>
 
       {leads.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
           <Inbox className="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-muted-foreground" />
-          <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+          <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
             No leads found
           </p>
           <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
@@ -252,10 +252,10 @@ export default function AdminLeadsPage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card">
           <div className="overflow-x-auto">
             <table className="min-w-[980px] w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
+              <thead className="bg-gray-50 text-xs font-semibold text-gray-500 dark:bg-white/5 dark:text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Source</th>
                   <th className="px-4 py-3 text-left font-medium">Full name</th>
@@ -398,8 +398,8 @@ export default function AdminLeadsPage() {
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
-      <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
+      <div className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">
         {label}
       </div>
       <div className="mt-2 text-2xl font-semibold text-gray-900 dark:text-foreground">

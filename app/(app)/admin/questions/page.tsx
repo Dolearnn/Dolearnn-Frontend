@@ -144,7 +144,7 @@ export default function AdminQuestionBankPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Question bank" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           {errorMessage(overviewQuery.error)}
         </div>
       </div>
@@ -176,7 +176,7 @@ export default function AdminQuestionBankPage() {
 
       <QuestionReportsPanel />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <MetricCard label="Total questions" value={total} />
         <MetricCard label="Published" value={byStatus.PUBLISHED ?? 0} />
         <MetricCard label="Draft" value={byStatus.DRAFT ?? 0} />
@@ -265,24 +265,24 @@ export default function AdminQuestionBankPage() {
       )}
 
       {questionsQuery.isError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           {errorMessage(questionsQuery.error)}
         </div>
       ) : questionsQuery.isLoading ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center text-sm text-gray-500 dark:border-border dark:bg-card">
+        <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-10 text-center text-sm text-gray-500">
           Loading questions...
         </div>
       ) : questions.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
           <BookOpen className="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-muted-foreground" />
-          <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">No questions found</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-foreground">No questions found</p>
           <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
             Try another filter, or add a question.
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
-          <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50 px-4 py-3 text-xs uppercase tracking-wide text-gray-500 dark:border-border dark:bg-background dark:text-muted-foreground">
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card">
+          <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-500 dark:border-border dark:bg-background dark:text-muted-foreground">
             <Checkbox
               checked={allLoadedSelected}
               onCheckedChange={(checked) =>
@@ -422,7 +422,7 @@ function QuestionRow({
               );
             })}
           </ul>
-          <p className="rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-background dark:text-foreground/90">
+          <p className="rounded-2xl bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-white/5 dark:text-foreground/90">
             <span className="font-medium">Explanation: </span>
             {question.explanation?.trim() || 'None yet.'}
           </p>
@@ -652,9 +652,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
-      <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-gray-900 dark:text-foreground">{value}</div>
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
+      <div className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">{label}</div>
+      <div className="mt-2 font-display text-[28px] font-extrabold leading-none tabular-nums text-gray-950 dark:text-foreground">{value.toLocaleString()}</div>
     </div>
   );
 }

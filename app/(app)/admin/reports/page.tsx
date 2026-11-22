@@ -59,7 +59,7 @@ export default function AdminReportsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Monthly report" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load reports right now. Please try again.
         </div>
       </div>
@@ -147,13 +147,13 @@ export default function AdminReportsPage() {
       </div>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-foreground/90">
+        <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Teacher payout breakdown
         </h2>
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card">
           <div className="overflow-x-auto">
             <table className="min-w-[760px] w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
+              <thead className="bg-gray-50 text-xs font-semibold text-gray-500 dark:bg-white/5 dark:text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Teacher</th>
                   <th className="px-4 py-3 text-right font-medium">
@@ -257,8 +257,8 @@ function ReportList({
   }>;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-foreground/90">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
+      <h2 className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
         {title}
       </h2>
       {rows.length === 0 ? (

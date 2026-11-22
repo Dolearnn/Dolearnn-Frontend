@@ -11,10 +11,6 @@ export type BottomNavItem = {
   active: boolean;
 };
 
-/**
- * The main pages as a tab bar along the bottom of the screen, where a
- * thumb can reach them. Phones only; larger screens keep the sidebar.
- */
 const itemClass = (active: boolean) =>
   cn(
     'group flex min-h-[60px] w-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors focus-visible:outline-none',
@@ -27,6 +23,10 @@ const pillClass = (active: boolean) =>
     active ? 'bg-accent2-100 dark:bg-accent2-500/15' : 'group-hover:bg-gray-100 dark:group-hover:bg-white/5',
   );
 
+/**
+ * The main pages as a tab bar along the bottom of the screen, where a
+ * thumb can reach them. Phones only; larger screens keep the sidebar.
+ */
 export default function BottomNav({
   items,
   onMore,

@@ -206,14 +206,14 @@ export default function AdminDailyPage() {
       />
 
       {data && (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Questions left">
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Questions left">
           <div className={cn('rounded-2xl p-4', data.summary.daysLeft <= 7 ? 'bg-amber-100 text-amber-900' : 'bg-brand text-white')}>
             <p className="text-sm font-medium">New quizzes left</p>
             <p className="mt-1 text-3xl font-bold">{data.summary.daysLeft} {data.summary.daysLeft === 1 ? 'day' : 'days'}</p>
             <p className="mt-1 text-xs opacity-80">After this, older questions repeat.</p>
           </div>
           {data.summary.categories.map((item) => (
-            <div key={item.category} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
+            <div key={item.category} className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
               <p className="text-sm font-medium text-gray-600 dark:text-muted-foreground">{label(item.category)}</p>
               <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-foreground">{item.unused}</p>
               <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
@@ -224,7 +224,7 @@ export default function AdminDailyPage() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card" aria-labelledby="played-title">
+      <section className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card" aria-labelledby="played-title">
         <div className="p-4">
           <h2 id="played-title" className="font-semibold text-gray-900 dark:text-foreground">Who played</h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-muted-foreground">
@@ -235,7 +235,7 @@ export default function AdminDailyPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-t border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500 dark:border-border dark:text-muted-foreground">
+                <tr className="border-t border-gray-100 text-left text-xs font-semibold text-gray-500 dark:border-border dark:text-muted-foreground">
                   <th className="px-4 py-2 font-medium">Day</th>
                   <th className="px-4 py-2 text-right font-medium">Played</th>
                   <th className="px-4 py-2 text-right font-medium">Members</th>
@@ -303,12 +303,12 @@ export default function AdminDailyPage() {
       {query.isLoading ? (
         <Skeleton className="h-96 w-full rounded-2xl" />
       ) : query.isError || !data ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           <p>The questions could not load.</p>
           <button type="button" className="mt-2 font-semibold underline" onClick={() => query.refetch()}>Try again</button>
         </div>
       ) : data.questions.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-border">No questions found.</p>
+        <p className="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-border">No questions found.</p>
       ) : (
         <ul className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white dark:divide-border dark:border-border dark:bg-card">
           {data.questions.map((question) => (

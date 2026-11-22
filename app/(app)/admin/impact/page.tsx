@@ -33,7 +33,7 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-foreground/90">{title}</h2>
+      <h2 className="text-sm font-semibold text-gray-900 dark:text-foreground">{title}</h2>
       {note && (
         <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5 mb-3">{note}</p>
       )}
@@ -56,7 +56,7 @@ export default function AdminImpactPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Impact" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load the impact numbers right now. Please try again.
         </div>
       </div>

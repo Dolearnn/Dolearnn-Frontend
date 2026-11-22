@@ -112,7 +112,7 @@ export default function AdminHome() {
     return (
       <div className="space-y-6">
         <PageHeader title="Overview" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           We could not load the admin dashboard right now. Please try again.
         </div>
       </div>
@@ -200,11 +200,11 @@ export default function AdminHome() {
       <PageHeader title="Overview" description="What needs you first, then how things are going." />
 
       <section aria-labelledby="todo-heading">
-        <h2 id="todo-heading" className="mb-3 text-lg font-semibold text-gray-900 dark:text-foreground">
+        <h2 id="todo-heading" className="mb-3 font-display text-lg font-bold text-gray-950 dark:text-foreground">
           Needs your attention
         </h2>
         {tasks.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-accent2-200 bg-accent2-50 p-5 dark:border-accent2-500/30 dark:bg-accent2-500/10">
+          <div className="flex items-center gap-3 rounded-3xl bg-accent2-50 p-5 dark:bg-accent2-500/10">
             <CheckCircle2 className="h-6 w-6 shrink-0 text-accent2-600 dark:text-accent2-400" />
             <div>
               <p className="font-semibold text-gray-900 dark:text-foreground">You&apos;re all caught up</p>
@@ -221,7 +221,7 @@ export default function AdminHome() {
                   href={task.href}
                   className="group flex items-center gap-4 p-4 transition-colors hover:bg-accent2-50 dark:hover:bg-accent2-500/10 sm:px-5"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent2-100 text-brand dark:bg-accent2-500/20 dark:text-accent2-400">
                     <task.icon className="h-5 w-5" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -266,7 +266,7 @@ export default function AdminHome() {
             {upcoming.slice(0, 4).map((s) => (
               <div
                 key={s.id}
-                className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card"
+                className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4"
               >
                 <p className="font-semibold text-gray-900 dark:text-foreground">
                   {s.subject} · {s.teacherName ?? 'Teacher'}
@@ -297,7 +297,7 @@ export default function AdminHome() {
               .map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card"
+                  className="flex items-center gap-3 rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-sm font-semibold text-white">
                     {t.name
@@ -336,7 +336,7 @@ export default function AdminHome() {
 function SectionHeading({ title, href, link }: { title: string; href: string; link: string }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-foreground">{title}</h2>
+      <h2 className="font-display text-lg font-bold text-gray-950 dark:text-foreground">{title}</h2>
       <Link href={href} className="text-sm font-medium text-brand dark:text-accent2-400">
         {link}
       </Link>
@@ -346,7 +346,7 @@ function SectionHeading({ title, href, link }: { title: string; href: string; li
 
 function EmptyCard({ text }: { text: string }) {
   return (
-    <p className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-border dark:text-muted-foreground">
+    <p className="rounded-3xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-border dark:text-muted-foreground">
       {text}
     </p>
   );

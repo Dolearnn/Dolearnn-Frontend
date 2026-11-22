@@ -386,7 +386,7 @@ export default function AdminTeachersPage() {
       </div>
 
       {teachers.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
           <p className="text-sm text-gray-500 dark:text-muted-foreground">
             No teachers match that search.
           </p>
@@ -606,8 +606,8 @@ function TeacherCard({
       <div className="grid grid-cols-3 gap-2 text-center">
         <Stat label="Students" value={teacher.studentCount ?? 0} />
         <Stat label="Upcoming" value={teacher.upcomingCount ?? 0} />
-        <div className="rounded-xl bg-gray-50 p-2 dark:bg-background">
-          <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
+        <div className="rounded-2xl bg-gray-50 p-2 dark:bg-white/5">
+          <p className="text-xs font-medium text-gray-500 dark:text-muted-foreground">
             Pay / session
           </p>
           <div className="mt-1 flex items-center justify-center gap-1">
@@ -636,7 +636,7 @@ function TeacherCard({
       </div>
 
       <div className="space-y-1 border-t border-gray-100 pt-3 dark:border-border">
-        <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
+        <p className="text-xs font-medium text-gray-500 dark:text-muted-foreground">
           Qualifications
         </p>
         <p className="text-xs text-gray-700 dark:text-foreground/90">
@@ -899,8 +899,8 @@ function RematchPanel({
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-xl bg-gray-50 p-2 dark:bg-background">
-      <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-muted-foreground">
+    <div className="rounded-2xl bg-gray-50 p-2 dark:bg-white/5">
+      <p className="text-xs font-medium text-gray-500 dark:text-muted-foreground">
         {label}
       </p>
       <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-foreground">
@@ -912,8 +912,8 @@ function Stat({ label, value }: { label: string; value: number | string }) {
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
-      <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
+    <div className="rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
+      <div className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">
         {label}
       </div>
       <div className="mt-2 text-2xl font-semibold text-gray-900 dark:text-foreground">

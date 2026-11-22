@@ -243,7 +243,7 @@ export default function AdminAuditPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Activity log" description="" />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+        <div className="rounded-3xl bg-red-50 p-5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
           {auditQuery.error instanceof Error ? auditQuery.error.message : 'Could not load the activity log.'}
         </div>
       </div>
@@ -330,7 +330,7 @@ export default function AdminAuditPage() {
         })}
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-border dark:bg-card">
+      <div className="space-y-3 rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card p-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_170px_150px_220px]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-muted-foreground" />
@@ -451,18 +451,18 @@ export default function AdminAuditPage() {
       ) : null}
 
       {logs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-border dark:bg-card">
           <FileSearch className="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-muted-foreground" />
-          <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">No activity found</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-foreground">No activity found</p>
           <p className="mt-1 text-xs text-gray-500 dark:text-muted-foreground">
             {filtersActive ? 'Try clearing some filters.' : 'As people use the platform, what they do will show up here.'}
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-border dark:bg-card">
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white dark:border-border dark:bg-card">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-background dark:text-muted-foreground">
+              <thead className="bg-gray-50 text-xs font-semibold text-gray-500 dark:bg-white/5 dark:text-muted-foreground">
                 <tr>
                   <th className="w-8 px-2 py-3" />
                   <th className="px-4 py-3 text-left font-medium">When</th>

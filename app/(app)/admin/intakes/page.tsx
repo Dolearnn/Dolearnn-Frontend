@@ -369,7 +369,7 @@ export default function AdminIntakesPage() {
       {children.length === 0 ? (
         <div className="bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-border p-10 text-center">
           <ClipboardCheck className="w-6 h-6 text-accent2-500 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-gray-700 dark:text-foreground/90">
+          <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
             {filter === 'Pending'
               ? 'Every intake is matched'
               : 'No intakes match this filter'}
@@ -516,7 +516,7 @@ export default function AdminIntakesPage() {
               }
               placeholder="School"
             />
-            <div className="rounded-2xl border border-gray-200 dark:border-border p-4 space-y-4">
+            <div className="space-y-4 rounded-3xl border border-gray-200/80 p-4 dark:border-border">
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
                   Learning needs
@@ -655,7 +655,7 @@ export default function AdminIntakesPage() {
               />
             </div>
 
-            <div className="rounded-2xl border border-gray-200 dark:border-border p-4 space-y-4">
+            <div className="space-y-4 rounded-3xl border border-gray-200/80 p-4 dark:border-border">
               <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
                 Availability and budget
               </p>
@@ -888,7 +888,7 @@ function IntakeCard({
         </div>
         <span
           className={cn(
-            'text-[11px] font-medium px-2 py-0.5 rounded-full',
+            'rounded-full px-2 py-0.5 text-xs font-medium',
             fullyAssigned
               ? 'bg-accent2-50 text-accent2-700'
               : 'bg-amber-50 text-amber-700',
@@ -957,7 +957,7 @@ function IntakeCard({
                   <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={cn(
-                        'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                        'rounded-full px-2 py-0.5 text-xs font-medium',
                         assignment
                           ? 'bg-accent2-50 text-accent2-700'
                           : 'bg-amber-50 text-amber-700',
@@ -967,7 +967,7 @@ function IntakeCard({
                     </span>
                     <span
                       className={cn(
-                        'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                        'rounded-full px-2 py-0.5 text-xs font-medium',
                         paymentSummary.isPaid
                           ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-rose-50 text-rose-700',
@@ -1146,7 +1146,7 @@ function Row({
 }) {
   return (
     <div className={cn('flex gap-2', full && 'sm:col-span-2')}>
-      <span className="text-gray-400 dark:text-muted-foreground uppercase tracking-wide text-[10px] w-20 shrink-0 pt-0.5">
+      <span className="w-20 shrink-0 pt-0.5 text-xs font-semibold text-gray-500 dark:text-muted-foreground">
         {label}
       </span>
       <span className="text-gray-700 dark:text-foreground/90">{value}</span>
