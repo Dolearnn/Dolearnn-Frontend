@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import RecordPaymentDialog from '@/components/admin/RecordPaymentDialog';
 import PageHeader from '@/components/dashboard/PageHeader';
+import PlanSalesCard from '@/components/admin/PlanSalesCard';
 import StatTile from '@/components/dashboard/StatTile';
 import { PageShellSkeleton } from '@/components/dashboard/Skeletons';
 import { Button } from '@/components/ui/button';
@@ -256,7 +257,7 @@ export default function AdminPaymentsPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile
           icon={Wallet}
-          label="Revenue"
+          label="Tutoring revenue"
           value={formatCurrency(revenue)}
           sub={`${paymentsSummary?.length ?? 0} payment records`}
           accent
@@ -280,6 +281,8 @@ export default function AdminPaymentsPage() {
           sub="this payout month"
         />
       </div>
+
+      <PlanSalesCard />
 
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">

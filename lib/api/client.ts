@@ -9,11 +9,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || DEFAULT_A
 
 export class ApiError extends Error {
   status: number;
+  // Set by the server for errors the app handles, e.g. "PLAN_LIMIT".
+  code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -64,7 +67,7 @@ export async function apiFetch<T>(
     if (response.status === 401 && token && EXPIRED_SESSION.test(message)) {
       endExpiredSession();
     }
-    throw new ApiError(response.status, message);
+    throw new ApiError(response.status, message, typeof data?.code === 'string' ? data.code : undefined);
   }
 
   return data as T;

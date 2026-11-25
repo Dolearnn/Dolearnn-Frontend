@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Check, ChevronDown, Clock, Play, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import type { QuizCatalogExam, QuizCatalogSubject, QuizMode } from '@/lib/api/qu
 import { cn } from '@/lib/utils';
 import { idlePill, selectedPill, sheetContent, stickyFooter } from './pills';
 import { useStartQuiz } from './useStartQuiz';
+import { useBilling } from '@/components/billing/useBilling';
 
 const MAX_SUBJECTS = 6;
 const PER_SUBJECT_CHOICES = [5, 10, 20, 40];
@@ -56,6 +58,7 @@ export default function MixedQuizDialog({
   onClose: () => void;
 }) {
   const start = useStartQuiz();
+  const billing = useBilling();
   const ready = subjects.filter((row) => row.available > 0);
   const isJamb = /jamb|utme/i.test(exam?.name ?? '');
   const english = ready.find((row) => row.subject.slug === UTME_ENGLISH_SLUG);
@@ -157,6 +160,16 @@ export default function MixedQuizDialog({
               ? `Use of English (${UTME_ENGLISH_QUESTIONS} questions) plus three subjects (${UTME_SUBJECT_QUESTIONS} each), ${UTME_MINUTES / 60} hours, in exam mode.`
               : `${exam ? `${exam.name}. ` : ''}Pick up to ${MAX_SUBJECTS} subjects. Questions are shared equally and grouped by subject.`}
           </DialogDescription>
+          {utme && billing.data?.limited && (
+            <p className="rounded-2xl bg-accent2-50 px-3.5 py-2.5 text-sm text-gray-800 dark:bg-accent2-500/10 dark:text-foreground/90">
+              Free plan: {billing.data.limits.utmePapersPerMonth} full paper a month (
+              {Math.max(0, billing.data.limits.utmePapersPerMonth - billing.data.usage.utmePapersThisMonth)} left).{' '}
+              <Link href="/student/plan" className="font-semibold text-brand underline underline-offset-2 dark:text-accent2-300">
+                Pro
+              </Link>{' '}
+              is unlimited.
+            </p>
+          )}
         </DialogHeader>
 
         <div className="space-y-6">

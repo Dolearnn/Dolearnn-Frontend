@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Copy, Send } from 'lucide-react';
+import Link from 'next/link';
+import { Check, Copy, Crown, Send } from 'lucide-react';
+import { useBilling } from '@/components/billing/useBilling';
 import { Button } from '@/components/ui/button';
 import { getAuthUser } from '@/lib/api/auth-storage';
 import {
@@ -22,8 +24,8 @@ function shortDate(date: Date) {
   return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
-function plural(count: number, word: string) {
-  return `${count} ${word}${count === 1 ? '' : 's'}`;
+function plural(count: number, word: string, many = `${word}s`) {
+  return `${count} ${count === 1 ? word : many}`;
 }
 
 /**
@@ -33,6 +35,7 @@ function plural(count: number, word: string) {
  */
 export default function ParentReportCard() {
   const [copied, setCopied] = useState(false);
+  const billing = useBilling();
   const [firstName, setFirstName] = useState('');
   useEffect(() => setFirstName(getAuthUser()?.name?.split(' ')[0] ?? ''), []);
 
@@ -93,7 +96,33 @@ export default function ParentReportCard() {
     return { text: lines.join('\n'), sessions: week.length, questions };
   }, [overview.data, history.data, rewards.data, profile.data, firstName]);
 
-  if (!report) return null;
+  if (!report || !billing.data) return null;
+
+  // A Pro feature: free learners see what it is and how to get it.
+  if (billing.data.limited) {
+    return (
+      <section
+        aria-labelledby="parent-report-heading"
+        className="rounded-3xl border border-gray-200/80 bg-white p-4 dark:border-border dark:bg-card sm:p-6"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="parent-report-heading" className="font-display text-lg font-bold text-gray-950 dark:text-foreground">
+            Weekly report for a parent
+          </h2>
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand dark:bg-accent2-500/15 dark:text-accent2-300">
+            <Crown className="h-3.5 w-3.5" aria-hidden /> Pro
+          </span>
+        </div>
+        <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-muted-foreground">
+          A short WhatsApp report from your real results: what you practised this week, your most improved topics and what
+          comes next.{report.sessions > 0 ? ` So far this week: ${plural(report.sessions, 'quiz', 'quizzes')}.` : ''}
+        </p>
+        <Button asChild className="mt-4 h-12 w-full rounded-2xl text-[15px] sm:w-auto sm:px-6">
+          <Link href="/student/plan">See Pro plans</Link>
+        </Button>
+      </section>
+    );
+  }
 
   const copy = async () => {
     try {

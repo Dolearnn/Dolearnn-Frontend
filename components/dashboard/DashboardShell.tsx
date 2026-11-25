@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
 import {
   Bell,
   BookOpen,
@@ -12,13 +13,16 @@ import {
   ChartNoAxesColumnIncreasing,
   ClipboardList,
   CreditCard,
+  Crown,
   FileSearch,
   Inbox,
   GraduationCap,
   Home,
   ListChecks,
   LogOut,
+  Moon,
   Settings,
+  Sun,
   Swords,
   Target,
   TrendingUp,
@@ -50,6 +54,7 @@ import { claimGuestDaily } from '@/lib/api/daily';
 import { trackPageView } from '@/lib/api/activity';
 import TutorTabs, { TUTOR_TABS } from '@/components/dashboard/TutorTabs';
 import BottomNav from '@/components/dashboard/BottomNav';
+import PlanPill from '@/components/billing/PlanPill';
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -68,6 +73,8 @@ type NavItem = {
   also?: string[];
   // A shorter name for the phone tab bar.
   short?: string;
+  // Kept out of the phone tab bar (reached another way there).
+  noTab?: boolean;
 };
 
 // One account type for learners: practice, Arena, tutoring and payments together.
@@ -78,6 +85,8 @@ const studentNav: NavItem[] = [
   { label: 'Progress', href: '/student/progress', icon: TrendingUp },
   { label: 'Tutor', href: '/student/tutor', icon: GraduationCap, also: TUTOR_TABS.map((tab) => tab.href) },
   { label: 'Notifications', href: '/student/notifications', icon: Bell },
+  // On phones the header's "Go Pro" button opens it.
+  { label: 'Plan', href: '/student/plan', icon: Crown, noTab: true },
 ];
 
 const teacherNav: NavItem[] = [
@@ -251,7 +260,7 @@ export default function DashboardShell({
   // Every role gets a bottom tab bar on phones; notifications move to the
   // header bell. Teachers and admins have more pages than fit, so the rest sit
   // behind "More", which opens the full menu.
-  const tabSource = nav.filter((item) => item.label !== 'Notifications');
+  const tabSource = nav.filter((item) => item.label !== 'Notifications' && !item.noTab);
   const tabPicks: Record<Role, NavItem[]> = {
     student: tabSource,
     teacher: tabSource.slice(0, 4),
@@ -332,6 +341,7 @@ export default function DashboardShell({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
+            {role === 'student' && <PlanPill />}
             <Link
               href={`/${role}/notifications`}
               aria-label={
@@ -346,8 +356,10 @@ export default function DashboardShell({
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-card" />
               )}
             </Link>
-            <ThemeToggle />
-            <UserMenu user={authUser} onLogout={handleLogout} />
+            {/* On phones the learner header also holds "Go Pro", so the theme
+                switch moves into the account menu there. */}
+            <ThemeToggle className={role === 'student' ? 'max-sm:hidden' : undefined} />
+            <UserMenu user={authUser} onLogout={handleLogout} themeInMenu={role === 'student'} />
           </div>
         </header>
         <main
@@ -445,10 +457,15 @@ function SidebarContents({
 function UserMenu({
   user,
   onLogout,
+  themeInMenu = false,
 }: {
   user: AuthUser;
   onLogout: () => void | Promise<void>;
+  // Adds a light/dark switch to the menu on phones.
+  themeInMenu?: boolean;
 }) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -475,6 +492,18 @@ function UserMenu({
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {themeInMenu && (
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setTheme(isDark ? 'light' : 'dark');
+            }}
+            className="cursor-pointer sm:hidden"
+          >
+            {isDark ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+            {isDark ? 'Light mode' : 'Dark mode'}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();

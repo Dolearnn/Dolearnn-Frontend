@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { billingKeys, isPlanLimitError } from '@/lib/api/billing';
 import { quizKeys, startQuizAttempt } from '@/lib/api/quiz';
 
 // Starts a quiz and opens it. The response already contains the questions, so
@@ -16,9 +17,18 @@ export function useStartQuiz() {
     mutationFn: startQuizAttempt,
     onSuccess: (view) => {
       queryClient.setQueryData(quizKeys.attempt(view.attempt.id), view);
+      // The free plan's "quizzes left today" has changed.
+      void queryClient.invalidateQueries({ queryKey: billingKeys.me });
       router.push(`/student/practice/attempt/${view.attempt.id}`);
     },
-    onError: (error) => {
+    onError: (error, input) => {
+      // A free account has used today's quizzes or this month's UTME paper:
+      // show the plans rather than an error.
+      if (isPlanLimitError(error)) {
+        void queryClient.invalidateQueries({ queryKey: billingKeys.me });
+        router.push(`/student/plan?reason=${input.utme ? 'utme' : 'quizzes'}`);
+        return;
+      }
       toast({
         title: 'Could not start the quiz',
         description:

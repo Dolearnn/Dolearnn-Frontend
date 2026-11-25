@@ -5,6 +5,7 @@ import {
   Calculator,
   Check,
   Clock,
+  Crown,
   Flame,
   GraduationCap,
   MessageCircle,
@@ -16,7 +17,7 @@ import {
 import { Logo } from '@/components/brand/Logo';
 import { LandingNav, NewsletterForm } from '@/components/landing/LandingNav';
 import { naira } from '@/lib/money';
-import { BANK_FACTS, PRICING } from '@/lib/pricing';
+import { BANK_FACTS, examPassPrice, FREE_LIMITS, PRICING } from '@/lib/pricing';
 
 export const metadata: Metadata = {
   title: 'DoLearnn: Know what to fix. Prove you fixed it.',
@@ -66,15 +67,19 @@ const faqs = [
   },
   {
     q: 'Is it free?',
-    a: `Practice, the Daily quiz, Arena battles and the full UTME paper are free today. Tutoring is ${naira(PRICING.tutoringSession)} per session.`,
+    a: `Yes. The free plan has ${FREE_LIMITS.quizzesPerDay} topic quizzes a day, one full UTME paper a month, the Daily quiz and Arena battles. Pro (${naira(PRICING.proMonth)} a month, or the Exam Season Pass at ${naira(PRICING.examPass)} for ${PRICING.examPassMonths} months) removes the limits and adds the weekly parent report. Tutoring is ${naira(PRICING.tutoringSession)} per session.`,
   },
   {
     q: 'How can a parent follow progress?',
-    a: 'From the Progress page a learner can send a weekly report to a parent on WhatsApp: practice this week, the topics that improved and what they are working on next, all from real results.',
+    a: 'With Pro, a learner can send a weekly report to a parent on WhatsApp from the Progress page: practice this week, the topics that improved and what they are working on next, all from real results.',
   },
 ];
 
+// Rebuilt hourly, so the founding price comes off on its own on 1 January.
+export const revalidate = 3600;
+
 export default function Home() {
+  const pass = examPassPrice();
   return (
     <div className="min-h-screen overflow-x-clip bg-white text-gray-800">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2">
@@ -206,31 +211,58 @@ export default function Home() {
         {/* ---------- PRICING ---------- */}
         <section id="pricing" className="scroll-mt-20 bg-gray-50 py-16 lg:py-24" aria-labelledby="pricing-title">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <SectionHead title={<span id="pricing-title">Free to practise</span>} text="Pay only when you want a person to help." />
+            <SectionHead
+              title={<span id="pricing-title">Free to practise. Pro for exam season.</span>}
+              text="One price for every family, online or through your lesson centre. No automatic renewal."
+            />
             <div className="mt-10 grid gap-4 lg:grid-cols-3">
               <PriceCard
-                featured
                 icon={GraduationCap}
-                name="Practice"
-                price="Free"
+                name="Free"
+                price={naira(0)}
                 unit="for every learner"
-                points={['Topic quizzes with written explanations', 'Weak-topic list and progress tracking', 'The Daily quiz and Arena battles', 'The full UTME paper in exam mode']}
+                points={[
+                  `${FREE_LIMITS.quizzesPerDay} topic quizzes a day, with explanations`,
+                  'One full UTME paper a month',
+                  'Weak-topic list and progress tracking',
+                  'The Daily quiz and Arena battles',
+                ]}
                 cta={{ label: 'Start practising free', href: '/register' }}
               />
               <PriceCard
-                icon={MessageCircle}
-                name="Tutoring"
-                price={naira(PRICING.tutoringSession)}
-                unit="per 60-minute session"
-                points={['A tutor matched to your weak topics', 'They see your results before lesson one', 'Notes after every lesson']}
-                cta={{ label: 'Request a tutor', href: '/register' }}
+                featured
+                icon={Crown}
+                name="Exam Season Pass"
+                badge="Best value"
+                price={naira(pass.price)}
+                was={pass.was ? naira(pass.was) : undefined}
+                unit={`for ${PRICING.examPassMonths} months of Pro`}
+                note={pass.was ? 'Founding price until 31 December 2026' : undefined}
+                points={['Unlimited topic quizzes', 'Unlimited full UTME papers in the CBT layout', 'Weekly progress report for a parent', 'One payment: card, bank transfer or USSD']}
+                cta={{ label: 'Get the pass', href: '/register' }}
               />
               <PriceCard
+                icon={Zap}
+                name="Pro monthly"
+                price={naira(PRICING.proMonth)}
+                unit="per month"
+                points={['Everything in the Exam Season Pass', 'Pay one month at a time', 'Good for trying Pro first']}
+                cta={{ label: 'Try Pro for a month', href: '/register' }}
+              />
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <ExtraOffer
+                icon={MessageCircle}
+                name="One-to-one tutoring"
+                price={`${naira(PRICING.tutoringSession)} per session`}
+                text="A tutor matched to your weak topics, who sees your results before lesson one."
+                cta={{ label: 'Request a tutor', href: '/register' }}
+              />
+              <ExtraOffer
                 icon={School}
                 name="Schools"
-                price={naira(PRICING.schoolYear)}
-                unit="per year"
-                points={['Class-wide diagnostics', 'Progress dashboards and class reports', 'Ask us about a pilot with one class']}
+                price={`${naira(PRICING.schoolYear)} per year`}
+                text="Class-wide diagnostics, dashboards and reports. Ask us about a one-class pilot first."
                 cta={{ label: 'Ask about a pilot', href: schoolsForm, external: true }}
               />
             </div>
@@ -367,7 +399,10 @@ function PriceCard({
   icon: Icon,
   name,
   price,
+  was,
   unit,
+  note,
+  badge,
   points,
   cta,
   featured = false,
@@ -375,7 +410,11 @@ function PriceCard({
   icon: React.ComponentType<{ className?: string }>;
   name: string;
   price: string;
+  // The usual price, crossed out while an offer runs.
+  was?: string;
   unit: string;
+  note?: string;
+  badge?: string;
   points: string[];
   cta: { label: string; href: string; external?: boolean };
   featured?: boolean;
@@ -391,14 +430,19 @@ function PriceCard({
           : 'flex flex-col rounded-[28px] border border-gray-200/80 bg-white p-6'
       }
     >
-      <span className={featured ? 'grid h-11 w-11 place-items-center rounded-2xl bg-accent2-400 text-brand-700' : 'grid h-11 w-11 place-items-center rounded-2xl bg-accent2-100 text-brand'}>
-        <Icon className="h-5 w-5" />
-      </span>
+      <div className="flex items-start justify-between gap-3">
+        <span className={featured ? 'grid h-11 w-11 place-items-center rounded-2xl bg-accent2-400 text-brand-700' : 'grid h-11 w-11 place-items-center rounded-2xl bg-accent2-100 text-brand'}>
+          <Icon className="h-5 w-5" />
+        </span>
+        {badge && <span className="rounded-full bg-accent2-400 px-3 py-1 text-xs font-semibold text-brand-700">{badge}</span>}
+      </div>
       <h3 className={`mt-4 font-display text-lg font-bold ${featured ? 'text-white' : 'text-gray-950'}`}>{name}</h3>
       <p className="mt-1">
         <span className="font-display text-4xl font-extrabold tabular-nums">{price}</span>{' '}
+        {was && <s className={`mr-1 tabular-nums ${featured ? 'text-white/55' : 'text-gray-400'}`}>{was}</s>}
         <span className={featured ? 'text-white/70' : 'text-gray-500'}>{unit}</span>
       </p>
+      {note && <p className={`mt-2 text-sm font-medium ${featured ? 'text-accent2-300' : 'text-accent2-700'}`}>{note}</p>}
       <ul className="mt-5 flex-1 space-y-2.5">
         {points.map((point) => (
           <li key={point} className="flex gap-2.5 text-sm">
@@ -412,6 +456,43 @@ function PriceCard({
       ) : (
         <Link href={cta.href} className={ctaClass}>{cta.label}</Link>
       )}
+    </article>
+  );
+}
+
+function ExtraOffer({
+  icon: Icon,
+  name,
+  price,
+  text,
+  cta,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  name: string;
+  price: string;
+  text: string;
+  cta: { label: string; href: string; external?: boolean };
+}) {
+  const ctaClass = 'mt-1 inline-flex min-h-11 items-center gap-1 font-semibold text-brand underline-offset-4 hover:underline';
+  return (
+    <article className="flex gap-4 rounded-3xl border border-gray-200/80 bg-white p-5">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent2-100 text-brand">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0">
+        <h3 className="font-display text-base font-bold text-gray-950">{name}</h3>
+        <p className="font-display text-sm font-bold tabular-nums text-gray-700">{price}</p>
+        <p className="mt-1 text-sm leading-6 text-gray-600">{text}</p>
+        {cta.external ? (
+          <a href={cta.href} target="_blank" rel="noreferrer" className={ctaClass}>
+            {cta.label} <ArrowRight className="h-4 w-4" />
+          </a>
+        ) : (
+          <Link href={cta.href} className={ctaClass}>
+            {cta.label} <ArrowRight className="h-4 w-4" />
+          </Link>
+        )}
+      </div>
     </article>
   );
 }

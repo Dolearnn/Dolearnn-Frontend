@@ -13,6 +13,7 @@ import AchievementsPanel from '@/components/quiz/AchievementsPanel';
 import DailyCard from '@/components/daily/DailyCard';
 import InstallAppCard from '@/components/dashboard/InstallAppCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import FreePlanStrip from '@/components/billing/FreePlanStrip';
 import { getAuthUser } from '@/lib/api/auth-storage';
 import { getQuizPracticeOverview, quizKeys } from '@/lib/api/quiz';
 import { getLearnerProfile, studentKeys } from '@/lib/api/student';
@@ -135,6 +136,7 @@ export default function StudentDashboardPage() {
                 </p>
               )}
               <DailyCard />
+              <FreePlanStrip />
             </div>
           </div>
 
